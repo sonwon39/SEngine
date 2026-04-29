@@ -1,0 +1,8 @@
+.claude/settings.local.json
+
+.vs/
+x64/
+SEngine/x64/
+SEngine/*.vcxproj.user
+
+packages/
