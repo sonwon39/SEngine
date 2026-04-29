@@ -10,6 +10,7 @@ PSInput main(VSInput input)
     svPos = mul(svPos, gLocalCB.projection);
     
     output.svPosition = svPos;
+    output.uv = input.uv;
     
     return output;
 }

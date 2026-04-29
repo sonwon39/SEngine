@@ -6,7 +6,9 @@
       "Write",
       "Edit",
       "WebFetch",
-      "WebSearch"
+      "WebSearch",
+      "PowerShell",
+      "Bash"
     ]
   }
 }

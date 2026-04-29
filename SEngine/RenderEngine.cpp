@@ -1,4 +1,4 @@
-#pragma warning(disable : 4996)
+Ôªø#pragma warning(disable : 4996)
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -32,9 +32,9 @@ RenderEngine::RenderEngine(ID3D12Device5* device)
 
 RenderEngine::~RenderEngine()
 {
-	ImGui_ImplDX12_Shutdown();
+	/*ImGui_ImplDX12_Shutdown();
 	ImGui_ImplWin32_Shutdown();
-	ImGui::DestroyContext();
+	ImGui::DestroyContext();*/
 }
 
 bool RenderEngine::Initialize(int width, int height, int guiWidth, IDXGIFactory7* factory, HWND wnd)
@@ -57,13 +57,14 @@ bool RenderEngine::Initialize(int width, int height, int guiWidth, IDXGIFactory7
 	m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(m_fence.GetAddressOf()));
 	m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(m_createBufferfence.GetAddressOf()));
 
-	// Descriptor Handle offset ±∏«œ±‚
+	// Descriptor Handle offset Íµ¨ÌïòÍ∏∞
 	m_cbvSrvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	m_rtvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	m_dsvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
-	// DescriptorHeap ª˝º∫
+	// DescriptorHeap ÏÉùÏÑ±
 	utility->CreateDescriptorHeap(m_swapChainBufferCount, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, m_swapChainRTVHeap);
+	utility->CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, m_DSVHeap);
 
 
 	CreateSwapChain(factory, wnd);
@@ -81,10 +82,18 @@ bool RenderEngine::Initialize(int width, int height, int guiWidth, IDXGIFactory7
 	CreateTextureBuffers();
 	CreateDepthBuffers();
 
+	m_commandAllocator->Reset();
+	ThrowIfFailed(m_commandList->Reset(m_commandAllocator.Get(), nullptr));
 
-	Mesh<SimpleVertex, uint16_t> rect = GeometryGenerator::MakeSimpleRect(0.5, 0.5);
+	Mesh<SimpleVertex, uint16_t> rect = GeometryGenerator::MakeSimpleCube(0.5f, 0.5f, 0.5f);
 	m_mesh = std::make_unique<StaticMesh>();
 	m_mesh->Initialize(m_device, m_commandList.Get(), rect);
+
+	m_commandList->Close();
+
+	ID3D12CommandList* commands[] = { m_commandList.Get() };
+	m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
+	FlushResourceCommands();
 
 	using DirectX::SimpleMath::Vector3;
 
@@ -102,7 +111,6 @@ bool RenderEngine::Initialize(int width, int height, int guiWidth, IDXGIFactory7
 	localConstant.projection = localConstant.projection.Transpose();
 
 	utility->CreateConstantBuffer(sizeof(localConstant), m_localCB, &pLocalCB);
-	
 	memcpy(pLocalCB, &localConstant, sizeof(localConstant));
 
 	return true;
@@ -121,7 +129,7 @@ bool RenderEngine::InitGUI(HWND wnd)
 	//ImGui::StyleColorsLight();
 	//const char* fontPath = "Fonts/Hack-Regular.ttf";
 	//float fontSize = 15.0f;
-	//// ∆˘∆Æ ∑ŒµÂ 
+	//// Ìè∞Ìä∏ Î°úÎìú 
 	//io.Fonts->AddFontFromFileTTF(fontPath, fontSize);
 
 	//D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
@@ -146,20 +154,20 @@ void RenderEngine::OnResize()
 {
 	if (m_swapChain == nullptr) return;
 
-	// swapchain πˆ∆€ ∏Æº¬
+	// swapchain Î≤ÑÌçº Î¶¨ÏÖã
 	for (int i = 0; i < m_swapChainBufferCount; i++)
 	{
 		m_swapChainResources[i].Reset();
 	}
 
-	// swapchain πˆ∆€ ≈©±‚ ¡∂¡§
+	// swapchain Î≤ÑÌçº ÌÅ¨Í∏∞ Ï°∞Ï†ï
 	m_swapChain->ResizeBuffers(m_swapChainBufferCount,
 		m_width,
 		m_height,
 		DXGI_FORMAT_UNKNOWN,
 		DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH);
 
-	// πˆ∆€ø° ¥Î«— RTV ¿Áª˝º∫
+	// Î≤ÑÌçºÏóê ÎåÄÌïú RTV Ïû¨ÏÉùÏÑ±
 	CD3DX12_CPU_DESCRIPTOR_HANDLE handle(m_swapChainRTVHeap->GetCPUDescriptorHandleForHeapStart());
 	for (int i = 0; i < m_swapChainBufferCount; i++)
 	{
@@ -169,7 +177,7 @@ void RenderEngine::OnResize()
 		handle.Offset(1, m_rtvDescriptorSize);
 	}
 
-	// DepthBuffer ¿Áª˝º∫
+	// DepthBuffer Ïû¨ÏÉùÏÑ±
 	CreateMainDepthBuffer();
 
 	m_currentBackBufferIndex = m_swapChain->GetCurrentBackBufferIndex();
@@ -270,6 +278,14 @@ void RenderEngine::UpdateGUI()
 // BOOKMARK
 void RenderEngine::Tick(float deltaTime)
 {
+	{
+		angle += rotateSpeed * deltaTime;
+		float radians = DirectX::XMConvertToRadians(angle);
+		localConstant.model = DirectX::XMMatrixRotationY(radians);
+		localConstant.model = localConstant.model.Transpose();
+		memcpy(pLocalCB, &localConstant, sizeof(localConstant));
+	}
+
 	Draw();
 }
 
@@ -295,7 +311,7 @@ void RenderEngine::Render(const std::string& psoName, bool clear)
 		pso = m_PSOs["defaultPSO"];
 	}
 	m_commandAllocator->Reset();
-	ThrowIfFailed(m_commandList->Reset(m_commandAllocator.Get(), nullptr));
+	ThrowIfFailed(m_commandList->Reset(m_commandAllocator.Get(), pso.GetPSO()));
 
 	m_commandList->SetPipelineState(pso.GetPSO());
 	m_commandList->SetGraphicsRootSignature(pso.GetRootSignature()->GetSignature());
@@ -336,10 +352,11 @@ void RenderEngine::Render(const std::string& psoName, bool clear)
 		m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
 
 		ThrowIfFailed(m_commandQueue->Signal(m_fence.Get(), m_currentFence));
-		// text æ˜µ•¿Ã∆Æ∏¶ ¿ß«ÿ graphcics memory ªÁøÎ Ω√ commit «ÿ¡‡æﬂ Graphics ∏ﬁ∏∏Æ∏¶ ¿ÁªÁøÎ«—¥Ÿ
+		// text ÏóÖÎç∞Ïù¥Ìä∏Î•º ÏúÑÌï¥ graphcics memory ÏÇ¨Ïö© Ïãú commit Ìï¥Ï§òÏïº Graphics Î©îÎ™®Î¶¨Î•º Ïû¨ÏÇ¨Ïö©ÌïúÎã§
 		ThrowIfFailed(m_swapChain->Present(1, 0));
 		m_currentBackBufferIndex = (m_currentBackBufferIndex + 1) % m_swapChainBufferCount;
 
+		FlushResourceCommands();
 	}
 	PIXEndEvent(m_commandQueue.Get());
 }

@@ -117,7 +117,7 @@ bool BaseApp::InitWindow()
 	ShowWindow(m_mainWnd, SW_SHOWDEFAULT);
 	UpdateWindow(m_mainWnd);
 
-	ShowCursor(false);
+	//ShowCursor(false);
 
 	return true;
 }
@@ -129,22 +129,6 @@ bool Core::BaseApp::IsWindowFocused()
 
 LRESULT BaseApp::MainProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	if (Graphics::g_imguiCtx)
-	{
-		static thread_local bool s_inImGui = false;
-		if (!s_inImGui)
-		{
-			s_inImGui = true;
-			ImGui::SetCurrentContext(Graphics::g_imguiCtx);
-			if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
-			{
-				s_inImGui = false;
-				return 1;
-			}
-			s_inImGui = false;
-		}
-	}
-
 	switch (msg) {
 	case WM_DESTROY:
 	{

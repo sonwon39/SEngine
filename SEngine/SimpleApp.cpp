@@ -1,4 +1,4 @@
-#include "SimpleApp.h"
+ï»¿#include "SimpleApp.h"
 #include "RootSignature.h"
 #include "PipelineState.h"
 #include "GeometryGenerator.h"
@@ -53,7 +53,7 @@ int Core::SimpleApp::Run()
 		}
 	}
 
-	std::cout << "Run ÇÔ¼ö Á¾·á\n";
+	std::cout << "Run í•¨ìˆ˜ ì¢…ë£Œ\n";
 	//m_renderEngine->Quit();
 	return (int)msg.wParam;
 }
