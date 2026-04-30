@@ -4,6 +4,11 @@
 
 #include "CompiledShaders/DefaultPS.h"
 #include "CompiledShaders/DefaultVS.h"
+#include "CompiledShaders/DefaultCS.h"
+
+#include "CompiledShaders/ParticleRenderVS.h"
+#include "CompiledShaders/ParticleRenderPS.h"
+
 
 using namespace Graphics;
 using namespace Renderer;
@@ -29,6 +34,9 @@ namespace Renderer
 void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 {
 	GraphicsPSO defaultPSO(L"default PSO");
+	GraphicsPSO particleRenderPSO(L"particleRender PSO");
+
+	ComputePSO defaultCPSO(L"default CPSO");
 
 	hdrFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -101,6 +109,26 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 	defaultPSO.Finalize(device);
 	m_PSOs["defaultPSO"] = defaultPSO;
 	psoNames.push_back("defaultPSO");
+
+	particleRenderPSO.SetInputLayout(0, nullptr);
+	particleRenderPSO.SetRootSignature(g_U1_RS);
+	particleRenderPSO.SetRasterizerState(rasterizerDefault);
+	particleRenderPSO.SetBlendState(blendNoColorWrite);
+	particleRenderPSO.SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT);
+	particleRenderPSO.SetVertexShader(g_pParticleRenderVS, sizeof(g_pParticleRenderVS));
+	particleRenderPSO.SetPixelShader(g_pParticleRenderPS, sizeof(g_pParticleRenderPS));
+	particleRenderPSO.SetSampleMask(UINT_MAX);
+	particleRenderPSO.SetRenderTargetFormat(backBufferFormat, DXGI_FORMAT_UNKNOWN, 1, 0);
+	particleRenderPSO.Finalize(device);
+	m_PSOs["particleRenderPSO"] = particleRenderPSO;
+	psoNames.push_back("particleRenderPSO");
+
+
+	defaultCPSO.SetRootSignature(g_U1_RS);
+	defaultCPSO.SetComputeShader(g_pDefaultCS, sizeof(g_pDefaultCS));
+	defaultCPSO.Finalize(device);
+	m_CPSOs["defaultCPSO"] = defaultCPSO;
+	cpsoNames.push_back("defaultCPSO");
 }
 
 ID3D12PipelineState* Renderer::GetPSO(std::string psoName)

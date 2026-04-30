@@ -102,6 +102,10 @@
   <ItemGroup>
     <FxCompile Include="DefaultVS.hlsl" />
     <FxCompile Include="DefaultPS.hlsl" />
+    <FxCompile Include="DefaultCS.hlsl" />
+    <FxCompile Include="ParticleSimulationCS.hlsl" />
+    <FxCompile Include="ParticleRenderPS.hlsl" />
+    <FxCompile Include="ParticleRenderVS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -109,29 +109,35 @@ namespace GraphicsUtils {
 		if (format == DXGI_FORMAT_R32_TYPELESS)
 			clearValue.Format = DXGI_FORMAT_D32_FLOAT;
 
-		// 깊이/스텐실 포맷이면 Depth=1.0, Stencil=0 으로, 그 외 컬러 포맷이면 검정색 + α=1 로 클리어값을 설정한다.
+		// 깊이/스텐실 포맷이면 Depth=1.0, Stencil=0 으로, 그 외 컬러 포맷이면 clearValue를 설정하지 않는다
 		if (clearValue.Format == DXGI_FORMAT_D24_UNORM_S8_UINT ||
 			clearValue.Format == DXGI_FORMAT_D32_FLOAT)
 		{
 			clearValue.DepthStencil.Depth = 1.f;
 			clearValue.DepthStencil.Stencil = 0;
+
+			ThrowIfFailed(m_device->CreateCommittedResource(
+				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+				D3D12_HEAP_FLAG_NONE,
+				&rDesc,
+				state,
+				&clearValue,
+				IID_PPV_ARGS(buffer.ReleaseAndGetAddressOf())
+			));
 		}
 		else
 		{
-			clearValue.Color[0] = 0.f;
-			clearValue.Color[1] = 0.f;
-			clearValue.Color[2] = 0.f;
-			clearValue.Color[3] = 1.f;
+			ThrowIfFailed(m_device->CreateCommittedResource(
+				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+				D3D12_HEAP_FLAG_NONE,
+				&rDesc,
+				state,
+				nullptr,
+				IID_PPV_ARGS(buffer.ReleaseAndGetAddressOf())
+			));
 		}
 
-		ThrowIfFailed( m_device->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-			D3D12_HEAP_FLAG_NONE,
-			&rDesc,
-			state,
-			&clearValue,
-			IID_PPV_ARGS(buffer.ReleaseAndGetAddressOf())
-		));
+		
 
 		// PIX 등 디버깅 도구에서 식별 가능하도록 리소스에 이름을 부여한다.
 		buffer->SetName(name.c_str());

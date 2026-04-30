@@ -26,19 +26,8 @@ namespace Graphics
     extern D3D12_DEPTH_STENCIL_DESC depthStateDefault;
 
     extern RootSignature g_commonRS;
-    extern RootSignature g_pointCloudRS;
-    extern RootSignature g_cubeMapRS;
-    extern RootSignature g_videoRS;
-    extern RootSignature g_U1_C1_RS;
-    extern RootSignature g_R1_RS;
-    extern RootSignature g_C1_RS;
-    extern RootSignature g_R1_C2_RS;
-    extern RootSignature g_R1_C3_RS;
-    extern RootSignature g_R2_C2_RS;
-    extern RootSignature g_R3_C2_RS;
-    extern RootSignature g_R4_C2_RS;
-    extern RootSignature g_R4_C3_RS;
-    extern RootSignature g_C2_RS;
+    extern RootSignature g_U1_RS;
+   
 
     extern std::shared_ptr<GraphicsUtils::Utility> utility;
 }

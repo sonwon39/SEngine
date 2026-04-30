@@ -62,11 +62,8 @@ bool RenderEngine::Initialize(int width, int height, int guiWidth, IDXGIFactory7
 	m_rtvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	m_dsvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
-	// DescriptorHeap 생성
-	utility->CreateDescriptorHeap(m_swapChainBufferCount, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, m_swapChainRTVHeap);
-	utility->CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, m_DSVHeap);
 
-
+	CreateDescriptorHeaps();
 	CreateSwapChain(factory, wnd);
 
 	// Create SwapChain RTVs
@@ -78,40 +75,51 @@ bool RenderEngine::Initialize(int width, int height, int guiWidth, IDXGIFactory7
 
 		handle.Offset(1, m_rtvDescriptorSize);
 	}
-
+		
 	CreateTextureBuffers();
 	CreateDepthBuffers();
 
-	m_commandAllocator->Reset();
-	ThrowIfFailed(m_commandList->Reset(m_commandAllocator.Get(), nullptr));
+	InitScene();
 
-	Mesh<SimpleVertex, uint16_t> rect = GeometryGenerator::MakeSimpleCube(0.5f, 0.5f, 0.5f);
-	m_mesh = std::make_unique<StaticMesh>();
-	m_mesh->Initialize(m_device, m_commandList.Get(), rect);
+	return true;
+}
 
-	m_commandList->Close();
+bool RenderEngine::InitScene()
+{
+	// 모델 준비
+	{
+		using DirectX::SimpleMath::Vector3;
 
-	ID3D12CommandList* commands[] = { m_commandList.Get() };
-	m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
-	FlushResourceCommands();
+		m_commandAllocator->Reset();
+		ThrowIfFailed(m_commandList->Reset(m_commandAllocator.Get(), nullptr));
 
-	using DirectX::SimpleMath::Vector3;
+		Mesh<SimpleVertex, uint16_t> rect = GeometryGenerator::MakeSimpleCube(0.5f, 0.5f, 0.5f);
+		m_mesh = std::make_unique<StaticMesh>();
+		m_mesh->Initialize(m_device, m_commandList.Get(), rect);
 
-	localConstant.model = DirectX::SimpleMath::Matrix();
-	localConstant.view = DirectX::XMMatrixLookToLH(Vector3(0, 0, -3),
-		Vector3(0, 0, 1), Vector3(0, 1, 0));
-	float degrees = 70.f;
-	float radians = DirectX::XMConvertToRadians(degrees);
-	float aspectRatio = (float)width / height;
-	localConstant.projection = DirectX::XMMatrixPerspectiveFovLH(radians,
-		aspectRatio, 0.1f, 100.f);
+		m_commandList->Close();
 
-	localConstant.model = localConstant.model.Transpose();
-	localConstant.view = localConstant.view.Transpose();
-	localConstant.projection = localConstant.projection.Transpose();
+		ID3D12CommandList* commands[] = { m_commandList.Get() };
+		m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
+		FlushResourceCommands();
 
-	utility->CreateConstantBuffer(sizeof(localConstant), m_localCB, &pLocalCB);
-	memcpy(pLocalCB, &localConstant, sizeof(localConstant));
+		// camera settings
+		localConstant.model = DirectX::SimpleMath::Matrix();
+		localConstant.view = DirectX::XMMatrixLookToLH(Vector3(0, 0, -3),
+			Vector3(0, 0, 1), Vector3(0, 1, 0));
+		float degrees = 70.f;
+		float radians = DirectX::XMConvertToRadians(degrees);
+		float aspectRatio = (float)m_width / m_height;
+		localConstant.projection = DirectX::XMMatrixPerspectiveFovLH(radians,
+			aspectRatio, 0.1f, 100.f);
+
+		localConstant.model = localConstant.model.Transpose();
+		localConstant.view = localConstant.view.Transpose();
+		localConstant.projection = localConstant.projection.Transpose();
+
+		utility->CreateConstantBuffer(sizeof(localConstant), m_localCB, &pLocalCB);
+		memcpy(pLocalCB, &localConstant, sizeof(localConstant));
+	}
 
 	return true;
 }
@@ -205,6 +213,27 @@ void RenderEngine::CreateCommandObjects()
 			IID_PPV_ARGS(&m_commandList)
 		));
 
+	m_computeCommandAllocators.resize(computeCommandCount);
+	m_computeCommandLists.resize(computeCommandCount);
+
+	for (UINT i = 0; i < computeCommandCount; i++)
+	{
+		ThrowIfFailed(
+			m_device->CreateCommandAllocator(
+				D3D12_COMMAND_LIST_TYPE_DIRECT,
+				IID_PPV_ARGS(&m_computeCommandAllocators[i])
+			));
+
+		ThrowIfFailed(
+			m_device->CreateCommandList(
+				0,
+				D3D12_COMMAND_LIST_TYPE_DIRECT,
+				m_computeCommandAllocators[i].Get(),
+				nullptr,
+				IID_PPV_ARGS(&m_computeCommandLists[i])
+			));
+		m_computeCommandLists[i]->Close();
+	}
 	D3D12_COMMAND_QUEUE_DESC queueDesc;
 	ZeroMemory(&queueDesc, sizeof(queueDesc));
 	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
@@ -262,9 +291,23 @@ void RenderEngine::CreateDepthBuffers()
 	CreateMainDepthBuffer();
 }
 
+void RenderEngine::CreateDescriptorHeaps()
+{
+	// DescriptorHeap 생성
+	utility->CreateDescriptorHeap(m_swapChainBufferCount, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, m_swapChainRTVHeap);
+	utility->CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, m_DSVHeap);
+	utility->CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, m_hdrRTVHeap);
+	utility->CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, m_hdrUAVHeap, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+	utility->CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, m_hdrSRVHeap, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+}
+
 void RenderEngine::CreateTextureBuffers()
 {
-
+	D3D12_RESOURCE_FLAGS hdrFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS | D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+	utility->CreateTextureBuffer(m_hdrBuffer, m_width, m_height, Renderer::hdrFormat, hdrFlags, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 0, L"hdrBuffer");
+	utility->CreateResourceView(m_hdrBuffer, Renderer::hdrFormat, false, m_hdrRTVHeap->GetCPUDescriptorHandleForHeapStart(), DescriptorType::RTV);
+	utility->CreateResourceView(m_hdrBuffer, Renderer::hdrFormat, false, m_hdrUAVHeap->GetCPUDescriptorHandleForHeapStart(), DescriptorType::UAV);
+	utility->CreateResourceView(m_hdrBuffer, Renderer::hdrFormat, false, m_hdrSRVHeap->GetCPUDescriptorHandleForHeapStart(), DescriptorType::SRV);
 }
 
 // BOOKMARK
@@ -272,7 +315,6 @@ void RenderEngine::UpdateGUI()
 {
 	ImGui::SetWindowSize(ImVec2((float)m_guiWidth, (float)m_height));
 	ImGui::SetWindowPos(ImVec2(0.f, 0.f), ImGuiCond_FirstUseEver);
-
 }
 
 // BOOKMARK
@@ -291,8 +333,50 @@ void RenderEngine::Tick(float deltaTime)
 
 void RenderEngine::RenderMeshes(const std::string& psoName, ID3D12GraphicsCommandList* commandList)
 {
-	commandList->SetGraphicsRootConstantBufferView(0, m_localCB->GetGPUVirtualAddress());
 	m_mesh->Render(commandList);
+}
+
+void RenderEngine::Compute(const std::string& psoName, int idx)
+{
+	PIXBeginEvent(m_commandQueue.Get(), PIX_COLOR(255, 255, 0), psoName.c_str());
+
+	using namespace Renderer;
+
+	ComputePSO pso;
+	if (m_CPSOs.find(psoName) != m_CPSOs.end())
+	{
+		pso = m_CPSOs[psoName];
+	}
+	else
+	{
+		pso = m_CPSOs["defaultCPSO"];
+	}
+	ID3D12CommandAllocator* alloc = m_computeCommandAllocators[idx].Get();
+	ID3D12GraphicsCommandList* cmdList = m_computeCommandLists[idx].Get();
+	alloc->Reset();
+	ThrowIfFailed(cmdList->Reset(alloc, pso.GetPSO()));
+
+	cmdList->SetPipelineState(pso.GetPSO());
+	cmdList->SetComputeRootSignature(pso.GetRootSignature()->GetSignature());
+
+	ID3D12DescriptorHeap* heaps[] = {
+		m_hdrUAVHeap.Get()
+	};
+
+	cmdList->SetDescriptorHeaps(1, heaps);
+	cmdList->SetComputeRootDescriptorTable(0, m_hdrUAVHeap->GetGPUDescriptorHandleForHeapStart());
+
+	UINT numThreadsX = 4;
+	UINT numThreadsY = 1024/ numThreadsX;
+	UINT threadXCount = (m_width + numThreadsX - 1) / numThreadsX;
+	UINT threadYCount = (m_height + numThreadsY - 1) / numThreadsY;
+	cmdList->Dispatch(threadXCount, threadYCount, 1);
+	cmdList->Close();
+
+	ID3D12CommandList* commands[] = { cmdList };
+	m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
+
+	PIXEndEvent(m_commandQueue.Get());
 }
 
 void RenderEngine::Render(const std::string& psoName, bool clear)
@@ -334,6 +418,13 @@ void RenderEngine::Render(const std::string& psoName, bool clear)
 		m_commandList->ClearDepthStencilView(GetDSVCpuHandle(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
 	}
 	m_commandList->OMSetRenderTargets(1, &GetCurrentRtvCpuHandle(), TRUE, &GetDSVCpuHandle());
+	ID3D12DescriptorHeap* heaps[] = {
+		m_hdrSRVHeap.Get()
+	};
+
+	m_commandList->SetDescriptorHeaps(1, heaps);
+	m_commandList->SetGraphicsRootDescriptorTable(0, m_hdrSRVHeap->GetGPUDescriptorHandleForHeapStart());
+	m_commandList->SetGraphicsRootConstantBufferView(1, m_localCB->GetGPUVirtualAddress());
 
 	RenderMeshes(psoName, m_commandList.Get());
 
@@ -380,6 +471,7 @@ void RenderEngine::RenderGUI(bool isFinal)
 // BOOKMARK
 void RenderEngine::Draw()
 {
+	Compute("defaultCPSO", 0);
 	Render("", true/*clear RT*/);
 }
 

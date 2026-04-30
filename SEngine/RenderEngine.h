@@ -41,6 +41,7 @@ public:
 
 public:
 	bool Initialize(int width, int height, int guiWidth, IDXGIFactory7* factory, HWND wnd);
+	bool InitScene();
 	bool InitGUI(HWND wnd);
 
 	void OnResize();
@@ -51,12 +52,15 @@ protected:
 	void CreateSwapChain(IDXGIFactory7* factory, HWND wnd);
 	void CreateMainDepthBuffer();
 	void CreateDepthBuffers();
+	void CreateDescriptorHeaps();
 	void CreateTextureBuffers();
 	void UpdateGUI();
 
 
 	void Update(float deltaTime);
 	void RenderMeshes(const std::string& psoName, ID3D12GraphicsCommandList* commandList);
+	void Compute(const std::string& psoName, int idx);
+
 	void Render(const std::string& psoName, bool clear);
 	void Draw();
 
@@ -99,6 +103,10 @@ private:
 
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_commandQueue;
 
+	UINT computeCommandCount = 4;
+	std::vector<Microsoft::WRL::ComPtr<ID3D12CommandAllocator>> m_computeCommandAllocators;
+	std::vector<Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>> m_computeCommandLists;
+
 private:
 	D3D12_VIEWPORT m_viewport;
 	D3D12_VIEWPORT m_hdrViewport;
@@ -125,6 +133,13 @@ private:
 	
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_depthStencilBuffer;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_DSVHeap;
+
+	// hdr 버퍼
+private:
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_hdrRTVHeap;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_hdrUAVHeap;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_hdrSRVHeap;
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_hdrBuffer;
 
 private:
 	POINT currMousPt = { 0,0 };

@@ -46,9 +46,9 @@ public:
         range->BaseShaderRegister = Register;
         range->RegisterSpace = Space;
         range->OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-
     }
-    void InitCBV(UINT baseShaderRegister = 0, D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL, UINT registerSpace = 0)
+
+	void InitCBV(UINT baseShaderRegister = 0, D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL, UINT registerSpace = 0)
     {
         m_rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
         m_rootParam.ShaderVisibility = visibility;
