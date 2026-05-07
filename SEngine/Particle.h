@@ -14,9 +14,29 @@ struct Particle
 	XMFLOAT3 color;
 };
 
+struct SPHParticle {
+	XMFLOAT3 position;
+	float density;
+	XMFLOAT3 color;
+	float pressure;
+	XMFLOAT3 velocity;
+	XMFLOAT3 acceleration;
+};
+
 struct ParticleLocalConstant
 {
 	Matrix model;
 };
 
+struct SPHParticleLocalConstant
+{
+	int particleCount;
+	float kernelCoefficient;
+	float h;
+	float hd; // 1 / pow(h, d)
+	float rho0;
+	float k;
+	float dt;
+	float mu;
+};
 #endif

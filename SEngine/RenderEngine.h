@@ -64,8 +64,13 @@ protected:
 	void RenderMeshes(const std::string& psoName, ID3D12GraphicsCommandList* commandList);
 	void Compute(const std::string& psoName, int idx);
 
+	void SPH(const std::string& psoName, int idx, ID3D12DescriptorHeap* heap);
+
 	void Render(const std::string& psoName, bool clear);
+	void RenderSPH(const std::string& psoName, bool clear);
 	void Draw();
+
+	void SPHSimulation();
 
 	//void Render(const std::string& psoName, int idx, RenderType renderType, bool isFinal, bool clear);
 	void RenderGUI(bool isFinal);
@@ -175,5 +180,22 @@ private:
 	ParticleLocalConstant m_particleConstant;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_particleLocalCB;
 	void* pParticleLocalCB;
+
+	//sph
+private:
+	int sphCurrParticleCount = 0;
+	float countTick = 0.f;
+	float sphCountIncreaseSpeed = 1000.f;
+	int sphMaxParticleCount = 10000;
+	std::vector<SPHParticle> sphParticles;
+	Microsoft::WRL::ComPtr<ID3D12Resource> sphParticleBuffer[2];
+	Microsoft::WRL::ComPtr<ID3D12Resource> sphParticleUpload[2];
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_sphParticleUAVHeap[2];
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_sphParticleSRVHeap;
+	int sphHeapIdx = 0;
+
+	SPHParticleLocalConstant m_sphParticleConstant;
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_sphParticleLocalCB;
+	void* pSPHParticleLocalCB;
 
 };

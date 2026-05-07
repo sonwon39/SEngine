@@ -6,3 +6,5 @@ SEngine/x64/
 SEngine/*.vcxproj.user
 
 packages/
+
+Papers/

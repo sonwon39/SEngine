@@ -10,6 +10,11 @@
 #include "CompiledShaders/ParticleRenderPS.h"
 #include "CompiledShaders/ParticleSimulationCS.h"
 
+#include "CompiledShaders/ComputeDensityCS.h"
+#include "CompiledShaders/ComputeForcesCS.h"
+#include "CompiledShaders/ComputePressureCS.h"
+#include "CompiledShaders/SPHSimulationCS.h"
+
 
 using namespace Graphics;
 using namespace Renderer;
@@ -38,7 +43,15 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 	GraphicsPSO particleRenderPSO(L"particleRender PSO");
 
 	ComputePSO defaultCPSO(L"default CPSO");
+
+	ComputePSO computeDensityCPSO(L"computeDensity CPSO");
+	ComputePSO computePressureCPSO(L"computePressure CPSO");
+	ComputePSO computeForcesCPSO(L"computeForces CPSO");
+	ComputePSO sphSimulationCPSO(L"sphSimulation CPSO");
+
 	ComputePSO particleSimulationCPSO(L"particleSimulation CPSO");
+
+
 	hdrFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	//backBufferFormat  = hdrFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
@@ -136,6 +149,30 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 	particleSimulationCPSO.Finalize(device);
 	m_CPSOs["particleSimulationCPSO"] = particleSimulationCPSO;
 	cpsoNames.push_back("particleSimulationCPSO");
+
+	computeDensityCPSO.SetRootSignature(g_U2_C1_RS);
+	computeDensityCPSO.SetComputeShader(g_pComputeDensityCS, sizeof(g_pComputeDensityCS));
+	computeDensityCPSO.Finalize(device);
+	m_CPSOs["computeDensityCPSO"] = computeDensityCPSO;
+	cpsoNames.push_back("computeDensityCPSO");
+
+	computePressureCPSO.SetRootSignature(g_U2_C1_RS);
+	computePressureCPSO.SetComputeShader(g_pComputePressureCS, sizeof(g_pComputePressureCS));
+	computePressureCPSO.Finalize(device);
+	m_CPSOs["computePressureCPSO"] = computePressureCPSO;
+	cpsoNames.push_back("computePressureCPSO");
+
+	computeForcesCPSO.SetRootSignature(g_U2_C1_RS);
+	computeForcesCPSO.SetComputeShader(g_pComputeForcesCS, sizeof(g_pComputeForcesCS));
+	computeForcesCPSO.Finalize(device);
+	m_CPSOs["computeForcesCPSO"] = computeForcesCPSO;
+	cpsoNames.push_back("computeForcesCPSO");
+
+	sphSimulationCPSO.SetRootSignature(g_U2_C1_RS);
+	sphSimulationCPSO.SetComputeShader(g_pSPHSimulationCS, sizeof(g_pSPHSimulationCS));
+	sphSimulationCPSO.Finalize(device);
+	m_CPSOs["sphSimulationCPSO"] = sphSimulationCPSO;
+	cpsoNames.push_back("sphSimulationCPSO");
 }
 
 ID3D12PipelineState* Renderer::GetPSO(std::string psoName)
