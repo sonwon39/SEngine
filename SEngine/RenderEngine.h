@@ -7,6 +7,7 @@
 #include "directxtk12/SpriteBatch.h"
 #include "directxtk12/SpriteFont.h"
 #include "directxtk12/GraphicsMemory.h"
+#include <vector>
 
 #include "imgui.h"
 #include "imgui_impl_win32.h"
@@ -16,6 +17,8 @@
 
 #include "directxtk12/SimpleMath.h"
 #include "DefaultHLSLCompat.h"
+
+#include "Particle.h"
 
 class StaticMesh;
 
@@ -130,7 +133,7 @@ private:
 	Microsoft::WRL::ComPtr<IDXGISwapChain3> m_swapChain;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_swapChainRTVHeap;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_swapChainResources[m_swapChainBufferCount];
-	
+
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_depthStencilBuffer;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_DSVHeap;
 
@@ -150,13 +153,27 @@ private:
 	uint32_t r_idMax = 0;
 	int r_selecteId = 0;
 
-// 임시 scene
+	// 임시 scene
 private:
 	std::unique_ptr<StaticMesh> m_mesh;
 	DefaultLocalConstant localConstant;
+
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_localCB;
 	void* pLocalCB;
 
 	float angle = 0.f;
 	float rotateSpeed = 90.f;
+
+private:
+	int particleCount = 3000;
+	std::vector<Particle> particles;
+	Microsoft::WRL::ComPtr<ID3D12Resource> particleBuffer;
+	Microsoft::WRL::ComPtr<ID3D12Resource> particleUpload;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_particleUAVHeap;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_particleSRVHeap;
+
+	ParticleLocalConstant m_particleConstant;
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_particleLocalCB;
+	void* pParticleLocalCB;
+
 };

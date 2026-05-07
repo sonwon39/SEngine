@@ -1,4 +1,14 @@
-﻿float4 main( float4 pos : POSITION ) : SV_POSITION
+﻿#include "ParticleCommon.hlsli"
+
+StructuredBuffer<Particle> particles : register(t0);
+
+
+PSInput main(uint id : SV_VertexID)
 {
-	return pos;
+	PSInput output;
+	float3 pos = particles[id].pos;
+	output.pos = float4(pos, 1.0f);
+	output.color = particles[id].color;
+	return output;
+	
 }

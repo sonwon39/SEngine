@@ -10,6 +10,7 @@
 
 #include <fp16.h>
 #include <pix3.h>
+#include <random>
 
 #include "RenderEngine.h"
 #include "GraphicsCommon.h"
@@ -48,7 +49,8 @@ bool RenderEngine::Initialize(int width, int height, int guiWidth, IDXGIFactory7
 	m_scissorRect = CD3DX12_RECT((LONG)0, 0, (LONG)(m_width), (LONG)m_height);
 	m_hdrViewport = CD3DX12_VIEWPORT((FLOAT)0.F, 0.F, (FLOAT)(m_width), (FLOAT)m_height);
 
-	rtvClearColor = { 0.53F, 0.81F, 0.92F, 1.0F };
+	//rtvClearColor = { 0.53F, 0.81F, 0.92F, 1.0F };
+	rtvClearColor = { 0.F, 0.F, 0.F, 1.0F };
 	blackClearColor = { 0.F, 0.F, 0.F, 1.0F };
 
 	CreateCommandObjects();
@@ -62,7 +64,6 @@ bool RenderEngine::Initialize(int width, int height, int guiWidth, IDXGIFactory7
 	m_rtvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	m_dsvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
-
 	CreateDescriptorHeaps();
 	CreateSwapChain(factory, wnd);
 
@@ -75,7 +76,7 @@ bool RenderEngine::Initialize(int width, int height, int guiWidth, IDXGIFactory7
 
 		handle.Offset(1, m_rtvDescriptorSize);
 	}
-		
+
 	CreateTextureBuffers();
 	CreateDepthBuffers();
 
@@ -97,30 +98,54 @@ bool RenderEngine::InitScene()
 		m_mesh = std::make_unique<StaticMesh>();
 		m_mesh->Initialize(m_device, m_commandList.Get(), rect);
 
-		m_commandList->Close();
-
-		ID3D12CommandList* commands[] = { m_commandList.Get() };
-		m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
-		FlushResourceCommands();
-
-		// camera settings
-		localConstant.model = DirectX::SimpleMath::Matrix();
-		localConstant.view = DirectX::XMMatrixLookToLH(Vector3(0, 0, -3),
-			Vector3(0, 0, 1), Vector3(0, 1, 0));
-		float degrees = 70.f;
-		float radians = DirectX::XMConvertToRadians(degrees);
-		float aspectRatio = (float)m_width / m_height;
-		localConstant.projection = DirectX::XMMatrixPerspectiveFovLH(radians,
-			aspectRatio, 0.1f, 100.f);
-
-		localConstant.model = localConstant.model.Transpose();
-		localConstant.view = localConstant.view.Transpose();
-		localConstant.projection = localConstant.projection.Transpose();
-
-		utility->CreateConstantBuffer(sizeof(localConstant), m_localCB, &pLocalCB);
-		memcpy(pLocalCB, &localConstant, sizeof(localConstant));
 	}
 
+	{
+		std::random_device rd;
+		std::mt19937 gen(rd());
+
+		std::uniform_real_distribution<float> dist(-1.5f, 1.5f);
+		particles.resize(particleCount);
+
+		for (size_t i = 0; i < particleCount; i++)
+		{
+			Particle& p = particles[i];
+			p.pos = Vector3(dist(gen), dist(gen), 1.f);
+			p.color = Vector3(1.f, 1.f, 1.f);
+		}
+		D3D12_RESOURCE_FLAGS uavFlag = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+		utility->CreateBuffer(particles, particleBuffer, particleUpload, uavFlag);
+		utility->CreateStructuredResourceView(particleBuffer, DXGI_FORMAT_UNKNOWN, m_particleSRVHeap->GetCPUDescriptorHandleForHeapStart(), DescriptorType::SRV, particleCount, sizeof(Particle));
+		utility->CreateStructuredResourceView(particleBuffer, DXGI_FORMAT_UNKNOWN, m_particleUAVHeap->GetCPUDescriptorHandleForHeapStart(), DescriptorType::UAV, particleCount, sizeof(Particle));
+
+	}
+
+	m_commandList->Close();
+
+	ID3D12CommandList* commands[] = { m_commandList.Get() };
+	m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
+	FlushResourceCommands();
+
+
+	// camera settings
+	localConstant.model = DirectX::SimpleMath::Matrix();
+	localConstant.view = DirectX::XMMatrixLookToLH(Vector3(0, 0, -3),
+		Vector3(0, 0, 1), Vector3(0, 1, 0));
+	float degrees = 70.f;
+	float radians = DirectX::XMConvertToRadians(degrees);
+	float aspectRatio = (float)m_width / m_height;
+	localConstant.projection = DirectX::XMMatrixPerspectiveFovLH(radians,
+		aspectRatio, 0.1f, 100.f);
+
+	localConstant.model = localConstant.model.Transpose();
+	localConstant.view = localConstant.view.Transpose();
+	localConstant.projection = localConstant.projection.Transpose();
+
+	utility->CreateConstantBuffer(sizeof(localConstant), m_localCB, &pLocalCB);
+	memcpy(pLocalCB, &localConstant, sizeof(localConstant));
+
+	utility->CreateConstantBuffer(sizeof(ParticleLocalConstant), m_particleLocalCB, &pParticleLocalCB);
+	
 	return true;
 }
 
@@ -296,9 +321,13 @@ void RenderEngine::CreateDescriptorHeaps()
 	// DescriptorHeap 생성
 	utility->CreateDescriptorHeap(m_swapChainBufferCount, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, m_swapChainRTVHeap);
 	utility->CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, m_DSVHeap);
+
 	utility->CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, m_hdrRTVHeap);
 	utility->CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, m_hdrUAVHeap, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 	utility->CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, m_hdrSRVHeap, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+
+	utility->CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, m_particleUAVHeap, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+	utility->CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, m_particleSRVHeap, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 }
 
 void RenderEngine::CreateTextureBuffers()
@@ -320,14 +349,21 @@ void RenderEngine::UpdateGUI()
 // BOOKMARK
 void RenderEngine::Tick(float deltaTime)
 {
-	{
-		angle += rotateSpeed * deltaTime;
-		float radians = DirectX::XMConvertToRadians(angle);
-		localConstant.model = DirectX::XMMatrixRotationY(radians);
-		localConstant.model = localConstant.model.Transpose();
-		memcpy(pLocalCB, &localConstant, sizeof(localConstant));
-	}
+	//{
+	//	angle += rotateSpeed * deltaTime;
+	//	float radians = DirectX::XMConvertToRadians(angle);
+	//	localConstant.model = DirectX::XMMatrixRotationY(radians);
+	//	localConstant.model = localConstant.model.Transpose();
+	//	memcpy(pLocalCB, &localConstant, sizeof(localConstant));
+	//}
 
+	{
+		angle = rotateSpeed * deltaTime;
+		float radians = DirectX::XMConvertToRadians(angle);
+		m_particleConstant.model = DirectX::XMMatrixRotationZ(radians);
+		m_particleConstant.model = m_particleConstant.model.Transpose();
+		memcpy(pParticleLocalCB, &m_particleConstant, sizeof(ParticleLocalConstant));
+	}
 	Draw();
 }
 
@@ -360,22 +396,23 @@ void RenderEngine::Compute(const std::string& psoName, int idx)
 	cmdList->SetComputeRootSignature(pso.GetRootSignature()->GetSignature());
 
 	ID3D12DescriptorHeap* heaps[] = {
-		m_hdrUAVHeap.Get()
+		m_particleUAVHeap.Get()
 	};
 
 	cmdList->SetDescriptorHeaps(1, heaps);
-	cmdList->SetComputeRootDescriptorTable(0, m_hdrUAVHeap->GetGPUDescriptorHandleForHeapStart());
+	cmdList->SetComputeRootDescriptorTable(0, m_particleUAVHeap->GetGPUDescriptorHandleForHeapStart());
+	cmdList->SetComputeRootConstantBufferView(1, m_particleLocalCB->GetGPUVirtualAddress());
 
-	UINT numThreadsX = 4;
-	UINT numThreadsY = 1024/ numThreadsX;
-	UINT threadXCount = (m_width + numThreadsX - 1) / numThreadsX;
-	UINT threadYCount = (m_height + numThreadsY - 1) / numThreadsY;
-	cmdList->Dispatch(threadXCount, threadYCount, 1);
+	UINT numThreadsX = 1024;
+	
+	UINT threadXCount = (particleCount + numThreadsX - 1) / numThreadsX;
+	
+	cmdList->Dispatch(threadXCount, 1, 1);
 	cmdList->Close();
 
 	ID3D12CommandList* commands[] = { cmdList };
 	m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
-
+	//FlushResourceCommands();
 	PIXEndEvent(m_commandQueue.Get());
 }
 
@@ -419,14 +456,15 @@ void RenderEngine::Render(const std::string& psoName, bool clear)
 	}
 	m_commandList->OMSetRenderTargets(1, &GetCurrentRtvCpuHandle(), TRUE, &GetDSVCpuHandle());
 	ID3D12DescriptorHeap* heaps[] = {
-		m_hdrSRVHeap.Get()
+		m_particleSRVHeap.Get()
 	};
-
+	
 	m_commandList->SetDescriptorHeaps(1, heaps);
-	m_commandList->SetGraphicsRootDescriptorTable(0, m_hdrSRVHeap->GetGPUDescriptorHandleForHeapStart());
-	m_commandList->SetGraphicsRootConstantBufferView(1, m_localCB->GetGPUVirtualAddress());
+	m_commandList->SetGraphicsRootDescriptorTable(0, m_particleSRVHeap->GetGPUDescriptorHandleForHeapStart());
 
-	RenderMeshes(psoName, m_commandList.Get());
+	//RenderMeshes(psoName, m_commandList.Get());
+	m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
+	m_commandList->DrawInstanced(particleCount, 1, 0, 0);
 
 	m_commandList->ResourceBarrier(
 		1,
@@ -438,7 +476,7 @@ void RenderEngine::Render(const std::string& psoName, bool clear)
 
 	m_commandList->Close();
 
-	ID3D12CommandList* commands[] = { m_commandList.Get()};
+	ID3D12CommandList* commands[] = { m_commandList.Get() };
 	{
 		m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
 
@@ -471,8 +509,8 @@ void RenderEngine::RenderGUI(bool isFinal)
 // BOOKMARK
 void RenderEngine::Draw()
 {
-	Compute("defaultCPSO", 0);
-	Render("", true/*clear RT*/);
+	Compute("particleSimulationCPSO", 0);
+	Render("particleRenderPSO", true/*clear RT*/);
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE RenderEngine::GetCurrentRtvCpuHandle() const

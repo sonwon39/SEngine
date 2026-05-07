@@ -17,7 +17,7 @@ namespace GraphicsUtils {
 	 *       커맨드 리스트가 Execute 되어 펜스로 동기화되기 전까지 upload 리소스를 살려둬야 한다.
 	 */
 	template<typename DataType>
-	inline void Utility::CreateBuffer(const std::vector<DataType>& data, Microsoft::WRL::ComPtr<ID3D12Resource>& gpu, Microsoft::WRL::ComPtr<ID3D12Resource>& upload)
+	inline void Utility::CreateBuffer(const std::vector<DataType>& data, Microsoft::WRL::ComPtr<ID3D12Resource>& gpu, Microsoft::WRL::ComPtr<ID3D12Resource>& upload, D3D12_RESOURCE_FLAGS flag)
 	{
 		// (1) CPU → GPU 전송용 임시 버퍼. UPLOAD 힙은 CPU 매핑이 가능하다.
 		ThrowIfFailed(m_device->CreateCommittedResource(
@@ -33,7 +33,7 @@ namespace GraphicsUtils {
 		ThrowIfFailed(m_device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(sizeof(DataType) * data.size()),
+			&CD3DX12_RESOURCE_DESC::Buffer(sizeof(DataType) * data.size(), flag),
 			D3D12_RESOURCE_STATE_COMMON,
 			nullptr,
 			IID_PPV_ARGS(gpu.GetAddressOf())

@@ -137,7 +137,7 @@ namespace GraphicsUtils {
 			));
 		}
 
-		
+
 
 		// PIX 등 디버깅 도구에서 식별 가능하도록 리소스에 이름을 부여한다.
 		buffer->SetName(name.c_str());
@@ -168,6 +168,10 @@ namespace GraphicsUtils {
 			}
 			D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc;
 			ZeroMemory(&uavDesc, sizeof(uavDesc));
+
+			uavDesc.Format = format;
+			uavDesc.Texture2D.MipSlice = 0;
+			uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
 			uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
 			uavDesc.Format = format;
 			uavDesc.Texture2D.MipSlice = 0;
@@ -195,6 +199,33 @@ namespace GraphicsUtils {
 			dsvDesc.Format = format;
 
 			m_device->CreateDepthStencilView(buffer.Get(), &dsvDesc, handle);
+		}
+	}
+
+	void Utility::CreateStructuredResourceView(Microsoft::WRL::ComPtr<ID3D12Resource>& buffer, DXGI_FORMAT format, D3D12_CPU_DESCRIPTOR_HANDLE& handle, const DescriptorType& type, UINT count, UINT64 dataSize)
+	{
+		if (type == DescriptorType::UAV) {
+
+			D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc;
+			ZeroMemory(&uavDesc, sizeof(uavDesc));
+
+			uavDesc.Format = format;
+			uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+			uavDesc.Buffer.NumElements = count;
+			uavDesc.Buffer.StructureByteStride = dataSize;
+
+			m_device->CreateUnorderedAccessView(buffer.Get(), nullptr, &uavDesc, handle);
+		}
+		else if (type == DescriptorType::SRV) {
+
+			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			srvDesc.Format = format;
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+			srvDesc.Buffer.NumElements = count;
+			srvDesc.Buffer.StructureByteStride = dataSize;
+
+			m_device->CreateShaderResourceView(buffer.Get(), &srvDesc, handle);
 		}
 	}
 

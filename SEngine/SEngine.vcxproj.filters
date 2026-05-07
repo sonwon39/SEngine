@@ -98,6 +98,9 @@
     <ClInclude Include="DefaultHLSLCompat.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="Particle.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="DefaultVS.hlsl" />
@@ -113,5 +116,6 @@
       <Filter>헤더 파일</Filter>
     </None>
     <None Include="DefaultCommon.hlsli" />
+    <None Include="ParticleCommon.hlsli" />
   </ItemGroup>
 </Project>

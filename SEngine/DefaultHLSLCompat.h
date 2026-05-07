@@ -1,5 +1,5 @@
-#ifndef PBRHLSLCOMPAT_H
-#define PBRHLSLCOMPAT_H
+﻿#ifndef DEFUALTHLSLCOMPAT_H
+#define DEFUALTHLSLCOMPAT_H
 
 #ifdef HLSL
 #include "HlslCompat.h"

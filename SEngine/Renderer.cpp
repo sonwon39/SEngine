@@ -8,6 +8,7 @@
 
 #include "CompiledShaders/ParticleRenderVS.h"
 #include "CompiledShaders/ParticleRenderPS.h"
+#include "CompiledShaders/ParticleSimulationCS.h"
 
 
 using namespace Graphics;
@@ -37,7 +38,7 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 	GraphicsPSO particleRenderPSO(L"particleRender PSO");
 
 	ComputePSO defaultCPSO(L"default CPSO");
-
+	ComputePSO particleSimulationCPSO(L"particleSimulation CPSO");
 	hdrFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	//backBufferFormat  = hdrFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
@@ -111,7 +112,7 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 	psoNames.push_back("defaultPSO");
 
 	particleRenderPSO.SetInputLayout(0, nullptr);
-	particleRenderPSO.SetRootSignature(g_U1_RS);
+	particleRenderPSO.SetRootSignature(g_S1_RS);
 	particleRenderPSO.SetRasterizerState(rasterizerDefault);
 	particleRenderPSO.SetBlendState(blendNoColorWrite);
 	particleRenderPSO.SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT);
@@ -129,6 +130,12 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 	defaultCPSO.Finalize(device);
 	m_CPSOs["defaultCPSO"] = defaultCPSO;
 	cpsoNames.push_back("defaultCPSO");
+
+	particleSimulationCPSO.SetRootSignature(g_U1_C1_RS);
+	particleSimulationCPSO.SetComputeShader(g_pParticleSimulationCS, sizeof(g_pParticleSimulationCS));
+	particleSimulationCPSO.Finalize(device);
+	m_CPSOs["particleSimulationCPSO"] = particleSimulationCPSO;
+	cpsoNames.push_back("particleSimulationCPSO");
 }
 
 ID3D12PipelineState* Renderer::GetPSO(std::string psoName)

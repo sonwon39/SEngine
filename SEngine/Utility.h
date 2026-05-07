@@ -232,6 +232,8 @@ namespace GraphicsUtils {
 		 */
 		void CreateResourceView(Microsoft::WRL::ComPtr<ID3D12Resource>& buffer, DXGI_FORMAT format, bool bUseMsaa, D3D12_CPU_DESCRIPTOR_HANDLE& handle, const DescriptorType& type);
 
+		void CreateStructuredResourceView(Microsoft::WRL::ComPtr<ID3D12Resource>& buffer, DXGI_FORMAT forma, D3D12_CPU_DESCRIPTOR_HANDLE& handle, const DescriptorType& type , UINT count, UINT64 dataSize);
+
 
 		/**
 		 * 정점/인덱스 등 임의 타입의 데이터를 GPU 버퍼로 업로드한다.
@@ -245,7 +247,7 @@ namespace GraphicsUtils {
 		 * @param upload    [out] UPLOAD 힙에 생성된 임시 스테이징 리소스.
 		 */
 		template<typename DataType>
-		void CreateBuffer(const std::vector<DataType>& data, Microsoft::WRL::ComPtr<ID3D12Resource>& gpu, Microsoft::WRL::ComPtr<ID3D12Resource>& upload);
+		void CreateBuffer(const std::vector<DataType>& data, Microsoft::WRL::ComPtr<ID3D12Resource>& gpu, Microsoft::WRL::ComPtr<ID3D12Resource>& upload, D3D12_RESOURCE_FLAGS flag = D3D12_RESOURCE_FLAG_NONE);
 	};
 }
 #include "Utility.inl"
