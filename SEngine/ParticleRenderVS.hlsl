@@ -3,12 +3,12 @@
 StructuredBuffer<SPHParticle> particles : register(t0);
 
 
-PSInput main(uint id : SV_VertexID)
+GSInput main(uint id : SV_VertexID)
 {
-	PSInput output;
-	float3 pos = particles[id].position;
-	output.pos = float4(pos, 1.0f);
+	GSInput output;
+	output.pos = particles[id].position;
 	output.color = particles[id].color;
-	return output;
+	output.radius = particles[id].radius;
 	
+	return output;
 }

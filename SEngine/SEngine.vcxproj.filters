@@ -113,6 +113,7 @@
     <FxCompile Include="ComputePressureCS.hlsl" />
     <FxCompile Include="ComputeDensityCS.hlsl" />
     <FxCompile Include="SPHSimulationCS.hlsl" />
+    <FxCompile Include="ParticleRenderGS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

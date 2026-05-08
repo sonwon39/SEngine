@@ -17,15 +17,15 @@ void main( uint3 DTid : SV_DispatchThreadID )
 
     if (curr_particles[i].position.y <= -0.8f) { 
 		curr_particles[i].position.y = -0.8f;
-        curr_particles[i].velocity.y = -0.5 * curr_particles[i].velocity.y; 
+        curr_particles[i].velocity.y = -0.2 * curr_particles[i].velocity.y; 
     }
 
     if (curr_particles[i].position.x <= -0.95f) { 
 		curr_particles[i].position.x = -0.95f;
-        curr_particles[i].velocity.x = -0.5 * curr_particles[i].velocity.x; 
+        curr_particles[i].velocity.x = -0.2 * curr_particles[i].velocity.x; 
     }
     if (curr_particles[i].position.x >= 0.95f) { 
         curr_particles[i].position.x = 0.95f; 
-        curr_particles[i].velocity.x = -0.5 * curr_particles[i].velocity.x; 
+        curr_particles[i].velocity.x = -0.2 * curr_particles[i].velocity.x; 
     }
 }

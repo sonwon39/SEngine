@@ -7,6 +7,7 @@
 #include "CompiledShaders/DefaultCS.h"
 
 #include "CompiledShaders/ParticleRenderVS.h"
+#include "CompiledShaders/ParticleRenderGS.h"
 #include "CompiledShaders/ParticleRenderPS.h"
 #include "CompiledShaders/ParticleSimulationCS.h"
 
@@ -130,6 +131,7 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 	particleRenderPSO.SetBlendState(blendNoColorWrite);
 	particleRenderPSO.SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT);
 	particleRenderPSO.SetVertexShader(g_pParticleRenderVS, sizeof(g_pParticleRenderVS));
+	particleRenderPSO.SetGeometryShader(g_pParticleRenderGS, sizeof(g_pParticleRenderGS));
 	particleRenderPSO.SetPixelShader(g_pParticleRenderPS, sizeof(g_pParticleRenderPS));
 	particleRenderPSO.SetSampleMask(UINT_MAX);
 	particleRenderPSO.SetRenderTargetFormat(backBufferFormat, DXGI_FORMAT_UNKNOWN, 1, 0);

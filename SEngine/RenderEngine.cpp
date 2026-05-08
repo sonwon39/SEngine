@@ -139,6 +139,7 @@ bool RenderEngine::InitScene()
 			p.velocity = baseVelocity + Vector3(velDist(gen), 0.f, 0.f);
 			p.color = Vector3(1.f, 1.f, 1.f);
 			p.acceleration = Vector3(0.f, 0.f, 0.f);
+			p.radius = 0.01f;
 		}
 		for (size_t i = 0; i < 2; i++)
 		{
@@ -188,12 +189,12 @@ bool RenderEngine::InitScene()
 	utility->CreateConstantBuffer(sizeof(SPHParticleLocalConstant), m_sphParticleLocalCB, &pSPHParticleLocalCB);
 	m_sphParticleConstant.particleCount = sphCurrParticleCount;
 
-	m_sphParticleConstant.h = 0.036f;       // smoothing length = 1.2 * particleSpacing
+	m_sphParticleConstant.h = 0.02f;       // smoothing length = 1.2 * particleSpacing
 	m_sphParticleConstant.hd = 1.0f / (m_sphParticleConstant.h * m_sphParticleConstant.h);
 	m_sphParticleConstant.kernelCoefficient = 15.0f / (7.0f * PI); // 2D cubic spline
-	m_sphParticleConstant.rho0 = 1.0f;
-	m_sphParticleConstant.k = 50.0f;      // 처음 시작값
-	m_sphParticleConstant.mu = 0.02;
+	m_sphParticleConstant.rho0 = 4000.0f;
+	m_sphParticleConstant.k = 1000.0f;      // 처음 시작값
+	m_sphParticleConstant.mu = 500.f;
 	memcpy(pSPHParticleLocalCB, &m_sphParticleConstant, sizeof(SPHParticleLocalConstant));
 
 
@@ -422,7 +423,7 @@ void RenderEngine::Tick(float deltaTime)
 		sphCurrParticleCount = int(countTick);
 	}
 	m_sphParticleConstant.particleCount = sphCurrParticleCount;
-	m_sphParticleConstant.dt = deltaTime;
+	m_sphParticleConstant.dt = 1/30.f;
 	memcpy(pSPHParticleLocalCB, &m_sphParticleConstant, sizeof(SPHParticleLocalConstant));
 
 	SPHSimulation();

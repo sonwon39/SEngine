@@ -20,6 +20,7 @@ struct SPHParticle {
 	XMFLOAT3 color;
 	float pressure;
 	XMFLOAT3 velocity;
+	float radius;
 	XMFLOAT3 acceleration;
 };
 
