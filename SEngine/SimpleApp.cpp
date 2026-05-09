@@ -107,6 +107,10 @@ bool Core::SimpleApp::InitDirectX()
 
 bool Core::SimpleApp::InitGUI()
 {
+	if (m_renderEngine)
+	{
+		m_renderEngine->InitGUI(m_mainWnd);
+	}
 	return true;
 }
 
@@ -120,6 +124,9 @@ void Core::SimpleApp::Update(float deltaTime)
 
 void Core::SimpleApp::OnResize()
 {
-
+	if (m_renderEngine)
+	{
+		m_renderEngine->OnResize(m_width, m_height);
+	}
 }
 

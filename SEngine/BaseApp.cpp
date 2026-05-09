@@ -1,4 +1,4 @@
-#include "BaseApp.h"
+﻿#include "BaseApp.h"
 
 using namespace Core;
 
@@ -129,6 +129,9 @@ bool Core::BaseApp::IsWindowFocused()
 
 LRESULT BaseApp::MainProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
+		return true;
+
 	switch (msg) {
 	case WM_DESTROY:
 	{

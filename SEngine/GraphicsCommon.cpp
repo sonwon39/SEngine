@@ -12,7 +12,8 @@ namespace Graphics
 	D3D12_RASTERIZER_DESC wireRasterizer;
 	D3D12_RASTERIZER_DESC noneCullRasterizer;
 
-    D3D12_BLEND_DESC blendNoColorWrite;		
+	D3D12_BLEND_DESC blendNoColorWrite;
+	D3D12_BLEND_DESC blendColor;
 
     D3D12_DEPTH_STENCIL_DESC depthStateDefault;
 
@@ -21,6 +22,7 @@ namespace Graphics
 	RootSignature g_U1_C1_RS;
 	RootSignature g_U2_C1_RS;
 	RootSignature g_S1_RS;
+	RootSignature g_S1_C1_RS;
 
 	std::shared_ptr<GraphicsUtils::Utility> utility;
 }
@@ -70,10 +72,20 @@ void Graphics::InitializeCommonState(const Microsoft::WRL::ComPtr<ID3D12Device5>
 	wireRasterizer.DepthClipEnable = false;
 
 	blendNoColorWrite = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	blendColor = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+
+	blendColor.RenderTarget[0].BlendEnable = true;
+	blendColor.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+	blendColor.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+
+	blendColor.RenderTarget[0].SrcBlend = D3D12_BLEND_ONE;
+	blendColor.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+	blendColor.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
+	blendColor.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ONE;
 
 	depthStateDefault = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 
-    g_commonRS.Reset(2,1 );
+    g_commonRS.Reset(2,1);
 	g_commonRS[0].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0, 1);
 	g_commonRS[1].InitCBV(0);
 	g_commonRS.InitStaticSampler(0, wrapLinearSampler);
@@ -96,6 +108,11 @@ void Graphics::InitializeCommonState(const Microsoft::WRL::ComPtr<ID3D12Device5>
 	g_S1_RS.Reset(1, 0);
 	g_S1_RS[0].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0, 1);
 	g_S1_RS.Finalize(device, L"g_S1_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	g_S1_C1_RS.Reset(2, 0);
+	g_S1_C1_RS[0].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0, 1);
+	g_S1_C1_RS[1].InitCBV(0);
+	g_S1_C1_RS.Finalize(device, L"g_S1_C1_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 }
 

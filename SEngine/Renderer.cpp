@@ -126,9 +126,9 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 	psoNames.push_back("defaultPSO");
 
 	particleRenderPSO.SetInputLayout(0, nullptr);
-	particleRenderPSO.SetRootSignature(g_S1_RS);
+	particleRenderPSO.SetRootSignature(g_S1_C1_RS);
 	particleRenderPSO.SetRasterizerState(rasterizerDefault);
-	particleRenderPSO.SetBlendState(blendNoColorWrite);
+	particleRenderPSO.SetBlendState(blendColor);
 	particleRenderPSO.SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT);
 	particleRenderPSO.SetVertexShader(g_pParticleRenderVS, sizeof(g_pParticleRenderVS));
 	particleRenderPSO.SetGeometryShader(g_pParticleRenderGS, sizeof(g_pParticleRenderGS));
@@ -138,7 +138,6 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 	particleRenderPSO.Finalize(device);
 	m_PSOs["particleRenderPSO"] = particleRenderPSO;
 	psoNames.push_back("particleRenderPSO");
-
 
 	defaultCPSO.SetRootSignature(g_U1_RS);
 	defaultCPSO.SetComputeShader(g_pDefaultCS, sizeof(g_pDefaultCS));

@@ -144,6 +144,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="BaseApp.cpp" />
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="GeometryGenerator.cpp" />
     <ClCompile Include="GraphicsCommon.cpp" />
     <ClCompile Include="main.cpp" />
@@ -152,14 +153,17 @@
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="RootSignature.cpp" />
     <ClCompile Include="SimpleApp.cpp" />
+    <ClCompile Include="SPH.cpp" />
     <ClCompile Include="StaticMesh.cpp" />
     <ClCompile Include="Timer.cpp" />
     <ClCompile Include="Utility.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BaseApp.h" />
+    <ClInclude Include="Camera.h" />
     <ClInclude Include="DefaultHLSLCompat.h" />
     <ClInclude Include="GeometryGenerator.h" />
+    <ClInclude Include="GlobalConstant.h" />
     <ClInclude Include="GraphicsCommon.h" />
     <ClInclude Include="HLSLCompat.h" />
     <ClInclude Include="Mesh.h" />
@@ -169,6 +173,7 @@
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="RootSignature.h" />
     <ClInclude Include="SimpleApp.h" />
+    <ClInclude Include="SPH.h" />
     <ClInclude Include="StaticMesh.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="Utility.h" />

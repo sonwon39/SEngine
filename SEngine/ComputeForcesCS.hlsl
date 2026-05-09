@@ -39,8 +39,8 @@ void main( uint3 DTid : SV_DispatchThreadID )
             
             float3 pressure_acc = -((pi / rhoi_2) + (pj / rhoj_2)) * w_grad;
             float3 viscosity_acc = 2 * (mu / (rhoi * rhoj)) * vij * dot(xij, w_grad) / (dot(xij, xij) + 0.01 * h*h );
-            acc += pressure_acc + viscosity_acc;
-        }
+			acc += pressure_acc + viscosity_acc;
+		}
     }
     float3 gravity_acc = float3(0.f,-9.8f, 0.f);
 

@@ -35,9 +35,9 @@ RenderEngine::RenderEngine(ID3D12Device5* device)
 
 RenderEngine::~RenderEngine()
 {
-	/*ImGui_ImplDX12_Shutdown();
+	ImGui_ImplDX12_Shutdown();
 	ImGui_ImplWin32_Shutdown();
-	ImGui::DestroyContext();*/
+	ImGui::DestroyContext();
 }
 
 bool RenderEngine::Initialize(int width, int height, int guiWidth, IDXGIFactory7* factory, HWND wnd)
@@ -84,6 +84,9 @@ bool RenderEngine::Initialize(int width, int height, int guiWidth, IDXGIFactory7
 
 	InitScene();
 
+	m_camera = std::make_shared<Camera>(width, height);
+	m_camera->Initialize();
+
 	return true;
 }
 
@@ -93,79 +96,25 @@ bool RenderEngine::InitScene()
 	{
 		using DirectX::SimpleMath::Vector3;
 
-		m_commandAllocator->Reset();
-		ThrowIfFailed(m_commandList->Reset(m_commandAllocator.Get(), nullptr));
+		m_resourceCommandAllocator->Reset();
+		ThrowIfFailed(m_resourceCommandList->Reset(m_resourceCommandAllocator.Get(), nullptr));
 
 		Mesh<SimpleVertex, uint16_t> rect = GeometryGenerator::MakeSimpleCube(0.5f, 0.5f, 0.5f);
 		m_mesh = std::make_unique<StaticMesh>();
-		m_mesh->Initialize(m_device, m_commandList.Get(), rect);
+		m_mesh->Initialize(m_device, m_resourceCommandList.Get(), rect);
 
+		m_resourceCommandList->Close();
+		ID3D12CommandList* commands[] = { m_resourceCommandList.Get() };
+		m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
+		FlushCommands();
 	}
 
-	{
-		std::random_device rd;
-		std::mt19937 gen(rd());
+	m_sph = std::make_shared<SPH>();
+	m_sph->Initialize(m_device, m_resourceCommandAllocator.Get(), m_resourceCommandList.Get());
 
-		std::uniform_real_distribution<float> dist(-1.5f, 1.5f);
-		particles.resize(particleCount);
-
-		for (size_t i = 0; i < particleCount; i++)
-		{
-			Particle& p = particles[i];
-			p.pos = Vector3(dist(gen), dist(gen), 1.f);
-			p.color = Vector3(1.f, 1.f, 1.f);
-		}
-		D3D12_RESOURCE_FLAGS uavFlag = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-		utility->CreateBuffer(particles, particleBuffer, particleUpload, uavFlag);
-		utility->CreateStructuredResourceView(particleBuffer, DXGI_FORMAT_UNKNOWN, m_particleSRVHeap->GetCPUDescriptorHandleForHeapStart(), DescriptorType::SRV, particleCount, sizeof(Particle));
-		utility->CreateStructuredResourceView(particleBuffer, DXGI_FORMAT_UNKNOWN, m_particleUAVHeap->GetCPUDescriptorHandleForHeapStart(), DescriptorType::UAV, particleCount, sizeof(Particle));
-
-	}
-
-	{
-		Vector3 basePosition(-0.8f, 0.7f, 1.f);
-		Vector3 baseVelocity(1.f, 0.f, 0.f);
-		std::random_device rd;
-		std::mt19937 gen(rd());
-		sphParticles.resize(sphMaxParticleCount);
-
-		std::uniform_real_distribution<float> posDist(-0.05f, 0.05f);
-		std::uniform_real_distribution<float> velDist(0.01f, 0.2f);
-		D3D12_RESOURCE_FLAGS uavFlag = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-		for (size_t i = 0; i < sphMaxParticleCount; i++)
-		{
-			SPHParticle& p = sphParticles[i];
-			p.position = basePosition + Vector3(posDist(gen), posDist(gen), 0.f);
-			p.velocity = baseVelocity + Vector3(velDist(gen), 0.f, 0.f);
-			p.color = Vector3(1.f, 1.f, 1.f);
-			p.acceleration = Vector3(0.f, 0.f, 0.f);
-			p.radius = 0.01f;
-		}
-		for (size_t i = 0; i < 2; i++)
-		{
-			utility->CreateBuffer(sphParticles, sphParticleBuffer[i], sphParticleUpload[i], uavFlag);
-
-		}
-
-		CD3DX12_CPU_DESCRIPTOR_HANDLE prev_handle(m_sphParticleUAVHeap[0]->GetCPUDescriptorHandleForHeapStart());
-		CD3DX12_CPU_DESCRIPTOR_HANDLE curr_handle(m_sphParticleUAVHeap[1]->GetCPUDescriptorHandleForHeapStart());
-		CD3DX12_CPU_DESCRIPTOR_HANDLE srv_handle(m_sphParticleSRVHeap->GetCPUDescriptorHandleForHeapStart());
-		utility->CreateStructuredResourceView(sphParticleBuffer[0], DXGI_FORMAT_UNKNOWN, prev_handle, DescriptorType::UAV, sphMaxParticleCount, sizeof(SPHParticle));
-		utility->CreateStructuredResourceView(sphParticleBuffer[1], DXGI_FORMAT_UNKNOWN, curr_handle, DescriptorType::UAV, sphMaxParticleCount, sizeof(SPHParticle));
-		utility->CreateStructuredResourceView(sphParticleBuffer[0], DXGI_FORMAT_UNKNOWN, srv_handle, DescriptorType::SRV, sphMaxParticleCount, sizeof(SPHParticle));
-		prev_handle.Offset(1, m_cbvSrvDescriptorSize);
-		curr_handle.Offset(1, m_cbvSrvDescriptorSize);
-		srv_handle.Offset(1, m_cbvSrvDescriptorSize);
-		utility->CreateStructuredResourceView(sphParticleBuffer[1], DXGI_FORMAT_UNKNOWN, prev_handle, DescriptorType::UAV, sphMaxParticleCount, sizeof(SPHParticle));
-		utility->CreateStructuredResourceView(sphParticleBuffer[0], DXGI_FORMAT_UNKNOWN, curr_handle, DescriptorType::UAV, sphMaxParticleCount, sizeof(SPHParticle));
-		utility->CreateStructuredResourceView(sphParticleBuffer[1], DXGI_FORMAT_UNKNOWN, srv_handle, DescriptorType::SRV, sphMaxParticleCount, sizeof(SPHParticle));
-	}
-	m_commandList->Close();
-
-	ID3D12CommandList* commands[] = { m_commandList.Get() };
+	ID3D12CommandList* commands[] = { m_resourceCommandList.Get() };
 	m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
-	FlushResourceCommands();
-
+	FlushCommands();
 
 	// camera settings
 	localConstant.model = DirectX::SimpleMath::Matrix();
@@ -184,60 +133,47 @@ bool RenderEngine::InitScene()
 	utility->CreateConstantBuffer(sizeof(localConstant), m_localCB, &pLocalCB);
 	memcpy(pLocalCB, &localConstant, sizeof(localConstant));
 
-	utility->CreateConstantBuffer(sizeof(ParticleLocalConstant), m_particleLocalCB, &pParticleLocalCB);
-
-	utility->CreateConstantBuffer(sizeof(SPHParticleLocalConstant), m_sphParticleLocalCB, &pSPHParticleLocalCB);
-	m_sphParticleConstant.particleCount = sphCurrParticleCount;
-
-	m_sphParticleConstant.h = 0.02f;       // smoothing length = 1.2 * particleSpacing
-	m_sphParticleConstant.hd = 1.0f / (m_sphParticleConstant.h * m_sphParticleConstant.h);
-	m_sphParticleConstant.kernelCoefficient = 15.0f / (7.0f * PI); // 2D cubic spline
-	m_sphParticleConstant.rho0 = 4000.0f;
-	m_sphParticleConstant.k = 1000.0f;      // 처음 시작값
-	m_sphParticleConstant.mu = 500.f;
-	memcpy(pSPHParticleLocalCB, &m_sphParticleConstant, sizeof(SPHParticleLocalConstant));
-
-
+	//utility->CreateConstantBuffer(sizeof(ParticleLocalConstant), m_particleLocalCB, &pParticleLocalCB);
 	return true;
 }
 
 bool RenderEngine::InitGUI(HWND wnd)
 {
-	//IMGUI_CHECKVERSION();
-	//ImGui::CreateContext();
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+	io.IniFilename = nullptr;
 
-	//ImGuiIO& io = ImGui::GetIO();
-	//io.IniFilename = nullptr;
-	////io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-	//// io.Fonts->TexID = (ImTextureID)m_guiFont->GetSpriteSheet().ptr;
+	ImGui::StyleColorsLight();
+	const char* fontPath = "Fonts/Hack-Regular.ttf";
+	float fontSize = 15.0f;
+	// 폰트 로드 
+	io.Fonts->AddFontFromFileTTF(fontPath, fontSize);
 
-	//ImGui::StyleColorsLight();
-	//const char* fontPath = "Fonts/Hack-Regular.ttf";
-	//float fontSize = 15.0f;
-	//// 폰트 로드 
-	//io.Fonts->AddFontFromFileTTF(fontPath, fontSize);
+	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
+	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	heapDesc.NumDescriptors = 1;
+	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	m_device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_guiFontHeap));
 
-	//D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
-	//heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	//heapDesc.NumDescriptors = 1;
-	//heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	//m_device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_guiFontHeap));
+	// Setup Platform/Renderer backends
+	ImGui_ImplWin32_Init(wnd);
 
-	//// Setup Platform/Renderer backends
-	//ImGui_ImplWin32_Init(wnd);
-
-	//ImGui_ImplDX12_Init(m_device, m_swapChainBufferCount, Renderer::backBufferFormat,
-	//	m_guiFontHeap.Get(),
-	//	m_guiFontHeap->GetCPUDescriptorHandleForHeapStart(),
-	//	m_guiFontHeap->GetGPUDescriptorHandleForHeapStart());
+	ImGui_ImplDX12_Init(m_device, m_swapChainBufferCount, Renderer::backBufferFormat,
+		m_guiFontHeap.Get(),
+		m_guiFontHeap->GetCPUDescriptorHandleForHeapStart(),
+		m_guiFontHeap->GetGPUDescriptorHandleForHeapStart());
 
 	return true;
 }
 
 // BOOKMARK
-void RenderEngine::OnResize()
+void RenderEngine::OnResize(int width, int height)
 {
 	if (m_swapChain == nullptr) return;
+
+	m_width = width;
+	m_height = height;
 
 	// swapchain 버퍼 리셋
 	for (int i = 0; i < m_swapChainBufferCount; i++)
@@ -271,6 +207,10 @@ void RenderEngine::OnResize()
 	m_hdrViewport = CD3DX12_VIEWPORT((FLOAT)0.F, 0.F, (FLOAT)(m_width), (FLOAT)m_height);
 	m_scissorRect = CD3DX12_RECT((LONG)0, 0, (LONG)(m_width), (LONG)m_height);
 
+	if (m_camera)
+	{
+		m_camera->OnResize(m_width, m_height);
+	}
 }
 
 void RenderEngine::CreateCommandObjects()
@@ -288,6 +228,36 @@ void RenderEngine::CreateCommandObjects()
 			m_commandAllocator.Get(),
 			nullptr,
 			IID_PPV_ARGS(&m_commandList)
+		));
+
+	ThrowIfFailed(
+		m_device->CreateCommandAllocator(
+			D3D12_COMMAND_LIST_TYPE_DIRECT,
+			IID_PPV_ARGS(&m_resourceCommandAllocator)
+		));
+
+	ThrowIfFailed(
+		m_device->CreateCommandList(
+			0,
+			D3D12_COMMAND_LIST_TYPE_DIRECT,
+			m_resourceCommandAllocator.Get(),
+			nullptr,
+			IID_PPV_ARGS(&m_resourceCommandList)
+		));
+
+	ThrowIfFailed(
+		m_device->CreateCommandAllocator(
+			D3D12_COMMAND_LIST_TYPE_DIRECT,
+			IID_PPV_ARGS(&gui_commandAllocator)
+		));
+
+	ThrowIfFailed(
+		m_device->CreateCommandList(
+			0,
+			D3D12_COMMAND_LIST_TYPE_DIRECT,
+			gui_commandAllocator.Get(),
+			nullptr,
+			IID_PPV_ARGS(&gui_commandList)
 		));
 
 	m_computeCommandAllocators.resize(computeCommandCount);
@@ -322,6 +292,8 @@ void RenderEngine::CreateCommandObjects()
 	);
 
 	m_commandList->Close();
+	gui_commandList->Close();
+	m_resourceCommandList->Close();
 }
 
 void RenderEngine::CreateSwapChain(IDXGIFactory7* factory, HWND wnd)
@@ -378,13 +350,7 @@ void RenderEngine::CreateDescriptorHeaps()
 	utility->CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, m_hdrUAVHeap, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 	utility->CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, m_hdrSRVHeap, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 
-	utility->CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, m_particleUAVHeap, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
-	utility->CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, m_particleSRVHeap, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 
-	utility->CreateDescriptorHeap(2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, m_sphParticleUAVHeap[0], 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
-	utility->CreateDescriptorHeap(2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, m_sphParticleUAVHeap[1], 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
-	utility->CreateDescriptorHeap(2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, m_sphParticleSRVHeap, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
-	
 }
 
 void RenderEngine::CreateTextureBuffers()
@@ -399,32 +365,29 @@ void RenderEngine::CreateTextureBuffers()
 // BOOKMARK
 void RenderEngine::UpdateGUI()
 {
-	ImGui::SetWindowSize(ImVec2((float)m_guiWidth, (float)m_height));
-	ImGui::SetWindowPos(ImVec2(0.f, 0.f), ImGuiCond_FirstUseEver);
+	//ImGui::SetWindowSize(ImVec2((float)m_guiWidth, (float)m_height));
+	ImGui::SetWindowPos(ImVec2(0.f, 0.f), ImGuiCond_Always);
+
+	if (ImGui::Button("Reset SPH"))
+	{
+		resetFlag = true;
+	}
 }
 
 // BOOKMARK
 void RenderEngine::Tick(float deltaTime)
 {
-	//{
-	//	angle += rotateSpeed * deltaTime;
-	//	float radians = DirectX::XMConvertToRadians(angle);
-	//	localConstant.model = DirectX::XMMatrixRotationY(radians);
-	//	localConstant.model = localConstant.model.Transpose();
-	//	memcpy(pLocalCB, &localConstant, sizeof(localConstant));
-	//}
-	if (countTick < sphMaxParticleCount)
+	if (resetFlag && m_sph)
 	{
-		countTick += sphCountIncreaseSpeed*deltaTime;
-		
-		if (countTick >= sphMaxParticleCount)
-			countTick = sphMaxParticleCount;
+		resetFlag = false;
+		m_sph->Reset(m_resourceCommandAllocator.Get(), m_resourceCommandList.Get());
+		ID3D12CommandList* commands[] = { m_resourceCommandList.Get() };
+		m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
+		FlushCommands();
 
-		sphCurrParticleCount = int(countTick);
 	}
-	m_sphParticleConstant.particleCount = sphCurrParticleCount;
-	m_sphParticleConstant.dt = 1/30.f;
-	memcpy(pSPHParticleLocalCB, &m_sphParticleConstant, sizeof(SPHParticleLocalConstant));
+	if(m_sph)
+		m_sph->Tick(deltaTime);
 
 	SPHSimulation();
 }
@@ -434,7 +397,7 @@ void RenderEngine::RenderMeshes(const std::string& psoName, ID3D12GraphicsComman
 	m_mesh->Render(commandList);
 }
 
-void RenderEngine::Compute(const std::string& psoName, int idx)
+void RenderEngine::ComputeSPH(const std::string& psoName, int idx)
 {
 	PIXBeginEvent(m_commandQueue.Get(), PIX_COLOR(255, 255, 0), psoName.c_str());
 
@@ -457,19 +420,8 @@ void RenderEngine::Compute(const std::string& psoName, int idx)
 	cmdList->SetPipelineState(pso.GetPSO());
 	cmdList->SetComputeRootSignature(pso.GetRootSignature()->GetSignature());
 
-	ID3D12DescriptorHeap* heaps[] = {
-		m_particleUAVHeap.Get()
-	};
+	m_sph->Compute(cmdList);
 
-	cmdList->SetDescriptorHeaps(1, heaps);
-	cmdList->SetComputeRootDescriptorTable(0, m_particleUAVHeap->GetGPUDescriptorHandleForHeapStart());
-	cmdList->SetComputeRootConstantBufferView(1, m_particleLocalCB->GetGPUVirtualAddress());
-
-	UINT numThreadsX = 1024;
-
-	UINT threadXCount = (particleCount + numThreadsX - 1) / numThreadsX;
-
-	cmdList->Dispatch(threadXCount, 1, 1);
 	cmdList->Close();
 
 	ID3D12CommandList* commands[] = { cmdList };
@@ -478,52 +430,7 @@ void RenderEngine::Compute(const std::string& psoName, int idx)
 	PIXEndEvent(m_commandQueue.Get());
 }
 
-
-void RenderEngine::SPH(const std::string& psoName, int idx, ID3D12DescriptorHeap* heap)
-{
-	PIXBeginEvent(m_commandQueue.Get(), PIX_COLOR(255, 255, 0), psoName.c_str());
-
-	using namespace Renderer;
-
-	ComputePSO pso;
-	if (m_CPSOs.find(psoName) != m_CPSOs.end())
-	{
-		pso = m_CPSOs[psoName];
-	}
-	else
-	{
-		pso = m_CPSOs["defaultCPSO"];
-	}
-	ID3D12CommandAllocator* alloc = m_computeCommandAllocators[idx].Get();
-	ID3D12GraphicsCommandList* cmdList = m_computeCommandLists[idx].Get();
-	alloc->Reset();
-	ThrowIfFailed(cmdList->Reset(alloc, pso.GetPSO()));
-
-	cmdList->SetPipelineState(pso.GetPSO());
-	cmdList->SetComputeRootSignature(pso.GetRootSignature()->GetSignature());
-
-	ID3D12DescriptorHeap* heaps[] = {
-		heap
-	};
-
-	cmdList->SetDescriptorHeaps(1, heaps);
-	cmdList->SetComputeRootDescriptorTable(0, heap->GetGPUDescriptorHandleForHeapStart());
-	cmdList->SetComputeRootConstantBufferView(1, m_sphParticleLocalCB->GetGPUVirtualAddress());
-
-	UINT numThreadsX = 1024;
-	UINT threadXCount = (sphMaxParticleCount + numThreadsX - 1) / numThreadsX;
-
-	cmdList->Dispatch(threadXCount, 1, 1);
-	cmdList->Close();
-
-	ID3D12CommandList* commands[] = { cmdList };
-	m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
-	//FlushResourceCommands();
-	PIXEndEvent(m_commandQueue.Get());
-}
-
-
-void RenderEngine::Render(const std::string& psoName, bool clear)
+void RenderEngine::RenderSPH(const std::string& psoName, bool clear, bool isFinal)
 {
 	PIXBeginEvent(m_commandQueue.Get(), PIX_COLOR(255, 0, 0), psoName.c_str());
 
@@ -548,7 +455,6 @@ void RenderEngine::Render(const std::string& psoName, bool clear)
 	m_commandList->RSSetScissorRects(1, &m_scissorRect);
 	m_commandList->RSSetViewports(1, &m_viewport);
 
-
 	m_commandList->ResourceBarrier(
 		1,
 		&CD3DX12_RESOURCE_BARRIER::Transition(
@@ -562,16 +468,13 @@ void RenderEngine::Render(const std::string& psoName, bool clear)
 		m_commandList->ClearDepthStencilView(GetDSVCpuHandle(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
 	}
 	m_commandList->OMSetRenderTargets(1, &GetCurrentRtvCpuHandle(), TRUE, &GetDSVCpuHandle());
-	ID3D12DescriptorHeap* heaps[] = {
-		m_particleSRVHeap.Get()
-	};
 
-	m_commandList->SetDescriptorHeaps(1, heaps);
-	m_commandList->SetGraphicsRootDescriptorTable(0, m_particleSRVHeap->GetGPUDescriptorHandleForHeapStart());
+	if (m_camera)
+	{
+		m_commandList->SetGraphicsRootConstantBufferView(1, m_camera->GetGlboalConstant());
+	}
 
-	//RenderMeshes(psoName, m_commandList.Get());
-	m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
-	m_commandList->DrawInstanced(particleCount, 1, 0, 0);
+	m_sph->Render(m_commandList.Get());
 
 	m_commandList->ResourceBarrier(
 		1,
@@ -584,84 +487,10 @@ void RenderEngine::Render(const std::string& psoName, bool clear)
 	m_commandList->Close();
 
 	ID3D12CommandList* commands[] = { m_commandList.Get() };
+	m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
+
+	if(isFinal)
 	{
-		m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
-
-		ThrowIfFailed(m_commandQueue->Signal(m_fence.Get(), m_currentFence));
-		// text 업데이트를 위해 graphcics memory 사용 시 commit 해줘야 Graphics 메모리를 재사용한다
-		ThrowIfFailed(m_swapChain->Present(1, 0));
-		m_currentBackBufferIndex = (m_currentBackBufferIndex + 1) % m_swapChainBufferCount;
-
-		FlushResourceCommands();
-	}
-	PIXEndEvent(m_commandQueue.Get());
-}
-
-
-void RenderEngine::RenderSPH(const std::string& psoName, bool clear)
-{
-	PIXBeginEvent(m_commandQueue.Get(), PIX_COLOR(255, 0, 0), psoName.c_str());
-
-	using namespace Renderer;
-
-	GraphicsPSO pso;
-	if (m_PSOs.find(psoName) != m_PSOs.end())
-	{
-		pso = m_PSOs[psoName];
-	}
-	else
-	{
-		pso = m_PSOs["defaultPSO"];
-	}
-	m_commandAllocator->Reset();
-	ThrowIfFailed(m_commandList->Reset(m_commandAllocator.Get(), pso.GetPSO()));
-
-	m_commandList->SetPipelineState(pso.GetPSO());
-	m_commandList->SetGraphicsRootSignature(pso.GetRootSignature()->GetSignature());
-
-
-	m_commandList->RSSetScissorRects(1, &m_scissorRect);
-	m_commandList->RSSetViewports(1, &m_viewport);
-
-
-	m_commandList->ResourceBarrier(
-		1,
-		&CD3DX12_RESOURCE_BARRIER::Transition(
-			GetCurrentSwapChainResource(),
-			D3D12_RESOURCE_STATE_PRESENT,
-			D3D12_RESOURCE_STATE_RENDER_TARGET
-		));
-	if (clear)
-	{
-		m_commandList->ClearRenderTargetView(GetCurrentRtvCpuHandle(), rtvClearColor.data(), 0, nullptr);
-		m_commandList->ClearDepthStencilView(GetDSVCpuHandle(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
-	}
-	m_commandList->OMSetRenderTargets(1, &GetCurrentRtvCpuHandle(), TRUE, &GetDSVCpuHandle());
-	ID3D12DescriptorHeap* heaps[] = {
-		m_sphParticleSRVHeap.Get()
-	};
-
-	CD3DX12_GPU_DESCRIPTOR_HANDLE sphHandle(m_sphParticleSRVHeap->GetGPUDescriptorHandleForHeapStart(), sphHeapIdx, m_cbvSrvDescriptorSize);
-	m_commandList->SetDescriptorHeaps(1, heaps);
-	m_commandList->SetGraphicsRootDescriptorTable(0, sphHandle);
-
-	//RenderMeshes(psoName, m_commandList.Get());
-	m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
-	m_commandList->DrawInstanced(sphCurrParticleCount, 1, 0, 0);
-
-	m_commandList->ResourceBarrier(
-		1,
-		&CD3DX12_RESOURCE_BARRIER::Transition(
-			GetCurrentSwapChainResource(),
-			D3D12_RESOURCE_STATE_RENDER_TARGET,
-			D3D12_RESOURCE_STATE_PRESENT
-		));
-
-	m_commandList->Close();
-
-	ID3D12CommandList* commands[] = { m_commandList.Get() };
-	{
-		m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
 
 		ThrowIfFailed(m_commandQueue->Signal(m_fence.Get(), m_currentFence));
 		// text 업데이트를 위해 graphcics memory 사용 시 commit 해줘야 Graphics 메모리를 재사용한다
@@ -687,26 +516,58 @@ void RenderEngine::RenderGUI(bool isFinal)
 	ImGui::End();
 	ImGui::Render();
 
-}
+	ThrowIfFailed(gui_commandAllocator->Reset());
+	ThrowIfFailed(gui_commandList->Reset(gui_commandAllocator.Get(), nullptr));
 
-// BOOKMARK
-void RenderEngine::Draw()
-{
-	Compute("particleSimulationCPSO", 0);
-	Render("particleRenderPSO", true/*clear RT*/);
+	gui_commandList->ResourceBarrier(1,
+		&CD3DX12_RESOURCE_BARRIER::Transition(
+			GetCurrentSwapChainResource(),
+			D3D12_RESOURCE_STATE_PRESENT,
+			D3D12_RESOURCE_STATE_RENDER_TARGET
+		));
+
+	gui_commandList->OMSetRenderTargets(1, &GetCurrentRtvCpuHandle(), false, nullptr);
+	ID3D12DescriptorHeap* pHeaps[] = { m_guiFontHeap.Get() };
+	gui_commandList->SetDescriptorHeaps(static_cast<UINT>(std::size(pHeaps)), pHeaps);
+
+	ImDrawData* dd = ImGui::GetDrawData();
+	if (dd->Valid)
+		ImGui_ImplDX12_RenderDrawData(dd, gui_commandList.Get());
+
+	gui_commandList->ResourceBarrier(1,
+		&CD3DX12_RESOURCE_BARRIER::Transition(
+			GetCurrentSwapChainResource(),
+			D3D12_RESOURCE_STATE_RENDER_TARGET,
+			D3D12_RESOURCE_STATE_PRESENT
+		));
+
+	gui_commandList->Close();
+	ID3D12CommandList* commands[] = { gui_commandList.Get()};
+	m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
+
+	if (isFinal)
+	{
+		ThrowIfFailed(m_commandQueue->Signal(m_fence.Get(), m_currentFence));
+		// text 업데이트를 위해 graphcics memory 사용 시 commit 해줘야 Graphics 메모리를 재사용한다
+		//m_graphicsMemory->Commit(m_commandQueue.Get());
+		ThrowIfFailed(m_swapChain->Present(1, 0));
+		m_currentBackBufferIndex = (m_currentBackBufferIndex + 1) % m_swapChainBufferCount;
+		FlushResourceCommands();
+	}
+
 }
 
 void RenderEngine::SPHSimulation()
 {
 	int i = 0;
-	ID3D12DescriptorHeap* sphUavHeap = m_sphParticleUAVHeap[sphHeapIdx].Get();
-	SPH("computeDensityCPSO", i++, sphUavHeap);
-	SPH("computePressureCPSO", i++, sphUavHeap);
-	SPH("computeForcesCPSO", i++, sphUavHeap);
-	SPH("sphSimulationCPSO", i++, sphUavHeap);
+	
+	ComputeSPH("computeDensityCPSO", i++);
+	ComputeSPH("computePressureCPSO", i++);
+	ComputeSPH("computeForcesCPSO", i++);
+	ComputeSPH("sphSimulationCPSO", i++);
 
-	sphHeapIdx = (sphHeapIdx + 1) % 2;
-	RenderSPH("particleRenderPSO", true/*clear RT*/);
+	RenderSPH("particleRenderPSO", true/*clear RT*/, false /*isFinal*/);
+	RenderGUI(true);
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE RenderEngine::GetCurrentRtvCpuHandle() const
@@ -759,7 +620,6 @@ void RenderEngine::FlushResourceCommands()
 void RenderEngine::Quit()
 {
 	FlushResourceCommands();
-
 }
 
 void RenderEngine::GenerateMips(ID3D12Resource* tex)

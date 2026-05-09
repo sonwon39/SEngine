@@ -1,5 +1,8 @@
 ﻿#define HLSL
 #include "Particle.h"
+#include "GlobalConstant.h"
+
+ConstantBuffer<GlobalConstant> g_globalConstant : register(b0);
 
 struct GSInput
 {

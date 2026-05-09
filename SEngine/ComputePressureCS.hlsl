@@ -8,6 +8,6 @@ void main( uint3 DTid : SV_DispatchThreadID )
     if (i >= gParticleLocalCB.particleCount) return;
 
     float rhoi = curr_particles[i].density;
-    curr_particles[i].pressure = gParticleLocalCB.k* (pow(rhoi / gParticleLocalCB.rho0 , 7) - 1.f);
+    curr_particles[i].pressure = max(0.f, gParticleLocalCB.k* (pow(rhoi / gParticleLocalCB.rho0 , 7) - 1.f));
 }
 

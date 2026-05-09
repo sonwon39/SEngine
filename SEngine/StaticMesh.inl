@@ -15,8 +15,8 @@ inline void StaticMesh::Initialize(ID3D12Device5* device, ID3D12GraphicsCommandL
 	m_indexGpu.resize(meshCount);
 	m_indexUpload.resize(meshCount);
 
-	Graphics::utility->CreateBuffer<V>(mesh.m_vertices, m_vertexGpu[0], m_vertexUpload[0]);
-	Graphics::utility->CreateBuffer<I>(mesh.m_indices, m_indexGpu[0], m_indexUpload[0]);
+	Graphics::utility->CreateBuffer<V>(mesh.m_vertices, m_vertexGpu[0], m_vertexUpload[0], D3D12_RESOURCE_FLAG_NONE, commandList);
+	Graphics::utility->CreateBuffer<I>(mesh.m_indices, m_indexGpu[0], m_indexUpload[0], D3D12_RESOURCE_FLAG_NONE, commandList);
 
 	D3D12_VERTEX_BUFFER_VIEW VBV;
 	D3D12_INDEX_BUFFER_VIEW IBV;

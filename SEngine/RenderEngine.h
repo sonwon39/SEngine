@@ -18,7 +18,8 @@
 #include "directxtk12/SimpleMath.h"
 #include "DefaultHLSLCompat.h"
 
-#include "Particle.h"
+#include "Camera.h"
+#include "SPH.h"
 
 class StaticMesh;
 
@@ -47,7 +48,7 @@ public:
 	bool InitScene();
 	bool InitGUI(HWND wnd);
 
-	void OnResize();
+	void OnResize(int width, int height);
 
 
 protected:
@@ -62,13 +63,9 @@ protected:
 
 	void Update(float deltaTime);
 	void RenderMeshes(const std::string& psoName, ID3D12GraphicsCommandList* commandList);
-	void Compute(const std::string& psoName, int idx);
-
-	void SPH(const std::string& psoName, int idx, ID3D12DescriptorHeap* heap);
-
-	void Render(const std::string& psoName, bool clear);
-	void RenderSPH(const std::string& psoName, bool clear);
-	void Draw();
+	void ComputeSPH(const std::string& psoName, int idx);
+	void RenderSPH(const std::string& psoName, bool clear, bool isFinal);
+	
 
 	void SPHSimulation();
 
@@ -108,6 +105,10 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_commandList;
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> gui_commandAllocator;
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> gui_commandList;
+
+	// 버퍼 생성용
+	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_resourceCommandAllocator;
+	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_resourceCommandList;
 
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_commandQueue;
 
@@ -169,33 +170,17 @@ private:
 	float angle = 0.f;
 	float rotateSpeed = 90.f;
 
-private:
-	int particleCount = 3000;
-	std::vector<Particle> particles;
-	Microsoft::WRL::ComPtr<ID3D12Resource> particleBuffer;
-	Microsoft::WRL::ComPtr<ID3D12Resource> particleUpload;
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_particleUAVHeap;
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_particleSRVHeap;
-
-	ParticleLocalConstant m_particleConstant;
-	Microsoft::WRL::ComPtr<ID3D12Resource> m_particleLocalCB;
-	void* pParticleLocalCB;
-
 	//sph
 private:
-	int sphCurrParticleCount = 0;
-	float countTick = 0.f;
-	float sphCountIncreaseSpeed = 1000.f;
-	int sphMaxParticleCount = 10000;
-	std::vector<SPHParticle> sphParticles;
-	Microsoft::WRL::ComPtr<ID3D12Resource> sphParticleBuffer[2];
-	Microsoft::WRL::ComPtr<ID3D12Resource> sphParticleUpload[2];
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_sphParticleUAVHeap[2];
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_sphParticleSRVHeap;
-	int sphHeapIdx = 0;
+	std::shared_ptr<SPH> m_sph;
 
-	SPHParticleLocalConstant m_sphParticleConstant;
-	Microsoft::WRL::ComPtr<ID3D12Resource> m_sphParticleLocalCB;
-	void* pSPHParticleLocalCB;
 
+	//camera
+private:
+	std::shared_ptr<Camera> m_camera;
+
+	//font
+private:
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_guiFontHeap;
+	bool resetFlag = false;
 };

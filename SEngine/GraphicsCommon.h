@@ -21,7 +21,8 @@ namespace Graphics
     extern D3D12_RASTERIZER_DESC wireRasterizer;
     extern D3D12_RASTERIZER_DESC noneCullRasterizer;
 
-    extern D3D12_BLEND_DESC blendNoColorWrite;
+	extern D3D12_BLEND_DESC blendNoColorWrite;
+	extern D3D12_BLEND_DESC blendColor;
 
     extern D3D12_DEPTH_STENCIL_DESC depthStateDefault;
 
@@ -30,6 +31,7 @@ namespace Graphics
 	extern RootSignature g_U1_C1_RS;
 	extern RootSignature g_U2_C1_RS;
 	extern RootSignature g_S1_RS;
+	extern RootSignature g_S1_C1_RS;
    
 
     extern std::shared_ptr<GraphicsUtils::Utility> utility;

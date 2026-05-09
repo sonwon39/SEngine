@@ -13,34 +13,42 @@ void main(
 	element.color = input[0].color;
 
 	float4 center = float4(input[0].pos, 1.f);
-	
-	float4 p0 = center + float4(r, -r, 0, 0);
-	float4 p1 = center + float4(-r, -r, 0, 0);
-	float4 p2 = center + float4(-r, r, 0, 0);
-	float4 p3 = center + float4(r, r, 0, 0);
 
-	element.pos = p0;
-	element.uv = float2(1, 1);
-	output.Append(element);
-	element.pos = p1;
-	element.uv = float2(0, 1);
-	output.Append(element);
-	element.pos = p2;
-	element.uv = float2(0, 0);
-	output.Append(element);
+	float4 points[] =
+	{
+		center + float4(r, -r, 0, 0),
+		center + float4(-r, -r, 0, 0),
+		center + float4(-r, r, 0, 0),
+		center + float4(r, r, 0, 0)
+	};
+	float2 uvs[] =
+	{
+		float2(1, 1),
+		float2(0, 1),
+		float2(0, 0),
+		float2(1, 0)
+	};
+	uint indices[] =
+	{
+		0,1,2,0,2,3
+	};
 
-	output.RestartStrip();
-	
-	element.pos = p0;
-	element.uv = float2(1, 1);
-	output.Append(element);
-	element.pos = p2;
-	element.uv = float2(0, 0);
-	output.Append(element);
-	element.pos = p3;
-	element.uv = float2(1, 0);
-	output.Append(element);
+	for (uint i = 0; i < 4; i++)
+	{
+		points[i] = mul(points[i], g_globalConstant.view);
+		points[i] = mul(points[i], g_globalConstant.projection);
+	}
+	for (uint j = 0; j < 6; j++)
+	{
+		uint idx = indices[j];
+		
+		element.pos = points[idx];
+		element.uv = uvs[idx];
+		output.Append(element);
 
-	output.RestartStrip();
-	
+		if ((j + 1)  % 3 == 0)
+		{
+			output.RestartStrip();
+		}
+	}	
 }
