@@ -7,4 +7,5 @@ SEngine/*.vcxproj.user
 
 packages/
 
-Papers/
+Papers/**/*.pdf
+Papers/**/*.txt
