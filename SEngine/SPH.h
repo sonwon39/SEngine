@@ -33,8 +33,8 @@ public:
 private:
 	int sphCurrParticleCount = 0;
 	float countTick = 0.f;
-	float sphCountIncreaseSpeed = 1000.f;
-	int sphMaxParticleCount = 20000;
+	float sphCountIncreaseSpeed = 2000.f;
+	int sphMaxParticleCount = 30000;
 
 	std::vector<SPHParticle> m_sphParticles;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_sphParticleBuffer[2];

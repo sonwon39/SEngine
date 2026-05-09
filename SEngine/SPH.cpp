@@ -109,7 +109,7 @@ void SPH::InitParticleCPU()
 	sphCurrParticleCount = 0;
 	countTick = 0.f;
 
-	Vector3 basePosition(-0.8f, 0.7f, 1.f);
+	Vector3 basePosition(-0.4f, 0.5f, 0.f);  // [-1,1]
 	Vector3 baseVelocity(1.f, 0.f, 0.f);
 	std::random_device rd;
 	std::mt19937 gen(rd());
@@ -130,9 +130,9 @@ void SPH::InitParticleCPU()
 	};
 
 	float PI = 3.141592f;
-	std::uniform_real_distribution<float> randomTheta(0, PI / 2.f);
+	std::uniform_real_distribution<float> randomTheta(-PI, PI);
 	std::uniform_int_distribution<int> randomColor(0, 9);
-	std::uniform_real_distribution<float> randomDist(0.f, 0.4f);
+	std::uniform_real_distribution<float> randomDist(0.f, 0.3f);
 	std::uniform_real_distribution<float> velDist(1.f, 2.f);
 
 	// structured buffer cpu 데이터 초기화
@@ -140,7 +140,7 @@ void SPH::InitParticleCPU()
 	{
 		SPHParticle& p = m_sphParticles[i];
 		float theta = randomTheta(gen);
-		p.position = basePosition + Vector3(std::cos(theta), -std::sin(theta), 0.f) * randomDist(gen);
+		p.position = basePosition + Vector3(0.f, std::cos(theta), -std::sin(theta)) * randomDist(gen);
 		p.velocity = baseVelocity * velDist(gen);
 		p.color = Vector3(0.0f, 0.0f, 1.0f);
 		//p.color = colors[randomColor(gen)];

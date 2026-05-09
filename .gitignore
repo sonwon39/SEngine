@@ -9,3 +9,5 @@ packages/
 
 Papers/**/*.pdf
 Papers/**/*.txt
+Papers/*.pdf
+Papers/*.txt
