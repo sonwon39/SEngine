@@ -55,6 +55,20 @@ public:
         m_rootParam.Descriptor.ShaderRegister = baseShaderRegister;
         m_rootParam.Descriptor.RegisterSpace = registerSpace;
     }
+	void InitUAV(UINT baseShaderRegister = 0, D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL, UINT registerSpace = 0)
+	{
+		m_rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_UAV;
+		m_rootParam.ShaderVisibility = visibility;
+		m_rootParam.Descriptor.ShaderRegister = baseShaderRegister;
+		m_rootParam.Descriptor.RegisterSpace = registerSpace;
+	}
+	void InitSRV(UINT baseShaderRegister = 0, D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL, UINT registerSpace = 0)
+	{
+		m_rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
+		m_rootParam.ShaderVisibility = visibility;
+		m_rootParam.Descriptor.ShaderRegister = baseShaderRegister;
+		m_rootParam.Descriptor.RegisterSpace = registerSpace;
+	}
 
 protected:
     D3D12_ROOT_PARAMETER m_rootParam;

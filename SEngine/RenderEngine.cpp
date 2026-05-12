@@ -559,12 +559,12 @@ void RenderEngine::RenderGUI(bool isFinal)
 
 void RenderEngine::SPHSimulation()
 {
-	int i = 0;
+	/*int i = 0;
 	
 	ComputeSPH("computeDensityCPSO", i++);
 	ComputeSPH("computePressureCPSO", i++);
 	ComputeSPH("computeForcesCPSO", i++);
-	ComputeSPH("sphSimulationCPSO", i++);
+	ComputeSPH("sphSimulationCPSO", i++);*/
 
 	RenderSPH("particleRenderPSO", true/*clear RT*/, false /*isFinal*/);
 	RenderGUI(true);

@@ -5,12 +5,13 @@ void main( uint3 DTid : SV_DispatchThreadID )
 {
     int i = DTid.x;
     float dt = gParticleLocalCB.dt;
+	
+	float minX = gParticleLocalCB.gGridMin.x;
+	float minY = gParticleLocalCB.gGridMin.y;
+	float minZ = gParticleLocalCB.gGridMin.z;
 
-	float minY = -0.8f;
-	float minZ = -0.65f;
-	float maxZ = 0.65f;
-	float minX = -0.65f;
-	float maxX = 0.65f;
+	float maxX = gParticleLocalCB.gGridMax.x;
+	float maxZ = gParticleLocalCB.gGridMax.z;
 	
     if (i >= gParticleLocalCB.particleCount) return;
 

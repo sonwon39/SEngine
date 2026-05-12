@@ -129,6 +129,8 @@
     <FxCompile Include="ComputeDensityCS.hlsl" />
     <FxCompile Include="SPHSimulationCS.hlsl" />
     <FxCompile Include="ParticleRenderGS.hlsl" />
+    <FxCompile Include="PrefixSumCS.hlsl" />
+    <FxCompile Include="CountingCS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -138,5 +140,6 @@
     <None Include="DefaultCommon.hlsli" />
     <None Include="ParticleCommon.hlsli" />
     <None Include="SPHUtility.hlsli" />
+    <None Include="CountingSortCommon.hlsli" />
   </ItemGroup>
 </Project>

@@ -23,6 +23,9 @@ namespace Graphics
 	RootSignature g_U2_C1_RS;
 	RootSignature g_S1_RS;
 	RootSignature g_S1_C1_RS;
+	RootSignature g_SUUC_RS;
+	RootSignature g_USC_RS;
+	RootSignature g_UUU_RS;
 
 	std::shared_ptr<GraphicsUtils::Utility> utility;
 }
@@ -113,6 +116,25 @@ void Graphics::InitializeCommonState(const Microsoft::WRL::ComPtr<ID3D12Device5>
 	g_S1_C1_RS[0].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0, 1);
 	g_S1_C1_RS[1].InitCBV(0);
 	g_S1_C1_RS.Finalize(device, L"g_S1_C1_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	g_SUUC_RS.Reset(4, 0);
+	g_SUUC_RS[0].InitSRV(0);
+	g_SUUC_RS[1].InitUAV(0);
+	g_SUUC_RS[2].InitUAV(1);
+	g_SUUC_RS[3].InitCBV(0);
+	g_SUUC_RS.Finalize(device, L"g_SUUC_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	g_USC_RS.Reset(3, 0);
+	g_USC_RS[0].InitUAV(0);
+	g_USC_RS[1].InitSRV(0);
+	g_USC_RS[2].InitCBV(0);
+	g_USC_RS.Finalize(device, L"g_USC_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	g_UUU_RS.Reset(3, 0);
+	g_UUU_RS[0].InitUAV(0);
+	g_UUU_RS[1].InitUAV(1);
+	g_UUU_RS[2].InitUAV(2);
+	g_UUU_RS.Finalize(device, L"g_UUU_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 }
 

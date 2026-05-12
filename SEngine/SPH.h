@@ -23,6 +23,30 @@ public:
 public:
 	void Tick(float deltaTime);
 	void Compute(ID3D12GraphicsCommandList* commandList);
+	void Pass1(ID3D12GraphicsCommandList* commandList);
+
+	// 재귀 전역 exclusive scan. cellCount 가 아무리 커도 동작 (필요한 만큼 level 자동 생성).
+	//   Pass2  = orchestrator. PSO/RootSig 전환 + barrier + 재귀 호출 책임.
+	//   Pass2a = 한 level의 view 바인딩 + dispatch (Pass1 스타일)
+	//   Pass2b = 한 level의 view 바인딩 + dispatch
+	// 진입 invariant: m_cellCounterBuffer 는 NON_PIXEL_SHADER_RESOURCE, 모든 m_pass2Levels 버퍼는 UNORDERED_ACCESS.
+	// 종료 invariant: 동일 (per-frame 재호출 가능).
+	// 최종 결과: m_pass2Levels[0].output (= cellStart, 전역 exclusive scan).
+	void Pass2(ID3D12GraphicsCommandList* commandList,
+		ID3D12PipelineState* pass2aPSO, ID3D12RootSignature* pass2aRS,
+		ID3D12PipelineState* pass2bPSO, ID3D12RootSignature* pass2bRS,
+		int level = 0);
+	void Pass2a(ID3D12GraphicsCommandList* commandList, int level);
+	void Pass2b(ID3D12GraphicsCommandList* commandList, int level);
+
+	// Pass3: cellId 기준 scatter. 매 frame Pass2 다음에 호출.
+	// 호출 전 caller 책임:
+	//   1) m_scatterCounterBuffer 를 0 으로 클리어 (ClearUAV 또는 zero-upload + CopyResource)
+	//   2) m_particleCellIdBuffer:  UAV → NON_PIXEL_SHADER_RESOURCE
+	//   3) m_pass2Levels[0].output: UAV → NON_PIXEL_SHADER_RESOURCE
+	// 결과: m_sortedSphParticleBuffer 에 cellId 순으로 정렬된 SPHParticle 들.
+	void Pass3(ID3D12GraphicsCommandList* commandList);
+
 	void Render(ID3D12GraphicsCommandList* commandList);
 
 	void Reset(ID3D12CommandAllocator* cmdAlloc, ID3D12GraphicsCommandList* cmdList);
@@ -47,6 +71,48 @@ private:
 	void* pSPHParticleLocalCB;
 
 	int m_sphHeapIdx = 0;
+
+	// 정렬
+private:
+	std::vector<UINT> m_cellCounter;
+	std::vector<UINT> m_particleCellId;
+	Vector3 gridDim;
+	int cellCount;
+
+	// Pass1: count
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_cellCounterBuffer;
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_particleCellIdBuffer;
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_outputBuffer;   // (사용처 미정, 기존 선언 유지)
+
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_cellCounterUpload;
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_particleCellIdUpload;
+
+	// Pass2: 재귀 exclusive scan 의 level 별 자원 묶음.
+	//   level 0:  input = m_cellCounterBuffer
+	//   level k>0: input = m_pass2Levels[k-1].blockSums
+	// 마지막 level은 blockCount==1 (단일 블록 안에서 scan 완료 → terminal, 더 재귀 안 함).
+	struct Pass2Level {
+		UINT scanCount = 0;     // 이 level 입력 길이
+		UINT blockCount = 0;    // ceil(scanCount / GROUP_SIZE) = 이 level 의 dispatch 그룹 수
+		Microsoft::WRL::ComPtr<ID3D12Resource> output;       // [scanCount] — exclusive scan 결과
+		Microsoft::WRL::ComPtr<ID3D12Resource> blockSums;    // [blockCount] — 각 block 의 inclusive 총합 (다음 level 의 input)
+		Microsoft::WRL::ComPtr<ID3D12Resource> cb;           // gScanCount = scanCount 로 채운 CB
+
+		// CreateBuffer 가 요구하는 upload counterpart (cmdList 실행까지 살아있어야 함)
+		Microsoft::WRL::ComPtr<ID3D12Resource> outputUpload;
+		Microsoft::WRL::ComPtr<ID3D12Resource> blockSumsUpload;
+		void* pCb = nullptr;
+	};
+	std::vector<Pass2Level> m_pass2Levels;
+
+	// Pass3: scatter — particle 들을 cellId 순으로 m_sortedSphParticleBuffer 에 복사.
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_scatterCounterBuffer;       // [cellCount] — per-cell write cursor (매 frame 0 으로 클리어)
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_scatterCounterUpload;
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_sortedSphParticleBuffer;    // [sphMaxParticleCount] — Pass3 출력 (정렬된 particle)
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_sortedSphParticleUpload;
+
+	std::vector<UINT>        m_scatterCounter;       // init 용 (zeros)
+	std::vector<SPHParticle> m_sortedSphParticles;   // init 용
 
 // sph particle 계수
 public:
