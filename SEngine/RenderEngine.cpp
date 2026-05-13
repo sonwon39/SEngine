@@ -397,6 +397,24 @@ void RenderEngine::RenderMeshes(const std::string& psoName, ID3D12GraphicsComman
 	m_mesh->Render(commandList);
 }
 
+void RenderEngine::SortSPH(int idx)
+{
+	ID3D12CommandAllocator* alloc = m_computeCommandAllocators[idx].Get();
+	ID3D12GraphicsCommandList* cmdList = m_computeCommandLists[idx].Get();
+	alloc->Reset();
+	ThrowIfFailed(cmdList->Reset(alloc, nullptr));
+
+	m_sph->Pass0(cmdList);
+	m_sph->Pass1(cmdList);
+	m_sph->Pass2(cmdList);
+	m_sph->Pass3(cmdList);
+
+	cmdList->Close();
+
+	ID3D12CommandList* commands[] = { cmdList };
+	m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
+}
+
 void RenderEngine::ComputeSPH(const std::string& psoName, int idx)
 {
 	PIXBeginEvent(m_commandQueue.Get(), PIX_COLOR(255, 255, 0), psoName.c_str());
@@ -559,12 +577,14 @@ void RenderEngine::RenderGUI(bool isFinal)
 
 void RenderEngine::SPHSimulation()
 {
-	/*int i = 0;
+	int i = 0;
 	
+	SortSPH(i++);
+
 	ComputeSPH("computeDensityCPSO", i++);
 	ComputeSPH("computePressureCPSO", i++);
 	ComputeSPH("computeForcesCPSO", i++);
-	ComputeSPH("sphSimulationCPSO", i++);*/
+	ComputeSPH("sphSimulationCPSO", i++);
 
 	RenderSPH("particleRenderPSO", true/*clear RT*/, false /*isFinal*/);
 	RenderGUI(true);

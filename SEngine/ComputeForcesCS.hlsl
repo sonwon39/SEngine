@@ -1,7 +1,6 @@
 ﻿#include "SPHUtility.hlsli"
 
-
-[numthreads(1024, 1, 1)]
+[numthreads(256, 1, 1)]
 void main( uint3 DTid : SV_DispatchThreadID )
 {
     int i = DTid.x;
@@ -18,30 +17,47 @@ void main( uint3 DTid : SV_DispatchThreadID )
     float dt = gParticleLocalCB.dt;
     float mu = gParticleLocalCB.mu;
 
-    for(uint j = 0; j< gParticleLocalCB.particleCount; j++)
-    {
-        if(i == j)
-        {
-            continue;
-        }
-        else{
-            float3 xj = prev_particles[j].position;
-            float3 xij = xi - xj;
+	int3 gridDim = int3(gParticleLocalCB.gGridDim);
+	int3 cellXYZ = int3(floor((xi - gParticleLocalCB.gGridMin) / gParticleLocalCB.gCellSize));
+	cellXYZ = clamp(cellXYZ, int3(0, 0, 0), gridDim - 1);
 
-            float3 vj = prev_particles[j].velocity;
-            float3 vij = vi - vj;
+	for (int dz = -1; dz <= 1; dz++)
+		for (int dy = -1; dy <= 1; dy++)
+			for (int dx = -1; dx <= 1; dx++)
+			{
+				int3 nc = cellXYZ + int3(dx, dy, dz);
+				if (any(nc < 0) || any(nc >= gridDim))
+					continue;
 
-            float3 w_grad = W_Grad(xi, xj);
+				uint cellId = LinearCellId(nc);
+				uint cellStart = gCellStart[cellId];
+				uint cellCount = gCellCounter[cellId];
 
-            float rhoj = curr_particles[j].density;
-            float rhoj_2 = rhoj*rhoj;
-            float pj = curr_particles[j].pressure;
+				for (uint j = 0; j < cellCount; j++)
+				{
+					uint id = cellStart + j;
+					uint pId = gSortedIndices[id];
+					if (pId >= gParticleLocalCB.particleCount)
+						continue;
+
+					float3 xj = prev_particles[pId].position;
+					float3 xij = xi - xj;
+
+					float3 vj = prev_particles[pId].velocity;
+					float3 vij = vi - vj;
+
+					float3 w_grad = W_Grad(xi, xj);
+
+					float rhoj = curr_particles[pId].density;
+					float rhoj_2 = rhoj * rhoj;
+					float pj = curr_particles[pId].pressure;
             
-            float3 pressure_acc = -((pi / rhoi_2) + (pj / rhoj_2)) * w_grad;
-            float3 viscosity_acc = 2 * (mu / (rhoi * rhoj)) * vij * dot(xij, w_grad) / (dot(xij, xij) + 0.01 * h*h );
-			acc += pressure_acc + viscosity_acc;
-		}
-    }
+					float3 pressure_acc = -((pi / rhoi_2) + (pj / rhoj_2)) * w_grad;
+					float3 viscosity_acc = 2 * (mu / (rhoi * rhoj)) * vij * dot(xij, w_grad) / (dot(xij, xij) + 0.01 * h * h);
+					acc += pressure_acc + viscosity_acc;
+					
+				}
+			}
     float3 gravity_acc = float3(0.f,-9.8f, 0.f);
 
     curr_particles[i].acceleration = acc + gravity_acc;

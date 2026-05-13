@@ -3,6 +3,7 @@
 #include "GlobalConstant.h"
 
 ConstantBuffer<GlobalConstant> g_globalConstant : register(b0);
+ConstantBuffer<SPHParticleLocalConstant> gParticleLocalCB : register(b1);
 
 struct GSInput
 {

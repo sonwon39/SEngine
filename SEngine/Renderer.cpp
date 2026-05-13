@@ -16,6 +16,12 @@
 #include "CompiledShaders/ComputePressureCS.h"
 #include "CompiledShaders/SPHSimulationCS.h"
 
+#include "CompiledShaders/ClearCounterCS.h"
+#include "CompiledShaders/CountingCS.h"
+#include "CompiledShaders/ScanBlocksCS.h"
+#include "CompiledShaders/AddBlockOffsetsCS.h"
+#include "CompiledShaders/ScatterCS.h"
+
 
 using namespace Graphics;
 using namespace Renderer;
@@ -51,6 +57,13 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 	ComputePSO sphSimulationCPSO(L"sphSimulation CPSO");
 
 	ComputePSO particleSimulationCPSO(L"particleSimulation CPSO");
+
+	// sph sort
+	ComputePSO pass0CPSO(L"pass0 CPSO");
+	ComputePSO pass1CPSO(L"pass1 CPSO");
+	ComputePSO pass2aCPSO(L"pass2a CPSO");
+	ComputePSO pass2bCPSO(L"pass2b CPSO");
+	ComputePSO pass3CPSO(L"pass3 CPSO");
 
 
 	hdrFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
@@ -126,7 +139,7 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 	psoNames.push_back("defaultPSO");
 
 	particleRenderPSO.SetInputLayout(0, nullptr);
-	particleRenderPSO.SetRootSignature(g_S1_C1_RS);
+	particleRenderPSO.SetRootSignature(g_S1_C2_RS);
 	particleRenderPSO.SetRasterizerState(rasterizerDefault);
 	particleRenderPSO.SetBlendState(blendColor);
 	particleRenderPSO.SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT);
@@ -151,29 +164,59 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 	m_CPSOs["particleSimulationCPSO"] = particleSimulationCPSO;
 	cpsoNames.push_back("particleSimulationCPSO");
 
-	computeDensityCPSO.SetRootSignature(g_U2_C1_RS);
+	computeDensityCPSO.SetRootSignature(g_UUUUSSC_RS);
 	computeDensityCPSO.SetComputeShader(g_pComputeDensityCS, sizeof(g_pComputeDensityCS));
 	computeDensityCPSO.Finalize(device);
 	m_CPSOs["computeDensityCPSO"] = computeDensityCPSO;
 	cpsoNames.push_back("computeDensityCPSO");
 
-	computePressureCPSO.SetRootSignature(g_U2_C1_RS);
+	computePressureCPSO.SetRootSignature(g_UUUUSSC_RS);
 	computePressureCPSO.SetComputeShader(g_pComputePressureCS, sizeof(g_pComputePressureCS));
 	computePressureCPSO.Finalize(device);
 	m_CPSOs["computePressureCPSO"] = computePressureCPSO;
 	cpsoNames.push_back("computePressureCPSO");
 
-	computeForcesCPSO.SetRootSignature(g_U2_C1_RS);
+	computeForcesCPSO.SetRootSignature(g_UUUUSSC_RS);
 	computeForcesCPSO.SetComputeShader(g_pComputeForcesCS, sizeof(g_pComputeForcesCS));
 	computeForcesCPSO.Finalize(device);
 	m_CPSOs["computeForcesCPSO"] = computeForcesCPSO;
 	cpsoNames.push_back("computeForcesCPSO");
 
-	sphSimulationCPSO.SetRootSignature(g_U2_C1_RS);
+	sphSimulationCPSO.SetRootSignature(g_UUUUSSC_RS);
 	sphSimulationCPSO.SetComputeShader(g_pSPHSimulationCS, sizeof(g_pSPHSimulationCS));
 	sphSimulationCPSO.Finalize(device);
 	m_CPSOs["sphSimulationCPSO"] = sphSimulationCPSO;
 	cpsoNames.push_back("sphSimulationCPSO");
+
+	pass0CPSO.SetRootSignature(g_UUC_RS);
+	pass0CPSO.SetComputeShader(g_pClearCounterCS, sizeof(g_pClearCounterCS));
+	pass0CPSO.Finalize(device);
+	m_CPSOs["pass0CPSO"] = pass0CPSO;
+	cpsoNames.push_back("pass0CPSO");
+
+	pass1CPSO.SetRootSignature(g_UUUC_RS);
+	pass1CPSO.SetComputeShader(g_pCountingCS, sizeof(g_pCountingCS));
+	pass1CPSO.Finalize(device);
+	m_CPSOs["pass1CPSO"] = pass1CPSO;
+	cpsoNames.push_back("pass1CPSO");
+
+	pass2aCPSO.SetRootSignature(g_SUUC_RS);
+	pass2aCPSO.SetComputeShader(g_pScanBlocksCS, sizeof(g_pScanBlocksCS));
+	pass2aCPSO.Finalize(device);
+	m_CPSOs["pass2aCPSO"] = pass2aCPSO;
+	cpsoNames.push_back("pass2aCPSO");
+
+	pass2bCPSO.SetRootSignature(g_USC_RS);
+	pass2bCPSO.SetComputeShader(g_pAddBlockOffsetsCS, sizeof(g_pAddBlockOffsetsCS));
+	pass2bCPSO.Finalize(device);
+	m_CPSOs["pass2bCPSO"] = pass2bCPSO;
+	cpsoNames.push_back("pass2bCPSO");
+
+	pass3CPSO.SetRootSignature(g_UUUUSSC_RS);
+	pass3CPSO.SetComputeShader(g_pScatterCS, sizeof(g_pScatterCS));
+	pass3CPSO.Finalize(device);
+	m_CPSOs["pass3CPSO"] = pass3CPSO;
+	cpsoNames.push_back("pass3CPSO");
 }
 
 ID3D12PipelineState* Renderer::GetPSO(std::string psoName)

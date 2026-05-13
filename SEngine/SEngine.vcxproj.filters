@@ -131,6 +131,10 @@
     <FxCompile Include="ParticleRenderGS.hlsl" />
     <FxCompile Include="PrefixSumCS.hlsl" />
     <FxCompile Include="CountingCS.hlsl" />
+    <FxCompile Include="AddBlockOffsetsCS.hlsl" />
+    <FxCompile Include="ScanBlocksCS.hlsl" />
+    <FxCompile Include="ScatterCS.hlsl" />
+    <FxCompile Include="ClearCounterCS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

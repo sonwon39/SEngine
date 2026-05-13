@@ -6,6 +6,7 @@
 #include "d3d12.h"
 
 #include "particle.h"
+#include "PipelineState.h"
 
 class SPH
 {
@@ -22,7 +23,7 @@ public:
 
 public:
 	void Tick(float deltaTime);
-	void Compute(ID3D12GraphicsCommandList* commandList);
+	void Pass0(ID3D12GraphicsCommandList* commandList);
 	void Pass1(ID3D12GraphicsCommandList* commandList);
 
 	// 재귀 전역 exclusive scan. cellCount 가 아무리 커도 동작 (필요한 만큼 level 자동 생성).
@@ -32,10 +33,7 @@ public:
 	// 진입 invariant: m_cellCounterBuffer 는 NON_PIXEL_SHADER_RESOURCE, 모든 m_pass2Levels 버퍼는 UNORDERED_ACCESS.
 	// 종료 invariant: 동일 (per-frame 재호출 가능).
 	// 최종 결과: m_pass2Levels[0].output (= cellStart, 전역 exclusive scan).
-	void Pass2(ID3D12GraphicsCommandList* commandList,
-		ID3D12PipelineState* pass2aPSO, ID3D12RootSignature* pass2aRS,
-		ID3D12PipelineState* pass2bPSO, ID3D12RootSignature* pass2bRS,
-		int level = 0);
+	void Pass2(ID3D12GraphicsCommandList* commandList, int level = 0);
 	void Pass2a(ID3D12GraphicsCommandList* commandList, int level);
 	void Pass2b(ID3D12GraphicsCommandList* commandList, int level);
 
@@ -46,6 +44,9 @@ public:
 	//   3) m_pass2Levels[0].output: UAV → NON_PIXEL_SHADER_RESOURCE
 	// 결과: m_sortedSphParticleBuffer 에 cellId 순으로 정렬된 SPHParticle 들.
 	void Pass3(ID3D12GraphicsCommandList* commandList);
+
+	void Sort(ID3D12GraphicsCommandList* commandList);
+	void Compute(ID3D12GraphicsCommandList* commandList);
 
 	void Render(ID3D12GraphicsCommandList* commandList);
 
@@ -110,9 +111,26 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_scatterCounterUpload;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_sortedSphParticleBuffer;    // [sphMaxParticleCount] — Pass3 출력 (정렬된 particle)
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_sortedSphParticleUpload;
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_sortedIndicesBuffer;      
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_sortedIndicesUpload;		 // [cellCount]
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_sortedSphParticleHeap;
 
 	std::vector<UINT>        m_scatterCounter;       // init 용 (zeros)
 	std::vector<SPHParticle> m_sortedSphParticles;   // init 용
+
+	std::string pass0CPSOname = "pass0CPSO";
+	ComputePSO pass0CPSO;
+
+	std::string pass1CPSOname = "pass1CPSO";
+	ComputePSO pass1CPSO;
+
+	std::string pass2aCPSOname = "pass2aCPSO";
+	ComputePSO pass2aCPSO;
+	std::string pass2bCPSOname = "pass2bCPSO";
+	ComputePSO pass2bCPSO;
+
+	std::string pass3CPSOname = "pass3CPSO";
+	ComputePSO pass3CPSO;
 
 // sph particle 계수
 public:

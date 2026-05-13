@@ -18,6 +18,7 @@
 RWStructuredBuffer<SPHParticle> gParticles       : register(u0);
 RWStructuredBuffer<uint>        gScatterCounter  : register(u1);
 RWStructuredBuffer<SPHParticle> gSortedParticles : register(u2);
+RWStructuredBuffer<uint>        gSortedIndices   : register(u3); 
 
 StructuredBuffer<uint>          gParticleCellId  : register(t0);
 StructuredBuffer<uint>          gCellStart       : register(t1);
@@ -37,4 +38,5 @@ void main(uint3 DTid : SV_DispatchThreadID)
 
     uint dst = gCellStart[cellId] + localSlot;
     gSortedParticles[dst] = gParticles[DTid.x];
+    gSortedIndices[dst] = DTid.x;
 }

@@ -63,6 +63,7 @@ protected:
 
 	void Update(float deltaTime);
 	void RenderMeshes(const std::string& psoName, ID3D12GraphicsCommandList* commandList);
+	void SortSPH(int idx);
 	void ComputeSPH(const std::string& psoName, int idx);
 	void RenderSPH(const std::string& psoName, bool clear, bool isFinal);
 	
@@ -112,7 +113,7 @@ private:
 
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_commandQueue;
 
-	UINT computeCommandCount = 4;
+	UINT computeCommandCount = 5;
 	std::vector<Microsoft::WRL::ComPtr<ID3D12CommandAllocator>> m_computeCommandAllocators;
 	std::vector<Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>> m_computeCommandLists;
 

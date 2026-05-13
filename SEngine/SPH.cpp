@@ -1,6 +1,24 @@
 ﻿#include "SPH.h"
 #include <random>
+#include <iostream>
+
 #include "GraphicsCommon.h"
+#include "Renderer.h"
+#include "RootSignature.h"
+
+using namespace Renderer;
+
+void SetPSO(const std::string& psoName, ComputePSO& pso)
+{
+	if (m_CPSOs.find(psoName) != m_CPSOs.end())
+	{
+		pso = m_CPSOs[psoName];
+	}
+	else
+	{
+		std::cout << "can't find pso -" << psoName << '\n';
+	}
+}
 
 SPH::SPH()
 {
@@ -21,10 +39,10 @@ void SPH::Initialize(ID3D12Device5* device, ID3D12CommandAllocator* cmdAlloc, ID
 	//   rho0  = 1/dx_eq²      연속체 한계 ρ ≈ m·n = m/dx² (m=1)
 	particleSpacing = 2.0f * particleRadius;
 	h = 1.3f * particleSpacing;
-	rho0 = 1.0f / (particleSpacing * particleSpacing);
+	rho0 = 1.0f / (particleSpacing * particleSpacing* particleSpacing);
 
 	m_sphParticleConstant.h = h;
-	m_sphParticleConstant.hd = 1.0f / (h * h);
+	m_sphParticleConstant.hd = 1.0f / (h * h* h);
 	m_sphParticleConstant.kernelCoefficient = kernelCoeff;
 	m_sphParticleConstant.rho0 = rho0;
 	m_sphParticleConstant.k = k;
@@ -32,7 +50,7 @@ void SPH::Initialize(ID3D12Device5* device, ID3D12CommandAllocator* cmdAlloc, ID
 
 	m_sphParticleConstant.gGridMin = Vector3(-0.5f, -0.5f, -0.5f);
 	m_sphParticleConstant.gGridMax = Vector3(0.5f, 0.5f, 0.5f);
-	m_sphParticleConstant.gCellSize = h;
+	m_sphParticleConstant.gCellSize = 2.f * h;
 
 	Vector3 gridLen = m_sphParticleConstant.gGridMax - m_sphParticleConstant.gGridMin;
 	gridDim = Vector3(int(gridLen.x / h), int(gridLen.y / h), int(gridLen.z / h));
@@ -63,8 +81,8 @@ void SPH::Initialize(ID3D12Device5* device, ID3D12CommandAllocator* cmdAlloc, ID
 	utility->CreateDescriptorHeap(2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, m_sphParticleUAVHeap[0], 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 	utility->CreateDescriptorHeap(2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, m_sphParticleUAVHeap[1], 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 	utility->CreateDescriptorHeap(2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, m_sphParticleSRVHeap, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
-	utility->CreateDescriptorHeap(2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, m_sortUAVHeap, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
-
+	utility->CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, m_sortedSphParticleHeap, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+	
 	InitParticleCPU();
 	InitParticleGPU(cmdAlloc, cmdList);
 	
@@ -80,6 +98,11 @@ void SPH::Initialize(ID3D12Device5* device, ID3D12CommandAllocator* cmdAlloc, ID
 		scanCB.gScanCount = lvl.scanCount;
 		memcpy(lvl.pCb, &scanCB, sizeof(SPHParticleLocalConstant));
 	}
+	SetPSO(pass0CPSOname, pass0CPSO);
+	SetPSO(pass1CPSOname, pass1CPSO);
+	SetPSO(pass2aCPSOname, pass2aCPSO);
+	SetPSO(pass2bCPSOname, pass2bCPSO);
+	SetPSO(pass3CPSOname, pass3CPSO);
 }
 
 void SPH::Tick(float deltaTime)
@@ -99,32 +122,34 @@ void SPH::Tick(float deltaTime)
 	memcpy(pSPHParticleLocalCB, &m_sphParticleConstant, sizeof(SPHParticleLocalConstant));
 }
 
-
-void SPH::Compute(ID3D12GraphicsCommandList* commandList)
+// 버퍼 clear용
+void SPH::Pass0(ID3D12GraphicsCommandList* commandList)
 {
-	ID3D12DescriptorHeap* heap = GetParticleUAVHeap(m_sphHeapIdx);
-	ID3D12DescriptorHeap* heaps[] = {
-		heap
-	};
+	commandList->SetPipelineState(pass0CPSO.GetPSO());
+	commandList->SetComputeRootSignature(pass0CPSO.GetRootSignature()->GetSignature());
+	
+	commandList->SetComputeRootUnorderedAccessView(0, m_cellCounterBuffer->GetGPUVirtualAddress());
+	commandList->SetComputeRootUnorderedAccessView(1, m_scatterCounterBuffer->GetGPUVirtualAddress());
+	commandList->SetComputeRootConstantBufferView(2, m_sphParticleLocalCB->GetGPUVirtualAddress());
 
-	commandList->SetDescriptorHeaps(1, heaps);
-	commandList->SetComputeRootDescriptorTable(0, heap->GetGPUDescriptorHandleForHeapStart());
-	commandList->SetComputeRootConstantBufferView(1, m_sphParticleLocalCB->GetGPUVirtualAddress());
-
-	UINT threadXCount = (sphMaxParticleCount + GROUP_SIZE - 1) / GROUP_SIZE;
-	commandList->Dispatch(threadXCount, 1, 1);
+	UINT groupCount = (cellCount + GROUP_SIZE - 1) / GROUP_SIZE;
+	commandList->Dispatch(groupCount, 1, 1);
 }
 
 void SPH::Pass1(ID3D12GraphicsCommandList* commandList)
 {
 	auto& particle = m_sphParticleBuffer[m_sphHeapIdx];
-	
+
+	commandList->SetPipelineState(pass1CPSO.GetPSO());
+	commandList->SetComputeRootSignature(pass1CPSO.GetRootSignature()->GetSignature());
+
 	commandList->SetComputeRootUnorderedAccessView(0, particle->GetGPUVirtualAddress());
 	commandList->SetComputeRootUnorderedAccessView(1, m_cellCounterBuffer->GetGPUVirtualAddress());
 	commandList->SetComputeRootUnorderedAccessView(2, m_particleCellIdBuffer->GetGPUVirtualAddress());
+	commandList->SetComputeRootConstantBufferView(3, m_sphParticleLocalCB->GetGPUVirtualAddress());
 
-	UINT threadXCount = (sphMaxParticleCount + GROUP_SIZE - 1) / GROUP_SIZE;
-	commandList->Dispatch(threadXCount, 1, 1);
+	UINT groupXCount = (sphMaxParticleCount + GROUP_SIZE - 1) / GROUP_SIZE;
+	commandList->Dispatch(groupXCount, 1, 1);
 }
 
 // Pass2a: per-block exclusive scan + emit block totals.
@@ -172,17 +197,15 @@ void SPH::Pass2b(ID3D12GraphicsCommandList* commandList, int level)
 // 진입 조건: m_cellCounterBuffer 가 NON_PIXEL_SHADER_RESOURCE 상태.
 //           m_pass2Levels 모든 buffer 들이 UNORDERED_ACCESS 상태.
 // 종료 조건: 모든 buffer 상태가 진입 때와 동일하게 복원됨 (per-frame 재실행 가능).
-void SPH::Pass2(ID3D12GraphicsCommandList* commandList,
-	ID3D12PipelineState* pass2aPSO, ID3D12RootSignature* pass2aRS,
-	ID3D12PipelineState* pass2bPSO, ID3D12RootSignature* pass2bRS,
-	int level)
+void SPH::Pass2(ID3D12GraphicsCommandList* commandList,	int level)
 {
 	auto& lvl = m_pass2Levels[level];
 	const int lastLevel = (int)m_pass2Levels.size() - 1;
 
 	// ── Pass2a dispatch ──────────────────────────────────────────────────
-	commandList->SetPipelineState(pass2aPSO);
-	commandList->SetComputeRootSignature(pass2aRS);
+	commandList->SetPipelineState(pass2aCPSO.GetPSO());
+	commandList->SetComputeRootSignature(pass2aCPSO.GetRootSignature()->GetSignature());
+
 	Pass2a(commandList, level);
 
 	// terminal level: blockCount==1 → 단일 블록 안에서 scan 완료. 더 재귀 안 함.
@@ -196,7 +219,7 @@ void SPH::Pass2(ID3D12GraphicsCommandList* commandList,
 	}
 
 	// ── 재귀 ─────────────────────────────────────────────────────────────
-	Pass2(commandList, pass2aPSO, pass2aRS, pass2bPSO, pass2bRS, level + 1);
+	Pass2(commandList, level + 1);
 
 	// 재귀에서 돌아온 시점: m_pass2Levels[level+1].output 가 전역 scan 완료 상태 (UAV).
 	// Pass2b 는 이걸 SRV 로 읽음.
@@ -207,8 +230,8 @@ void SPH::Pass2(ID3D12GraphicsCommandList* commandList,
 	}
 
 	// ── Pass2b dispatch ──────────────────────────────────────────────────
-	commandList->SetPipelineState(pass2bPSO);
-	commandList->SetComputeRootSignature(pass2bRS);
+	commandList->SetPipelineState(pass2bCPSO.GetPSO());
+	commandList->SetComputeRootSignature(pass2bCPSO.GetRootSignature()->GetSignature());
 	Pass2b(commandList, level);
 
 	// ── 상태 복원 (다음 프레임 호출에서 UAV 로 다시 쓸 수 있도록) ─────────
@@ -235,13 +258,40 @@ void SPH::Pass2(ID3D12GraphicsCommandList* commandList,
 void SPH::Pass3(ID3D12GraphicsCommandList* commandList)
 {
 	auto& particle = m_sphParticleBuffer[m_sphHeapIdx];
+	commandList->SetPipelineState(pass3CPSO.GetPSO());
+	commandList->SetComputeRootSignature(pass3CPSO.GetRootSignature()->GetSignature());
 
 	commandList->SetComputeRootUnorderedAccessView(0, particle->GetGPUVirtualAddress());
 	commandList->SetComputeRootUnorderedAccessView(1, m_scatterCounterBuffer->GetGPUVirtualAddress());
 	commandList->SetComputeRootUnorderedAccessView(2, m_sortedSphParticleBuffer->GetGPUVirtualAddress());
-	commandList->SetComputeRootShaderResourceView (3, m_particleCellIdBuffer->GetGPUVirtualAddress());
-	commandList->SetComputeRootShaderResourceView (4, m_pass2Levels[0].output->GetGPUVirtualAddress());
-	commandList->SetComputeRootConstantBufferView (5, m_sphParticleLocalCB->GetGPUVirtualAddress());
+	commandList->SetComputeRootUnorderedAccessView(3, m_sortedIndicesBuffer->GetGPUVirtualAddress());
+	commandList->SetComputeRootShaderResourceView (4, m_particleCellIdBuffer->GetGPUVirtualAddress());
+	commandList->SetComputeRootShaderResourceView (5, m_pass2Levels[0].output->GetGPUVirtualAddress());
+	commandList->SetComputeRootConstantBufferView (6, m_sphParticleLocalCB->GetGPUVirtualAddress());
+
+	UINT groupXCount = (sphMaxParticleCount + GROUP_SIZE - 1) / GROUP_SIZE;
+	commandList->Dispatch(groupXCount, 1, 1);
+}
+
+void SPH::Sort(ID3D12GraphicsCommandList* commandList)
+{
+
+}
+
+void SPH::Compute(ID3D12GraphicsCommandList* commandList)
+{
+	auto& prevParticles = m_sphParticleBuffer[m_sphHeapIdx];
+	auto& currParticles = m_sphParticleBuffer[1 - m_sphHeapIdx];
+
+	commandList->SetComputeRootUnorderedAccessView(0, prevParticles->GetGPUVirtualAddress());
+	commandList->SetComputeRootUnorderedAccessView(1, currParticles->GetGPUVirtualAddress());
+	commandList->SetComputeRootUnorderedAccessView(2, m_sortedSphParticleBuffer->GetGPUVirtualAddress());
+	commandList->SetComputeRootUnorderedAccessView(3, m_sortedIndicesBuffer->GetGPUVirtualAddress());
+
+	commandList->SetComputeRootShaderResourceView(4, m_pass2Levels[0].output->GetGPUVirtualAddress());
+	commandList->SetComputeRootShaderResourceView(5, m_cellCounterBuffer->GetGPUVirtualAddress());
+
+	commandList->SetComputeRootConstantBufferView(6, m_sphParticleLocalCB->GetGPUVirtualAddress());
 
 	UINT threadXCount = (sphMaxParticleCount + GROUP_SIZE - 1) / GROUP_SIZE;
 	commandList->Dispatch(threadXCount, 1, 1);
@@ -258,7 +308,7 @@ void SPH::Render(ID3D12GraphicsCommandList* commandList)
 	CD3DX12_GPU_DESCRIPTOR_HANDLE sphHandle(m_sphParticleSRVHeap->GetGPUDescriptorHandleForHeapStart(), m_sphHeapIdx, m_cbvSrvDescriptorSize);
 	commandList->SetDescriptorHeaps(1, heaps);
 	commandList->SetGraphicsRootDescriptorTable(0, sphHandle);
-
+	commandList->SetGraphicsRootConstantBufferView(2, m_sphParticleLocalCB->GetGPUVirtualAddress());
 
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
 	commandList->DrawInstanced(sphCurrParticleCount, 1, 0, 0);
@@ -276,7 +326,6 @@ void SPH::InitParticleCPU()
 {
 	sphCurrParticleCount = 0;
 	countTick = 0.f;
-
 	
 	std::random_device rd;
 	std::mt19937 gen(rd());
@@ -295,15 +344,16 @@ void SPH::InitParticleCPU()
 		Vector3(1.0f, 0.75f, 0.8f), // Pink
 		Vector3(0.5f, 1.0f, 0.5f), // Light Green
 	};
-	Vector3 basePosition(0.f, 0.f, 0.f);  // [-1,1]
-	//Vector3 basePosition(0.f, 0.2f, 0.f);  // [-1,1]
+	//Vector3 basePosition(0.f, 0.f, 0.f);  // [-1,1]
+	Vector3 basePosition(-0.45f, 0.2f, 0.f);  // [-0.5,0.5]
 	Vector3 baseVelocity(1.f, 0.f, 0.f);
 
 	float PI = 3.141592f;
 	std::uniform_real_distribution<float> randomTheta(-PI, PI);
 	std::uniform_int_distribution<int> randomColor(0, 9);
-	//std::uniform_real_distribution<float> randomDist(0.f, 0.25f);
-	std::uniform_real_distribution<float> randomDist(-0.48f, 0.48f);
+	std::uniform_real_distribution<float> randomDist(0.f, 0.25f);
+	std::uniform_real_distribution<float> randomDistX(-0.2f, 0.2f);
+	//std::uniform_real_distribution<float> randomDist(-0.48f, 0.48f);
 	std::uniform_real_distribution<float> velDist(1.f, 2.f);
 
 	// structured buffer cpu 데이터 초기화
@@ -311,8 +361,8 @@ void SPH::InitParticleCPU()
 	{
 		SPHParticle& p = m_sphParticles[i];
 		float theta = randomTheta(gen);
-		//p.position = basePosition + Vector3(0.f, std::cos(theta), -std::sin(theta)) * randomDist(gen);
-		p.position = basePosition + Vector3(randomDist(gen), randomDist(gen), randomDist(gen));
+		p.position = basePosition + Vector3(randomDistX(gen), std::cos(theta), -std::sin(theta)) * randomDist(gen);
+		//p.position = basePosition + Vector3(randomDist(gen), randomDist(gen), randomDist(gen));
 		p.velocity = baseVelocity * velDist(gen);
 		p.color = Vector3(0.0f, 0.0f, 1.0f);
 		//p.color = colors[randomColor(gen)];
@@ -340,6 +390,7 @@ void SPH::InitParticleGPU(ID3D12CommandAllocator* cmdAlloc, ID3D12GraphicsComman
 		Graphics::utility->CreateBuffer(m_sphParticles, m_sphParticleBuffer[i], m_sphParticleUpload[i], uavFlag, cmdList);
 	}
 	Graphics::utility->CreateBuffer(m_cellCounter, m_cellCounterBuffer, m_cellCounterUpload, uavFlag, cmdList);
+	Graphics::utility->CreateBuffer(m_particleCellId, m_sortedIndicesBuffer, m_sortedIndicesUpload, uavFlag, cmdList);
 	Graphics::utility->CreateBuffer(m_particleCellId, m_particleCellIdBuffer, m_particleCellIdUpload, uavFlag, cmdList);
 	Graphics::utility->CreateBuffer(m_sphParticles, m_sortedSphParticleBuffer, m_sortedSphParticleUpload, uavFlag, cmdList);
 	Graphics::utility->CreateBuffer(m_scatterCounter, m_scatterCounterBuffer, m_scatterCounterUpload, uavFlag, cmdList);
@@ -373,6 +424,6 @@ void SPH::InitParticleGPU(ID3D12CommandAllocator* cmdAlloc, ID3D12GraphicsComman
 	utility->CreateStructuredResourceView(m_sphParticleBuffer[1], DXGI_FORMAT_UNKNOWN, srv_handle, DescriptorType::SRV, sphMaxParticleCount, sizeof(SPHParticle));
 
 	// 정렬용 view 생성
-	//utility->CreateStructuredResourceView(m_cellCounterBuffer, DXGI_FORMAT_UNKNOWN, srv_handle, DescriptorType::SRV, sphMaxParticleCount, sizeof(SPHParticle));
+	utility->CreateStructuredResourceView(m_sortedSphParticleBuffer, DXGI_FORMAT_UNKNOWN, m_sortedSphParticleHeap->GetCPUDescriptorHandleForHeapStart(), DescriptorType::SRV, sphMaxParticleCount, sizeof(SPHParticle));
 
 }

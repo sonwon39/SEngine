@@ -23,9 +23,14 @@ namespace Graphics
 	RootSignature g_U2_C1_RS;
 	RootSignature g_S1_RS;
 	RootSignature g_S1_C1_RS;
+	RootSignature g_S1_C2_RS;
 	RootSignature g_SUUC_RS;
 	RootSignature g_USC_RS;
-	RootSignature g_UUU_RS;
+	RootSignature g_UUUC_RS;
+	RootSignature g_UC_RS;
+	RootSignature g_UUC_RS;
+	RootSignature g_UUUSSC_RS;
+	RootSignature g_UUUUSSC_RS;
 
 	std::shared_ptr<GraphicsUtils::Utility> utility;
 }
@@ -117,6 +122,12 @@ void Graphics::InitializeCommonState(const Microsoft::WRL::ComPtr<ID3D12Device5>
 	g_S1_C1_RS[1].InitCBV(0);
 	g_S1_C1_RS.Finalize(device, L"g_S1_C1_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
+	g_S1_C2_RS.Reset(3, 0);
+	g_S1_C2_RS[0].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0, 1);
+	g_S1_C2_RS[1].InitCBV(0);
+	g_S1_C2_RS[2].InitCBV(1);
+	g_S1_C2_RS.Finalize(device, L"g_S1_C2_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
 	g_SUUC_RS.Reset(4, 0);
 	g_SUUC_RS[0].InitSRV(0);
 	g_SUUC_RS[1].InitUAV(0);
@@ -130,11 +141,42 @@ void Graphics::InitializeCommonState(const Microsoft::WRL::ComPtr<ID3D12Device5>
 	g_USC_RS[2].InitCBV(0);
 	g_USC_RS.Finalize(device, L"g_USC_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
-	g_UUU_RS.Reset(3, 0);
-	g_UUU_RS[0].InitUAV(0);
-	g_UUU_RS[1].InitUAV(1);
-	g_UUU_RS[2].InitUAV(2);
-	g_UUU_RS.Finalize(device, L"g_UUU_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	g_UUUC_RS.Reset(4, 0);
+	g_UUUC_RS[0].InitUAV(0);
+	g_UUUC_RS[1].InitUAV(1);
+	g_UUUC_RS[2].InitUAV(2);
+	g_UUUC_RS[3].InitCBV(0);
+	g_UUUC_RS.Finalize(device, L"g_UUUC_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	g_UC_RS.Reset(2, 0);
+	g_UC_RS[0].InitUAV(0);
+	g_UC_RS[1].InitCBV(0);
+	g_UC_RS.Finalize(device, L"g_UC_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	
+	g_UUC_RS.Reset(3, 0);
+	g_UUC_RS[0].InitUAV(0);
+	g_UUC_RS[1].InitUAV(1);
+	g_UUC_RS[2].InitCBV(0);
+	g_UUC_RS.Finalize(device, L"g_UUC_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	
+	g_UUUSSC_RS.Reset(6, 0);
+	g_UUUSSC_RS[0].InitUAV(0);
+	g_UUUSSC_RS[1].InitUAV(1);
+	g_UUUSSC_RS[2].InitUAV(2);
+	g_UUUSSC_RS[3].InitSRV(0);
+	g_UUUSSC_RS[4].InitSRV(1);
+	g_UUUSSC_RS[5].InitCBV(0);
+	g_UUUSSC_RS.Finalize(device, L"g_UUUSSC_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	g_UUUUSSC_RS.Reset(7, 0);
+	g_UUUUSSC_RS[0].InitUAV(0);
+	g_UUUUSSC_RS[1].InitUAV(1);
+	g_UUUUSSC_RS[2].InitUAV(2);
+	g_UUUUSSC_RS[3].InitUAV(3);
+	g_UUUUSSC_RS[4].InitSRV(0);
+	g_UUUUSSC_RS[5].InitSRV(1);
+	g_UUUUSSC_RS[6].InitCBV(0);
+	g_UUUUSSC_RS.Finalize(device, L"g_UUUUSSC_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 }
 

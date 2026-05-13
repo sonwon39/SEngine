@@ -1,9 +1,27 @@
 ﻿#define HLSL
 #include "Particle.h"
 
-RWStructuredBuffer<SPHParticle> prev_particles : register(u0);
-RWStructuredBuffer<SPHParticle> curr_particles : register(u1);
+RWStructuredBuffer<SPHParticle> prev_particles   : register(u0);
+RWStructuredBuffer<SPHParticle> curr_particles   : register(u1);
+RWStructuredBuffer<SPHParticle> sorted_particles : register(u2);
+RWStructuredBuffer<uint>        gSortedIndices   : register(u3); 
+
+StructuredBuffer<uint>          gCellStart       : register(t0);
+StructuredBuffer<uint> 		    gCellCounter 	 : register(t1);
+
 ConstantBuffer<SPHParticleLocalConstant> gParticleLocalCB : register(b0);
+
+uint LinearCellId(int3 c)
+{
+	return uint(c.x) + uint(c.y) * uint(gParticleLocalCB.gGridDim.x) + uint(c.z) * uint(gParticleLocalCB.gGridDim.x) * uint(gParticleLocalCB.gGridDim.y);
+}
+
+uint CellIdFromPos(float3 p)
+{
+	int3 c = int3(floor((p - gParticleLocalCB.gGridMin) / gParticleLocalCB.gCellSize));
+	c = clamp(c, int3(0, 0, 0), int3(gParticleLocalCB.gGridDim) - 1);
+	return LinearCellId(c);
+}
 
 float Kernel(float q)
 {
