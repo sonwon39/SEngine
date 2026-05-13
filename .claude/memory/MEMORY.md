@@ -1,0 +1,7 @@
+- [SPH stiffness recommendation calibration](feedback_sph_stiffness.md) — for SEngine's explicit-Euler SPH, start k much lower than weakly-compressible theory (k ≈ 10–100, not 10³–10⁴)
+- [No LaTeX math in responses](feedback_no_latex.md) — UI renders CommonMark only; use Unicode/ASCII (ρ, Σ, ², ≈) and code fences instead of `$$...$$`
+- [SPH project goal and phased roadmap](project_sph_roadmap.md) — target sph14 Figure 1; agreed Phase 1 (spatial grid) → 7 plan; DFSPH+Volume Maps preferred over IISPH+Akinci
+- [SPH papers and reference implementations](reference_sph_resources.md) — sph14/sph22 PDFs, sph14_summary.md notes, SPlisHSPlasH library, key post-2014 paper refs
+- [SEngine layout and execution flow](reference_sengine_layout.md) — main → SimpleApp → RenderEngine → Tick/SPHSimulation; command list pools; where to plug new GPU work
+- [SEngine shader build pipeline](reference_sengine_shaders.md) — FxCompile rule, `$(OutDir)CompiledShaders/<Name>.h` + `g_p<Name>` convention, SM 6.0 (x64 only)
+- [SEngine D3D12 helpers and root-signature pool](reference_sengine_helpers.md) — `Graphics::utility`, named common RSes (`g_U2_C1_RS` etc.), `ThrowIfFailed`, PSO wrappers
