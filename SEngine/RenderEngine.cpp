@@ -404,11 +404,8 @@ void RenderEngine::SortSPH(int idx)
 	alloc->Reset();
 	ThrowIfFailed(cmdList->Reset(alloc, nullptr));
 
-	m_sph->Pass0(cmdList);
-	m_sph->Pass1(cmdList);
-	m_sph->Pass2(cmdList);
-	m_sph->Pass3(cmdList);
 
+	m_sph->Sort(cmdList);
 	cmdList->Close();
 
 	ID3D12CommandList* commands[] = { cmdList };

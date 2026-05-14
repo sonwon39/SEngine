@@ -58,8 +58,8 @@ public:
 private:
 	int sphCurrParticleCount = 0;
 	float countTick = 0.f;
-	float sphCountIncreaseSpeed = 2000.f;
-	int sphMaxParticleCount = 30000;
+	float sphCountIncreaseSpeed = 1000.f;
+	int sphMaxParticleCount = 50000;
 
 	std::vector<SPHParticle> m_sphParticles;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_sphParticleBuffer[2];
@@ -134,13 +134,13 @@ private:
 
 // sph particle 계수
 public:
-	float particleRadius = 0.01f;
+	float particleRadius = 0.02f;
 	float particleSpacing;
 	float h;
 
 	float kernelCoeff = 3.0f / (2.0f * 3.141592f);
 	float rho0;       // particleRadius로부터 Initialize()에서 자동 계산
-	float k = 1.f;
+	float k = 5.f;
 	float mu = 10.f;
 
 private:

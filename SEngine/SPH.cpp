@@ -38,7 +38,7 @@ void SPH::Initialize(ID3D12Device5* device, ID3D12CommandAllocator* cmdAlloc, ID
 	//   h     = 1.3·dx_eq     cubic spline 2D 권장 — support 안에 이웃 ~21개
 	//   rho0  = 1/dx_eq²      연속체 한계 ρ ≈ m·n = m/dx² (m=1)
 	particleSpacing = 2.0f * particleRadius;
-	h = 1.3f * particleSpacing;
+	h = particleSpacing;
 	rho0 = 1.0f / (particleSpacing * particleSpacing* particleSpacing);
 
 	m_sphParticleConstant.h = h;
@@ -53,7 +53,7 @@ void SPH::Initialize(ID3D12Device5* device, ID3D12CommandAllocator* cmdAlloc, ID
 	m_sphParticleConstant.gCellSize = 2.f * h;
 
 	Vector3 gridLen = m_sphParticleConstant.gGridMax - m_sphParticleConstant.gGridMin;
-	gridDim = Vector3(int(gridLen.x / h), int(gridLen.y / h), int(gridLen.z / h));
+	gridDim = Vector3(int(gridLen.x / (2.f * h)), int(gridLen.y / (2.f * h)), int(gridLen.z / (2.f * h)));
 	cellCount = int(gridDim.x * gridDim.y * gridDim.z);
 
 	m_sphParticleConstant.gGridDim = gridDim;
@@ -118,7 +118,7 @@ void SPH::Tick(float deltaTime)
 	}
 
 	m_sphParticleConstant.particleCount = sphCurrParticleCount;
-	m_sphParticleConstant.dt = 1 / 300.f;
+	m_sphParticleConstant.dt = 1 / 240.f;
 	memcpy(pSPHParticleLocalCB, &m_sphParticleConstant, sizeof(SPHParticleLocalConstant));
 }
 
@@ -273,9 +273,60 @@ void SPH::Pass3(ID3D12GraphicsCommandList* commandList)
 	commandList->Dispatch(groupXCount, 1, 1);
 }
 
+// 한 프레임의 counting-sort 파이프라인 전체 (Pass0 → 1 → 2 → 3) 를
+// 올바른 GPU sync barrier 와 함께 한 command list 안에서 실행.
+//
+// 진입 상태 가정: 관련 buffer 들이 COMMON (이전 ExecuteCommandLists 후 decay).
+//   → 첫 SetCompute*ResourceView 호출이 implicit promotion (COMMON → UAV/SRV).
+// 종료 상태 (decay 직전):
+//   m_cellCounterBuffer, m_particleCellIdBuffer, m_pass2Levels[0].output → NON_PIXEL_SHADER_RESOURCE
+//   m_scatterCounterBuffer, m_sortedSphParticleBuffer, m_sortedIndicesBuffer → UAV
+//   Pass2 내부 level buffer 들 → UAV (Pass2 자체 invariant)
+// 다음 ExecuteCommandLists 후 모두 COMMON 으로 decay → 다음 프레임 재진입 가능.
 void SPH::Sort(ID3D12GraphicsCommandList* commandList)
 {
+	Pass0(commandList);
 
+	// Pass0 → Pass1: cellCounter 의 0-clear 가 Pass1 의 InterlockedAdd 보다 먼저 끝나야 함.
+	{
+		D3D12_RESOURCE_BARRIER b = CD3DX12_RESOURCE_BARRIER::UAV(m_cellCounterBuffer.Get());
+		commandList->ResourceBarrier(1, &b);
+	}
+
+	Pass1(commandList);
+
+	// Pass1 → Pass2: Pass2a 의 level-0 입력이 m_cellCounterBuffer (SRV 슬롯).
+	//   Transition 은 prior UAV write 도 자동 drain 시켜주므로 별도 UAV barrier 불필요.
+	//   m_particleCellIdBuffer 는 Pass2 가 안 건드리므로 Pass3 직전에 한 번에 transition.
+	{
+		D3D12_RESOURCE_BARRIER b = CD3DX12_RESOURCE_BARRIER::Transition(
+			m_cellCounterBuffer.Get(),
+			D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		commandList->ResourceBarrier(1, &b);
+	}
+
+	Pass2(commandList);
+
+	// Pass2 → Pass3:
+	//   Pass3 의 SRV 입력 둘 (cellStart = m_pass2Levels[0].output, particleCellId) 를 UAV→SRV.
+	//   m_scatterCounterBuffer 는 Pass0 가 clear, Pass3 가 InterlockedAdd — 사이 UAV barrier 필요.
+	{
+		D3D12_RESOURCE_BARRIER bs[3] = {
+			CD3DX12_RESOURCE_BARRIER::Transition(
+				m_pass2Levels[0].output.Get(),
+				D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE),
+			CD3DX12_RESOURCE_BARRIER::Transition(
+				m_particleCellIdBuffer.Get(),
+				D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE),
+			CD3DX12_RESOURCE_BARRIER::UAV(m_scatterCounterBuffer.Get()),
+		};
+		commandList->ResourceBarrier(3, bs);
+	}
+
+	Pass3(commandList);
 }
 
 void SPH::Compute(ID3D12GraphicsCommandList* commandList)
@@ -293,7 +344,7 @@ void SPH::Compute(ID3D12GraphicsCommandList* commandList)
 
 	commandList->SetComputeRootConstantBufferView(6, m_sphParticleLocalCB->GetGPUVirtualAddress());
 
-	UINT threadXCount = (sphMaxParticleCount + GROUP_SIZE - 1) / GROUP_SIZE;
+	UINT threadXCount = (sphCurrParticleCount + GROUP_SIZE - 1) / GROUP_SIZE;
 	commandList->Dispatch(threadXCount, 1, 1);
 }
 
@@ -345,13 +396,13 @@ void SPH::InitParticleCPU()
 		Vector3(0.5f, 1.0f, 0.5f), // Light Green
 	};
 	//Vector3 basePosition(0.f, 0.f, 0.f);  // [-1,1]
-	Vector3 basePosition(-0.45f, 0.2f, 0.f);  // [-0.5,0.5]
+	Vector3 basePosition(-0.5f + 2*h , 0.6f, 0.f);  // [-0.5,0.5]
 	Vector3 baseVelocity(1.f, 0.f, 0.f);
 
 	float PI = 3.141592f;
 	std::uniform_real_distribution<float> randomTheta(-PI, PI);
 	std::uniform_int_distribution<int> randomColor(0, 9);
-	std::uniform_real_distribution<float> randomDist(0.f, 0.25f);
+	std::uniform_real_distribution<float> randomDist(0.f, 0.4f);
 	std::uniform_real_distribution<float> randomDistX(-0.2f, 0.2f);
 	//std::uniform_real_distribution<float> randomDist(-0.48f, 0.48f);
 	std::uniform_real_distribution<float> velDist(1.f, 2.f);
@@ -361,7 +412,7 @@ void SPH::InitParticleCPU()
 	{
 		SPHParticle& p = m_sphParticles[i];
 		float theta = randomTheta(gen);
-		p.position = basePosition + Vector3(randomDistX(gen), std::cos(theta), -std::sin(theta)) * randomDist(gen);
+		p.position = basePosition + Vector3(0.f, std::cos(theta), -std::sin(theta)) * randomDist(gen);
 		//p.position = basePosition + Vector3(randomDist(gen), randomDist(gen), randomDist(gen));
 		p.velocity = baseVelocity * velDist(gen);
 		p.color = Vector3(0.0f, 0.0f, 1.0f);
