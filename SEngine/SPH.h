@@ -138,7 +138,7 @@ public:
 	float particleSpacing;
 	float h;
 
-	float kernelCoeff = 15.0f / (7.0f * 3.141592f);
+	float kernelCoeff = 3.0f / (2.0f * 3.141592f);
 	float rho0;       // particleRadius로부터 Initialize()에서 자동 계산
 	float k = 1.f;
 	float mu = 10.f;
