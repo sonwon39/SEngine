@@ -12,6 +12,7 @@ void main( uint3 DTid : SV_DispatchThreadID )
 
 	float maxX = gParticleLocalCB.gGridMax.x;
 	float maxZ = gParticleLocalCB.gGridMax.z;
+	float maxY = gParticleLocalCB.gGridMax.y;
 	
     if (i >= gParticleLocalCB.particleCount) return;
 
@@ -27,6 +28,12 @@ void main( uint3 DTid : SV_DispatchThreadID )
 		curr_particles[i].position.y = minY + over * 0.2f; // 반사 비율만큼 되돌리기
 		curr_particles[i].velocity.y *= -0.2f;
     }
+	if (curr_particles[i].position.y >= maxY && curr_particles[i].velocity.y > 0.f)
+	{
+		float over = abs(maxY - curr_particles[i].position.y); // 박힌 깊이
+		curr_particles[i].position.y = maxY - over * 0.2f; // 반사 비율만큼 되돌리기
+		curr_particles[i].velocity.y *= -0.2;
+	}
 
 	// x축 경계조건
 	if (curr_particles[i].position.x <= minX && curr_particles[i].velocity.x < 0.f)

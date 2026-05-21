@@ -48,12 +48,13 @@ void SPH::Initialize(ID3D12Device5* device, ID3D12CommandAllocator* cmdAlloc, ID
 	m_sphParticleConstant.k = k;
 	m_sphParticleConstant.mu = mu;
 
-	m_sphParticleConstant.gGridMin = Vector3(-0.5f, -0.5f, -0.5f);
-	m_sphParticleConstant.gGridMax = Vector3(0.5f, 0.5f, 0.5f);
-	m_sphParticleConstant.gCellSize = 2.f * h;
+	m_sphParticleConstant.gGridMin = Vector3(-0.75, -0.9, -0.75);
+	m_sphParticleConstant.gGridMax = Vector3( 0.75,  0.9,  0.75);
+	cellSize = 2*h;
+	m_sphParticleConstant.gCellSize = cellSize;
 
 	Vector3 gridLen = m_sphParticleConstant.gGridMax - m_sphParticleConstant.gGridMin;
-	gridDim = Vector3(int(gridLen.x / (2.f * h)), int(gridLen.y / (2.f * h)), int(gridLen.z / (2.f * h)));
+	gridDim = Vector3(int(gridLen.x / (cellSize)), int(gridLen.y / (cellSize)), int(gridLen.z / (cellSize)));
 	cellCount = int(gridDim.x * gridDim.y * gridDim.z);
 
 	m_sphParticleConstant.gGridDim = gridDim;
@@ -118,7 +119,7 @@ void SPH::Tick(float deltaTime)
 	}
 
 	m_sphParticleConstant.particleCount = sphCurrParticleCount;
-	m_sphParticleConstant.dt = 1 / 240.f;
+	m_sphParticleConstant.dt = 1 / 300.f;
 	memcpy(pSPHParticleLocalCB, &m_sphParticleConstant, sizeof(SPHParticleLocalConstant));
 }
 
@@ -382,29 +383,13 @@ void SPH::InitParticleCPU()
 	std::mt19937 gen(rd());
 
 	m_sphParticles.resize(sphMaxParticleCount);
-	std::vector<Vector3> colors =
-	{
-		Vector3(1.0f, 0.0f, 0.0f), // Red
-		Vector3(0.0f, 1.0f, 0.0f), // Green
-		Vector3(0.0f, 0.0f, 1.0f), // Blue
-		Vector3(1.0f, 1.0f, 0.0f), // Yellow
-		Vector3(1.0f, 0.0f, 1.0f), // Magenta
-		Vector3(0.0f, 1.0f, 1.0f), // Cyan
-		Vector3(1.0f, 0.5f, 0.0f), // Orange
-		Vector3(0.6f, 0.2f, 1.0f), // Purple
-		Vector3(1.0f, 0.75f, 0.8f), // Pink
-		Vector3(0.5f, 1.0f, 0.5f), // Light Green
-	};
-	//Vector3 basePosition(0.f, 0.f, 0.f);  // [-1,1]
-	Vector3 basePosition(-0.5f + 2*h , 0.6f, 0.f);  // [-0.5,0.5]
+	
+	Vector3 basePosition(-0.7f, 0.4f, 0.f);  // [-0.5,0.5]
 	Vector3 baseVelocity(1.f, 0.f, 0.f);
 
 	float PI = 3.141592f;
 	std::uniform_real_distribution<float> randomTheta(-PI, PI);
-	std::uniform_int_distribution<int> randomColor(0, 9);
 	std::uniform_real_distribution<float> randomDist(0.f, 0.4f);
-	std::uniform_real_distribution<float> randomDistX(-0.2f, 0.2f);
-	//std::uniform_real_distribution<float> randomDist(-0.48f, 0.48f);
 	std::uniform_real_distribution<float> velDist(1.f, 2.f);
 
 	// structured buffer cpu 데이터 초기화
@@ -413,10 +398,8 @@ void SPH::InitParticleCPU()
 		SPHParticle& p = m_sphParticles[i];
 		float theta = randomTheta(gen);
 		p.position = basePosition + Vector3(0.f, std::cos(theta), -std::sin(theta)) * randomDist(gen);
-		//p.position = basePosition + Vector3(randomDist(gen), randomDist(gen), randomDist(gen));
 		p.velocity = baseVelocity * velDist(gen);
 		p.color = Vector3(0.0f, 0.0f, 1.0f);
-		//p.color = colors[randomColor(gen)];
 		p.acceleration = Vector3(0.f, 0.f, 0.f);
 		p.radius = particleRadius;
 	}

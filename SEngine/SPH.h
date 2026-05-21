@@ -58,8 +58,8 @@ public:
 private:
 	int sphCurrParticleCount = 0;
 	float countTick = 0.f;
-	float sphCountIncreaseSpeed = 1000.f;
-	int sphMaxParticleCount = 50000;
+	float sphCountIncreaseSpeed = 3000.f;
+	int sphMaxParticleCount = 30'000;
 
 	std::vector<SPHParticle> m_sphParticles;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_sphParticleBuffer[2];
@@ -79,6 +79,7 @@ private:
 	std::vector<UINT> m_particleCellId;
 	Vector3 gridDim;
 	int cellCount;
+	float cellSize;
 
 	// Pass1: count
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_cellCounterBuffer;

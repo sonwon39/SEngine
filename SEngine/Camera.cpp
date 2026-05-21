@@ -14,7 +14,7 @@ void Camera::Initialize()
 
 	m_upDir = Vector3(0, 1, 0);
 	m_eyePosition = Vector3(2, 2, -2);
-	m_eyePosition  = Vector3(0, 0, -2);
+	//m_eyePosition  = Vector3(0, 0, -2);
 	m_forwardDir = -m_eyePosition;
 	m_forwardDir.Normalize();
 
