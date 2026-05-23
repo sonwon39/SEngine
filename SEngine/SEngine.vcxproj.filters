@@ -57,6 +57,9 @@
     <ClCompile Include="SPH.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="StableFluids.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SimpleApp.h">
@@ -116,6 +119,12 @@
     <ClInclude Include="SPH.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="StableFluids.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Grid.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="DefaultVS.hlsl" />
@@ -135,6 +144,8 @@
     <FxCompile Include="ScanBlocksCS.hlsl" />
     <FxCompile Include="ScatterCS.hlsl" />
     <FxCompile Include="ClearCounterCS.hlsl" />
+    <FxCompile Include="ComputeAdvectedVelocityCS.hlsl" />
+    <FxCompile Include="ComputeDivergenceCS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -145,5 +156,6 @@
     <None Include="ParticleCommon.hlsli" />
     <None Include="SPHUtility.hlsli" />
     <None Include="CountingSortCommon.hlsli" />
+    <None Include="StableFluidsUtility.hlsli" />
   </ItemGroup>
 </Project>
