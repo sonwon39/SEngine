@@ -44,16 +44,18 @@ public:
 
 
 public:
-	bool Initialize(int width, int height, int guiWidth, IDXGIFactory7* factory, HWND wnd);
+	bool Initialize(int width, int height, int guiWidth, IDXGIFactory7* factory);
 	bool InitScene();
-	bool InitGUI(HWND wnd);
+	bool InitGUI();
 
 	void OnResize(int width, int height);
 
+public:
+	GraphicsPSO GetPSO(const std::string& psoName);
 
 protected:
 	void CreateCommandObjects();
-	void CreateSwapChain(IDXGIFactory7* factory, HWND wnd);
+	void CreateSwapChain(IDXGIFactory7* factory);
 	void CreateMainDepthBuffer();
 	void CreateDepthBuffers();
 	void CreateDescriptorHeaps();
@@ -62,12 +64,13 @@ protected:
 
 
 	void Update(float deltaTime);
-	void RenderMeshes(const std::string& psoName, ID3D12GraphicsCommandList* commandList);
+	void SPHTick(float deltaTime);
+	void StableFluidsTick(float deltaTime);
+	void RenderMeshes(const std::string& psoName);
 	void SortSPH(int idx);
 	void ComputeSPH(const std::string& psoName, int idx);
 	void RenderSPH(const std::string& psoName, bool clear, bool isFinal);
 	
-
 	void SPHSimulation();
 
 	//void Render(const std::string& psoName, int idx, RenderType renderType, bool isFinal, bool clear);
@@ -124,7 +127,6 @@ private:
 	int m_width;
 	int m_height;
 	int m_guiWidth;
-	HWND mainWnd;
 
 private:
 	int m_currentBackBufferIndex = 0;

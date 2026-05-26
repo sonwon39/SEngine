@@ -14,4 +14,12 @@ struct GlobalConstant
 	Matrix projection;
 };
 
+struct MouseConstant
+{
+	float posX;
+	float posY;
+	float delX;
+	float delY;
+};
+
 #endif

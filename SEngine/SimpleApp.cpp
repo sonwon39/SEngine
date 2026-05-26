@@ -2,10 +2,12 @@
 #include "RootSignature.h"
 #include "PipelineState.h"
 #include "GeometryGenerator.h"
+#include "World.h"
 
 #include "Directxtk12/DDSTextureLoader.h"
 #include "directxtk12/ResourceUploadBatch.h"
 
+#include "GraphicsCommon.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace GraphicsUtils;
@@ -47,6 +49,9 @@ int Core::SimpleApp::Run()
 
 			m_timer.Tick();
 			deltaTime = (float)m_timer.GetDeltaTime();
+
+			if(m_world)
+				m_world->Tick(deltaTime);
 
 			Update(deltaTime);
 
@@ -96,11 +101,15 @@ bool Core::SimpleApp::InitDirectX()
 
 	ThrowIfFailed(device.As(&m_device));
 
+	Graphics::utility = std::make_shared<GraphicsUtils::Utility>(m_device.Get());
+
+	m_world->Initialize(m_device.Get());
+	
 	Graphics::InitializeCommonState(m_device);
 	Renderer::Initialize(m_device);
 
 	m_renderEngine = std::make_shared<RenderEngine>(m_device.Get());
-	m_renderEngine->Initialize(m_width, m_height, m_guiWidth, m_dxgiFactory.Get(), m_mainWnd);
+	m_renderEngine->Initialize(m_width, m_height, m_guiWidth, m_dxgiFactory.Get());
 
 	return true;
 }
@@ -109,7 +118,7 @@ bool Core::SimpleApp::InitGUI()
 {
 	if (m_renderEngine)
 	{
-		m_renderEngine->InitGUI(m_mainWnd);
+		m_renderEngine->InitGUI();
 	}
 	return true;
 }

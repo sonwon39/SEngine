@@ -126,7 +126,7 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 	};
 
 	defaultPSO.SetInputLayout(_countof(simpleIL), simpleIL);
-	defaultPSO.SetRootSignature(g_commonRS);
+	defaultPSO.SetRootSignature(g_S1_C1_RS);
 	defaultPSO.SetRasterizerState(rasterizerDefault);
 	defaultPSO.SetBlendState(blendNoColorWrite);
 	defaultPSO.SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);

@@ -78,6 +78,7 @@ void GraphicsPSO::Finalize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 {
 	m_psoDesc.pRootSignature = m_rootSignature->GetSignature();
 	m_psoDesc.InputLayout.pInputElementDescs = m_inputLayouts.get();
+	auto& name = this->m_name;
 
 	ThrowIfFailed(
 		device->CreateGraphicsPipelineState(

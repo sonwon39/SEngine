@@ -1,10 +1,9 @@
 ﻿#define HLSL
-#include "DefaultHLSLCompat.h"
+#include "GlobalConstant.h"
 
-ConstantBuffer<DefaultLocalConstant> gLocalCB : register(b0);
-Texture2D g_hdrTexture : register(s0);
-
-SamplerState g_wrapLinearSampler;
+Texture2D						g_hdrTexture			: register(t0);
+SamplerState					g_wrapLinearSampler		: register(s0);
+ConstantBuffer<GlobalConstant>	gLocalCB				: register(b0);
 
 struct VSInput
 {

@@ -385,12 +385,14 @@ void SPH::InitParticleCPU()
 
 	m_sphParticles.resize(sphMaxParticleCount);
 	
-	Vector3 basePosition(-0.7f, 0.4f, 0.f);  // [-0.5,0.5]
-	Vector3 baseVelocity(1.f, 0.f, 0.f);
+	Vector3 basePosition0(-0.7f, 0.4f, 0.f);
+	Vector3 basePosition1(0.7f, 0.4f, 0.f);
+	Vector3 baseVelocity0(1.f, 0.f, 0.f);
+	Vector3 baseVelocity1(-1.f, 0.f, 0.f);
 
 	float PI = 3.141592f;
 	std::uniform_real_distribution<float> randomTheta(-PI, PI);
-	std::uniform_real_distribution<float> randomDist(0.f, 0.4f);
+	std::uniform_real_distribution<float> randomDist(0.f, 0.2f);
 	std::uniform_real_distribution<float> velDist(1.f, 2.f);
 
 	// structured buffer cpu 데이터 초기화
@@ -398,8 +400,17 @@ void SPH::InitParticleCPU()
 	{
 		SPHParticle& p = m_sphParticles[i];
 		float theta = randomTheta(gen);
-		p.position = basePosition + Vector3(0.f, std::cos(theta), -std::sin(theta)) * randomDist(gen);
-		p.velocity = baseVelocity * velDist(gen);
+		if (i % 2 == 0)
+		{
+			p.position = basePosition0 + Vector3(0.f, std::cos(theta), -std::sin(theta)) * randomDist(gen);
+			p.velocity = baseVelocity0 * velDist(gen);
+		}
+		else
+		{
+			p.position = basePosition1 + Vector3(0.f, std::cos(theta), -std::sin(theta)) * randomDist(gen);
+			p.velocity = baseVelocity1 * velDist(gen);
+		}
+		
 		p.color = Vector3(0.0f, 0.0f, 1.0f);
 		p.acceleration = Vector3(0.f, 0.f, 0.f);
 		p.radius = particleRadius;

@@ -9,6 +9,7 @@ class SamplerDesc;
 class RootSignature;
 class ComputePSO;
 class GraphicsPSO;
+class World;
 
 namespace Graphics
 {
@@ -32,6 +33,7 @@ namespace Graphics
 	extern RootSignature g_U2_C1_RS;
 	extern RootSignature g_S1_RS;
 	extern RootSignature g_S1_C1_RS;
+	extern RootSignature g_SC_RS;
 	extern RootSignature g_S1_C2_RS;
 	extern RootSignature g_SUUC_RS;
 	extern RootSignature g_USC_RS;
@@ -41,6 +43,9 @@ namespace Graphics
 	extern RootSignature g_UUUSSC_RS;
 	extern RootSignature g_UUUUSSC_RS;
 
+	/*extern std::shared_ptr<Mouse> m_mouse;
+	extern HWND m_mainWnd;*/
+	extern std::shared_ptr<GraphicsUtils::Utility> utility;
+	extern std::shared_ptr<World> m_world;
 
-    extern std::shared_ptr<GraphicsUtils::Utility> utility;
 }

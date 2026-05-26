@@ -1,6 +1,10 @@
 ﻿#include "BaseApp.h"
+#include "GraphicsCommon.h"
+#include "World.h"
 
 using namespace Core;
+using namespace GraphicsUtils;
+using namespace Graphics;
 
 BaseApp* BaseApp::m_appPtr = nullptr;
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -11,28 +15,27 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
 BaseApp::BaseApp()
 	:m_width(1280),
-	m_height(720),
-	m_mainWnd(NULL)
+	m_height(720)
 {
 	if (m_appPtr != nullptr) {
 		delete m_appPtr;
 	}
-	LoadLibraryA("torch_cuda.dll");
+	//LoadLibraryA("torch_cuda.dll");
 	m_appPtr = this;
 	m_timer = Timer();
+	Graphics::m_world = std::make_unique<World>();
 }
 
 BaseApp::BaseApp(int width, int height)
 	:m_width(width),
-	m_height(height),
-	m_mainWnd(NULL)
+	m_height(height)
 {
 	if (m_appPtr != nullptr) {
 		delete m_appPtr;
 	}
 	m_appPtr = this;
 	m_timer = Timer();
-
+	Graphics::m_world = std::make_unique<World>();
 }
 
 BaseApp::~BaseApp()
@@ -41,7 +44,9 @@ BaseApp::~BaseApp()
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();*/
 
-	m_mainWnd = NULL;
+	if(m_world)
+		m_world->m_mainWnd = NULL;
+
 	m_appPtr = nullptr;
 	std::cout << "Delete BaseApp\n";
 
@@ -92,15 +97,16 @@ bool BaseApp::InitWindow()
 	RECT rc = { 0, 0, (LONG)m_width, (LONG)m_height };
 	AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
 
-	m_mainWnd = CreateWindow(wc.lpszClassName, wc.lpszClassName, WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT,
-		CW_USEDEFAULT,
-		(int)(rc.right - rc.left),
-		(int)(rc.bottom - rc.top),
-		NULL,
-		NULL,
-		wc.hInstance,
-		nullptr);
+	m_world->m_mainWnd =
+		CreateWindow(wc.lpszClassName, wc.lpszClassName, WS_OVERLAPPEDWINDOW,
+			CW_USEDEFAULT,
+			CW_USEDEFAULT,
+			(int)(rc.right - rc.left),
+			(int)(rc.bottom - rc.top),
+			NULL,
+			NULL,
+			wc.hInstance,
+			nullptr);
 
 	RAWINPUTDEVICE rawInputDevice;
 
@@ -110,12 +116,12 @@ bool BaseApp::InitWindow()
 	rawInputDevice.usUsagePage = 0x01;
 	rawInputDevice.usUsage = standardMouse;
 	rawInputDevice.dwFlags = 0;
-	rawInputDevice.hwndTarget = m_mainWnd;
+	rawInputDevice.hwndTarget = m_world->m_mainWnd;
 
 	::RegisterRawInputDevices(&rawInputDevice, 1, sizeof(RAWINPUTDEVICE));
 
-	ShowWindow(m_mainWnd, SW_SHOWDEFAULT);
-	UpdateWindow(m_mainWnd);
+	ShowWindow(m_world->m_mainWnd, SW_SHOWDEFAULT);
+	UpdateWindow(m_world->m_mainWnd);
 
 	//ShowCursor(false);
 
@@ -124,7 +130,7 @@ bool BaseApp::InitWindow()
 
 bool Core::BaseApp::IsWindowFocused()
 {
-	return (GetForegroundWindow() == m_mainWnd);
+	return (GetForegroundWindow() == m_world->m_mainWnd);
 }
 
 LRESULT BaseApp::MainProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -156,8 +162,24 @@ LRESULT BaseApp::MainProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT,
 				&raw, &rawSize, sizeof(RAWINPUTHEADER));
 
+		if (m_world && m_world->mouse)
+		{
+			m_world->mouse->AddRawDelta(raw.data.mouse.lLastX, raw.data.mouse.lLastY);
+		}
 	}
 	break;
+	case WM_LBUTTONDOWN:
+		if (m_world && m_world->mouse)
+		{
+			m_world->mouse->UpdateLButtonDownState(true);
+		}
+		break;
+	case WM_LBUTTONUP:
+		if (m_world && m_world->mouse)
+		{
+			m_world->mouse->UpdateLButtonDownState(false);
+		}
+		break;
 	case WM_KEYDOWN:
 		break;
 	case WM_KEYUP:

@@ -34,6 +34,9 @@ private:
 
 	//DirectX::SimpleMath::Matrix m_projectionMat;
 	//DirectX::SimpleMath::Matrix m_viewMat;
+	DirectX::SimpleMath::Matrix perspectiveMat;
+	DirectX::SimpleMath::Matrix orthographicMat;
+	bool isPerspectiveMode = false;
 
 private:
 	GlobalConstant m_globalConstant;

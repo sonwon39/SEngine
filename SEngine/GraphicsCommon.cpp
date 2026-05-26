@@ -23,6 +23,7 @@ namespace Graphics
 	RootSignature g_U2_C1_RS;
 	RootSignature g_S1_RS;
 	RootSignature g_S1_C1_RS;
+	RootSignature g_SC_RS;
 	RootSignature g_S1_C2_RS;
 	RootSignature g_SUUC_RS;
 	RootSignature g_USC_RS;
@@ -33,6 +34,7 @@ namespace Graphics
 	RootSignature g_UUUUSSC_RS;
 
 	std::shared_ptr<GraphicsUtils::Utility> utility;
+	std::shared_ptr<World> m_world;
 }
 
 
@@ -93,10 +95,10 @@ void Graphics::InitializeCommonState(const Microsoft::WRL::ComPtr<ID3D12Device5>
 
 	depthStateDefault = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 
-    g_commonRS.Reset(2,1);
-	g_commonRS[0].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0, 1);
-	g_commonRS[1].InitCBV(0);
-	g_commonRS.InitStaticSampler(0, wrapLinearSampler);
+    g_commonRS.Reset(1,0);
+	//g_commonRS[0].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0, 1);
+	g_commonRS[0].InitCBV(0);
+	//g_commonRS.InitStaticSampler(0, wrapLinearSampler);
 	g_commonRS.Finalize(device, L"CommonRS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	g_U1_RS.Reset(1, 0);
@@ -117,10 +119,18 @@ void Graphics::InitializeCommonState(const Microsoft::WRL::ComPtr<ID3D12Device5>
 	g_S1_RS[0].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0, 1);
 	g_S1_RS.Finalize(device, L"g_S1_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
-	g_S1_C1_RS.Reset(2, 0);
+	g_S1_C1_RS.Reset(2, 1);
 	g_S1_C1_RS[0].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0, 1);
 	g_S1_C1_RS[1].InitCBV(0);
+	g_S1_C1_RS.InitStaticSampler(0, wrapLinearSampler);
 	g_S1_C1_RS.Finalize(device, L"g_S1_C1_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	g_SC_RS.Reset(2, 1);
+	g_SC_RS[0].InitSRV(0);
+	g_SC_RS[1].InitCBV(0);
+	g_SC_RS.InitStaticSampler(0, wrapLinearSampler);
+	g_SC_RS.Finalize(device, L"g_SC_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
 
 	g_S1_C2_RS.Reset(3, 0);
 	g_S1_C2_RS[0].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0, 1);

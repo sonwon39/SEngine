@@ -158,11 +158,10 @@ namespace GraphicsUtils {
 		 * @param pDevice      D3D12 디바이스 (소유권 없음).
 		 * @param pCommandList GPU 명령 기록용 커맨드 리스트 (소유권 없음).
 		 */
-		Utility(ID3D12Device5* pDevice, ID3D12GraphicsCommandList* pCommandList);
+		Utility(ID3D12Device5* pDevice);
 
 	private:
 		ID3D12Device5* m_device;					// 외부 소유 D3D12 디바이스 포인터.
-		ID3D12GraphicsCommandList* m_commandList;	// 외부 소유 커맨드 리스트 포인터.
 
 	public:
 		/**
@@ -234,20 +233,6 @@ namespace GraphicsUtils {
 
 		void CreateStructuredResourceView(Microsoft::WRL::ComPtr<ID3D12Resource>& buffer, DXGI_FORMAT forma, D3D12_CPU_DESCRIPTOR_HANDLE& handle, const DescriptorType& type , UINT count, UINT64 dataSize);
 
-
-		/**
-		 * 정점/인덱스 등 임의 타입의 데이터를 GPU 버퍼로 업로드한다.
-		 *
-		 * UPLOAD 힙(임시) → DEFAULT 힙(최종) 로의 일반적인 2단계 업로드 패턴을 수행하며,
-		 * 호출 후 커맨드 리스트가 실행될 때까지 upload 리소스를 유지해야 한다.
-		 *
-		 * @tparam DataType 버퍼 원소 타입 (POD 가정).
-		 * @param data      업로드할 호스트 측 데이터.
-		 * @param gpu       [out] DEFAULT 힙에 생성된 최종 GPU 리소스.
-		 * @param upload    [out] UPLOAD 힙에 생성된 임시 스테이징 리소스.
-		 */
-		template<typename DataType>
-		void CreateBuffer(const std::vector<DataType>& data, Microsoft::WRL::ComPtr<ID3D12Resource>& gpu, Microsoft::WRL::ComPtr<ID3D12Resource>& upload, D3D12_RESOURCE_FLAGS flag = D3D12_RESOURCE_FLAG_NONE);
 
 		template<typename DataType>
 		void CreateBuffer(const std::vector<DataType>& data, Microsoft::WRL::ComPtr<ID3D12Resource>& gpu, Microsoft::WRL::ComPtr<ID3D12Resource>& upload, D3D12_RESOURCE_FLAGS flag, ID3D12GraphicsCommandList* commandList);

@@ -2,53 +2,77 @@
 
 StructuredBuffer<SPHParticle> particles : register(t0);
 
-[maxvertexcount(6)]
+// GS 출력 제한 때문에 너무 크게 잡으면 컴파일 에러가 날 수 있음
+#define LAT_SEG 4
+#define LON_SEG 8
+
+#define PI 3.14159265359f
+#define TWO_PI 6.28318530718f
+
+void EmitSphereVertex(
+	float3 worldPos,
+	float3 color,
+	float2 uv,
+	inout TriangleStream<PSInput> output
+)
+{
+	PSInput element = (PSInput) 0;
+
+	element.color = color;
+	element.uv = uv;
+
+	float4 p = float4(worldPos, 1.0f);
+	p = mul(p, g_globalConstant.view);
+	p = mul(p, g_globalConstant.projection);
+
+	element.pos = p;
+
+	output.Append(element);
+}
+
+[maxvertexcount(LAT_SEG * (LON_SEG + 1) * 2)]
 void main(
 	point GSInput input[1],
 	inout TriangleStream<PSInput> output
 )
 {
-	PSInput element;
+	float3 center = input[0].pos;
 	float r = input[0].radius;
-	element.color = input[0].color;
+	float3 color = input[0].color;
 
-	float4 center = float4(input[0].pos, 1.f);
+	for (uint lat = 0; lat < LAT_SEG; ++lat)
+	{
+		float v0 = (float) lat / LAT_SEG;
+		float v1 = (float) (lat + 1) / LAT_SEG;
 
-	float4 points[] =
-	{
-		center + float4(r, -r, 0, 0),
-		center + float4(-r, -r, 0, 0),
-		center + float4(-r, r, 0, 0),
-		center + float4(r, r, 0, 0)
-	};
-	float2 uvs[] =
-	{
-		float2(1, 1),
-		float2(0, 1),
-		float2(0, 0),
-		float2(1, 0)
-	};
-	uint indices[] =
-	{
-		0,1,2,0,2,3
-	};
+		// -PI/2 ~ +PI/2
+		float theta0 = -PI * 0.5f + PI * v0;
+		float theta1 = -PI * 0.5f + PI * v1;
 
-	for (uint i = 0; i < 4; i++)
-	{
-		points[i] = mul(points[i], g_globalConstant.view);
-		points[i] = mul(points[i], g_globalConstant.projection);
-	}
-	for (uint j = 0; j < 6; j++)
-	{
-		uint idx = indices[j];
-		
-		element.pos = points[idx];
-		element.uv = uvs[idx];
-		output.Append(element);
+		float y0 = sin(theta0);
+		float y1 = sin(theta1);
 
-		if ((j + 1)  % 3 == 0)
+		float xz0 = cos(theta0);
+		float xz1 = cos(theta1);
+
+		for (uint lon = 0; lon <= LON_SEG; ++lon)
 		{
-			output.RestartStrip();
+			float u = (float) lon / LON_SEG;
+			float phi = TWO_PI * u;
+
+			float c = cos(phi);
+			float s = sin(phi);
+
+			float3 local0 = float3(xz0 * c, y0, xz0 * s);
+			float3 local1 = float3(xz1 * c, y1, xz1 * s);
+
+			float3 world0 = center + local0 * r;
+			float3 world1 = center + local1 * r;
+
+			EmitSphereVertex(world0, color, float2(u, v0), output);
+			EmitSphereVertex(world1, color, float2(u, v1), output);
 		}
-	}	
+
+		output.RestartStrip();
+	}
 }

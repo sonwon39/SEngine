@@ -25,14 +25,12 @@ namespace GraphicsUtils {
 	using Microsoft::WRL::ComPtr;
 
 	Utility::Utility()
-		:m_device(nullptr),
-		m_commandList(nullptr)
+		:m_device(nullptr)
 	{
 	}
 
-	Utility::Utility(ID3D12Device5* pDevice, ID3D12GraphicsCommandList* pCommandList)
-		:m_device(pDevice),
-		m_commandList(pCommandList)
+	Utility::Utility(ID3D12Device5* pDevice)
+		:m_device(pDevice)
 	{
 	}
 

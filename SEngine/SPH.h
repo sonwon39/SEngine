@@ -135,13 +135,13 @@ private:
 
 // sph particle 계수
 public:
-	float particleRadius = 0.02f;
+	float particleRadius = 0.01f;
 	float particleSpacing;
 	float h;
 
 	float kernelCoeff = 3.0f / (2.0f * 3.141592f);
 	float rho0;       // particleRadius로부터 Initialize()에서 자동 계산
-	float k = 5.f;
+	float k = 50000.f;
 	float mu = 10.f;
 
 private:
