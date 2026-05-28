@@ -22,7 +22,9 @@ public:
 public:
 	void Tick(float deltaTime);
 
+	void CopyDensityAndVelocity();
 	void AddSmokes();
+	void Advection();
 	void Execute(ID3D12CommandQueue* commandQueue);
 
 private:

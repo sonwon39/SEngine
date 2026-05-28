@@ -429,9 +429,9 @@ void RenderEngine::RenderMeshes(const std::string& psoName)
 
 	if (m_world)
 	{
-		ID3D12DescriptorHeap* heaps[] = { m_world->m_hdrSrvHeap.GetHeap() };
+		ID3D12DescriptorHeap* heaps[] = { m_world->m_renderDensityHeap.GetHeap() };
 		m_commandList->SetDescriptorHeaps(1, heaps);
-		m_commandList->SetGraphicsRootDescriptorTable(0, m_world->m_hdrSrvHeap.GetGPUHandle(0));
+		m_commandList->SetGraphicsRootDescriptorTable(0, m_world->m_renderDensityHeap.GetGPUHandle(0));
 	}
 
 	m_commandList->ClearRenderTargetView(GetCurrentRtvCpuHandle(), rtvClearColor.data(), 0, nullptr);

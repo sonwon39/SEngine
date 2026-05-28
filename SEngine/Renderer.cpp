@@ -23,6 +23,7 @@
 #include "CompiledShaders/ScatterCS.h"
 
 #include "CompiledShaders/AddSmokesCS.h"
+#include "CompiledShaders/AdvectionCS.h"
 
 using namespace Graphics;
 using namespace Renderer;
@@ -95,7 +96,7 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 
 	// stable fluids
 	ComputePSO addSmokesCPSO(L"addSmokes CPSO");
-
+	ComputePSO advectionCPSO(L"advection CPSO");
 
 	hdrFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -249,11 +250,17 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 	m_CPSOs["pass3CPSO"] = pass3CPSO;
 	cpsoNames.push_back("pass3CPSO");
 
-	addSmokesCPSO.SetRootSignature(g_U1_C2_RS);
+	addSmokesCPSO.SetRootSignature(g_U2_C2_RS);
 	addSmokesCPSO.SetComputeShader(g_pAddSmokesCS, sizeof(g_pAddSmokesCS));
 	addSmokesCPSO.Finalize(device);
 	m_CPSOs["addSmokesCPSO"] = addSmokesCPSO;
 	cpsoNames.push_back("addSmokesCPSO");
+
+	advectionCPSO.SetRootSignature(g_S2_U2_C1_RS);
+	advectionCPSO.SetComputeShader(g_pAdvectionCS, sizeof(g_pAdvectionCS));
+	advectionCPSO.Finalize(device);
+	m_CPSOs["advectionCPSO"] = advectionCPSO;
+	cpsoNames.push_back("advectionCPSO");
 }
 
 ID3D12PipelineState* Renderer::GetPSO(std::string psoName)

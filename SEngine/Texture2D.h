@@ -21,6 +21,7 @@ public:
 public:
 	ID3D12Resource* GetResource() const { return buffer.Get(); }
 	D3D12_GPU_VIRTUAL_ADDRESS GetGPUVirtualAddress() const { return buffer->GetGPUVirtualAddress(); }
+	D3D12_RESOURCE_BARRIER Transition(D3D12_RESOURCE_STATES newState);
 
 private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> buffer;

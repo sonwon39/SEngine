@@ -174,7 +174,7 @@
     <FxCompile Include="ScanBlocksCS.hlsl" />
     <FxCompile Include="ScatterCS.hlsl" />
     <FxCompile Include="ClearCounterCS.hlsl" />
-    <FxCompile Include="ComputeAdvectedVelocityCS.hlsl" />
+    <FxCompile Include="AdvectionCS.hlsl" />
     <FxCompile Include="ComputeDivergenceCS.hlsl" />
     <FxCompile Include="AddVelocityAndDensityCS.hlsl" />
     <FxCompile Include="AddSmokesCS.hlsl" />

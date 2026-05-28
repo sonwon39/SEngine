@@ -35,12 +35,20 @@ private:
 	ID3D12Device5* m_device;
 
 public:
-	// hdr 버퍼
-	Texture2D m_hdrBuffer;
-	DescriptorHeap m_hdrSrvHeap;
-	DescriptorHeap m_hdrUavHeap;
-	UINT hdrWidth = 1280;
-	UINT hdrHeight = 720;
+	// grid 버퍼
+	Texture2D m_oldDensityBuffer;
+	Texture2D m_oldVelocityBuffer;
+
+	Texture2D m_newDensityBuffer;
+	Texture2D m_newVelocityBuffer;
+
+	DescriptorHeap m_renderDensityHeap;
+	DescriptorHeap m_addSmokesHeap;
+	DescriptorHeap m_advectionHeap;
+
+	UINT gridWidth = 1280;
+	UINT gridHeight = 720;
+	DXGI_FORMAT hdrFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
 
 	ConstantBuffer<Grid> gridCB;
 };

@@ -15,19 +15,32 @@ void World::Initialize(ID3D12Device5* device)
 
 	mouse->Initilize();
 
-	// hdr 버퍼 초기화
+	// heap 초기화
 	{
-		m_hdrSrvHeap.Initialize(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
-		m_hdrUavHeap.Initialize(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
-
+		m_renderDensityHeap.Initialize(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+		m_addSmokesHeap.Initialize(2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+		m_advectionHeap.Initialize(4, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+	}
+	// 버퍼 초기화
+	{
 		D3D12_RESOURCE_FLAGS flag = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-		m_hdrBuffer.Initialize(hdrWidth, hdrHeight, DXGI_FORMAT_R32G32B32A32_FLOAT, flag, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 0, L"hdr Buffer");
+		m_oldDensityBuffer.Initialize(gridWidth, gridHeight, hdrFormat, flag, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 0, L"density Buffer");
+		m_oldVelocityBuffer.Initialize(gridWidth, gridHeight, hdrFormat, flag, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 0, L"velocity Buffer");
+		m_newDensityBuffer.Initialize(gridWidth, gridHeight, hdrFormat, flag, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 0, L"density Buffer");
+		m_newVelocityBuffer.Initialize(gridWidth, gridHeight, hdrFormat, flag, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 0, L"velocity Buffer");
 
-		m_hdrSrvHeap.CreateResourceView(m_hdrBuffer.GetResource(), DescriptorType::SRV);
-		m_hdrUavHeap.CreateResourceView(m_hdrBuffer.GetResource(), DescriptorType::UAV);
+		m_addSmokesHeap.CreateResourceView(m_oldDensityBuffer.GetResource(), DescriptorType::UAV);
+		m_addSmokesHeap.CreateResourceView(m_oldVelocityBuffer.GetResource(), DescriptorType::UAV);
+
+		m_advectionHeap.CreateResourceView(m_oldDensityBuffer.GetResource(), DescriptorType::SRV);
+		m_advectionHeap.CreateResourceView(m_oldVelocityBuffer.GetResource(), DescriptorType::SRV);
+		m_advectionHeap.CreateResourceView(m_newDensityBuffer.GetResource(), DescriptorType::UAV);
+		m_advectionHeap.CreateResourceView(m_newVelocityBuffer.GetResource(), DescriptorType::UAV);
+
+		m_renderDensityHeap.CreateResourceView(m_newDensityBuffer.GetResource(), DescriptorType::SRV);
 	}
 	Grid grid;
-	grid.gGridDim = Vector3(hdrWidth, hdrHeight, 1);
+	grid.gGridDim = Vector3(gridWidth, gridHeight, 1);
 	grid.h = 1.f;
 	gridCB.Initialize(grid);
 }

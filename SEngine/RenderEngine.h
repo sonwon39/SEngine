@@ -164,11 +164,6 @@ private:
 	float angle = 0.f;
 	float rotateSpeed = 90.f;
 
-	//// hdr 버퍼
-	//Texture2D m_hdrBuffer;
-	//DescriptorHeap m_hdrSrvHeap;
-	//DescriptorHeap m_hdrUavHeap;
-
 //sph
 private:
 	std::shared_ptr<SPH> m_sph;
