@@ -223,13 +223,13 @@ namespace GraphicsUtils {
 		/**
 		 * 주어진 리소스에 대해 지정한 종류의 뷰(RTV/UAV/SRV/DSV)를 생성한다.
 		 *
-		 * @param buffer   뷰를 만들 대상 리소스.
+		 * @param resource   뷰를 만들 대상 리소스 포인터.
 		 * @param format   뷰의 포맷.
 		 * @param bUseMsaa MSAA 를 사용하는지 여부 (UAV 와는 호환되지 않음).
 		 * @param handle   뷰가 기록될 CPU 디스크립터 핸들.
 		 * @param type     생성할 뷰의 종류.
 		 */
-		void CreateResourceView(Microsoft::WRL::ComPtr<ID3D12Resource>& buffer, DXGI_FORMAT format, bool bUseMsaa, D3D12_CPU_DESCRIPTOR_HANDLE& handle, const DescriptorType& type);
+		void CreateResourceView(ID3D12Resource* resource, DXGI_FORMAT format, bool bUseMsaa, D3D12_CPU_DESCRIPTOR_HANDLE& handle, const DescriptorType& type);
 
 		void CreateStructuredResourceView(Microsoft::WRL::ComPtr<ID3D12Resource>& buffer, DXGI_FORMAT forma, D3D12_CPU_DESCRIPTOR_HANDLE& handle, const DescriptorType& type , UINT count, UINT64 dataSize);
 

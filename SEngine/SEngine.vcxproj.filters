@@ -72,6 +72,9 @@
     <ClCompile Include="World.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="DescriptorHeap.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SimpleApp.h">
@@ -149,6 +152,9 @@
     <ClInclude Include="World.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="DescriptorHeap.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="DefaultVS.hlsl" />
@@ -171,6 +177,7 @@
     <FxCompile Include="ComputeAdvectedVelocityCS.hlsl" />
     <FxCompile Include="ComputeDivergenceCS.hlsl" />
     <FxCompile Include="AddVelocityAndDensityCS.hlsl" />
+    <FxCompile Include="AddSmokesCS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

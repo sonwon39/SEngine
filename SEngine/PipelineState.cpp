@@ -97,7 +97,8 @@ ComputePSO::ComputePSO(const wchar_t* name)
 void ComputePSO::Finalize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 {
 	m_psoDesc.pRootSignature = m_rootSignature->GetSignature();
-	
+	auto& name = this->m_name;
+
 	ThrowIfFailed(
 		device->CreateComputePipelineState(
 			&m_psoDesc,

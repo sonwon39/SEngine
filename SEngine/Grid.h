@@ -8,7 +8,7 @@ using namespace DirectX::SimpleMath;
 using namespace DirectX;
 #endif
 
-#define GROUP_SIZE 256
+#define SF_GROUP_SIZE 256
 
 struct Grid
 {

@@ -22,6 +22,7 @@
 #include "CompiledShaders/AddBlockOffsetsCS.h"
 #include "CompiledShaders/ScatterCS.h"
 
+#include "CompiledShaders/AddSmokesCS.h"
 
 using namespace Graphics;
 using namespace Renderer;
@@ -44,6 +45,33 @@ namespace Renderer
 
 }
 
+GraphicsPSO Renderer::GetGraphicsPSO(const std::string& psoName)
+{
+	GraphicsPSO pso;
+	if (m_PSOs.find(psoName) != m_PSOs.end())
+	{
+		pso = m_PSOs[psoName];
+	}
+	else
+	{
+		pso = m_PSOs["defaultPSO"];
+	}
+	return pso;
+}
+ComputePSO Renderer::GetComputePSO(const std::string& psoName)
+{
+	ComputePSO pso;
+	if (m_CPSOs.find(psoName) != m_CPSOs.end())
+	{
+		pso = m_CPSOs[psoName];
+	}
+	else
+	{
+		pso = m_CPSOs["defaultCPSO"];
+	}
+	return pso;
+}
+
 void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 {
 	GraphicsPSO defaultPSO(L"default PSO");
@@ -64,6 +92,9 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 	ComputePSO pass2aCPSO(L"pass2a CPSO");
 	ComputePSO pass2bCPSO(L"pass2b CPSO");
 	ComputePSO pass3CPSO(L"pass3 CPSO");
+
+	// stable fluids
+	ComputePSO addSmokesCPSO(L"addSmokes CPSO");
 
 
 	hdrFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
@@ -217,6 +248,12 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 	pass3CPSO.Finalize(device);
 	m_CPSOs["pass3CPSO"] = pass3CPSO;
 	cpsoNames.push_back("pass3CPSO");
+
+	addSmokesCPSO.SetRootSignature(g_U1_C2_RS);
+	addSmokesCPSO.SetComputeShader(g_pAddSmokesCS, sizeof(g_pAddSmokesCS));
+	addSmokesCPSO.Finalize(device);
+	m_CPSOs["addSmokesCPSO"] = addSmokesCPSO;
+	cpsoNames.push_back("addSmokesCPSO");
 }
 
 ID3D12PipelineState* Renderer::GetPSO(std::string psoName)

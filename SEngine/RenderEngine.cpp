@@ -79,7 +79,6 @@ bool RenderEngine::Initialize(int width, int height, int guiWidth, IDXGIFactory7
 		handle.Offset(1, m_rtvDescriptorSize);
 	}
 
-	CreateTextureBuffers();
 	CreateDepthBuffers();
 
 	InitScene();
@@ -109,9 +108,16 @@ bool RenderEngine::InitScene()
 		m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
 		FlushCommands();
 	}
-
-	m_sph = std::make_shared<SPH>();
-	m_sph->Initialize(m_device, m_resourceCommandAllocator.Get(), m_resourceCommandList.Get());
+	// sph 초기화
+	{
+		m_sph = std::make_shared<SPH>();
+		m_sph->Initialize(m_device, m_resourceCommandAllocator.Get(), m_resourceCommandList.Get());
+	}
+	// stable fluids 초기화
+	{
+		m_stableFluids = std::make_shared<StableFluids>();
+		m_stableFluids->Initialize();
+	}
 
 	ID3D12CommandList* commands[] = { m_resourceCommandList.Get() };
 	m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
@@ -202,7 +208,6 @@ void RenderEngine::OnResize(int width, int height)
 
 	// DepthBuffer 재생성
 	CreateMainDepthBuffer();
-	CreateTextureBuffers();
 
 	m_currentBackBufferIndex = m_swapChain->GetCurrentBackBufferIndex();
 
@@ -337,7 +342,7 @@ void RenderEngine::CreateMainDepthBuffer()
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE handle(m_DSVHeap->GetCPUDescriptorHandleForHeapStart());
 
-	utility->CreateResourceView(m_depthStencilBuffer, Renderer::dsBufferFormat, false, handle, DescriptorType::DSV);
+	utility->CreateResourceView(m_depthStencilBuffer.Get(), Renderer::dsBufferFormat, false, handle, DescriptorType::DSV);
 
 }
 
@@ -351,21 +356,6 @@ void RenderEngine::CreateDescriptorHeaps()
 	// DescriptorHeap 생성
 	utility->CreateDescriptorHeap(m_swapChainBufferCount, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, m_swapChainRTVHeap);
 	utility->CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, m_DSVHeap);
-
-	utility->CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, m_hdrRTVHeap);
-	utility->CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, m_hdrUAVHeap, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
-	utility->CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, m_hdrSRVHeap, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
-
-
-}
-
-void RenderEngine::CreateTextureBuffers()
-{
-	D3D12_RESOURCE_FLAGS hdrFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS | D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-	utility->CreateTextureBuffer(m_hdrBuffer, m_width, m_height, Renderer::hdrFormat, hdrFlags, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 0, L"hdrBuffer");
-	utility->CreateResourceView(m_hdrBuffer, Renderer::hdrFormat, false, m_hdrRTVHeap->GetCPUDescriptorHandleForHeapStart(), DescriptorType::RTV);
-	utility->CreateResourceView(m_hdrBuffer, Renderer::hdrFormat, false, m_hdrUAVHeap->GetCPUDescriptorHandleForHeapStart(), DescriptorType::UAV);
-	utility->CreateResourceView(m_hdrBuffer, Renderer::hdrFormat, false, m_hdrSRVHeap->GetCPUDescriptorHandleForHeapStart(), DescriptorType::SRV);
 }
 
 // BOOKMARK
@@ -404,22 +394,11 @@ void RenderEngine::SPHTick(float deltaTime)
 	SPHSimulation();
 }
 
-GraphicsPSO RenderEngine::GetPSO(const std::string& psoName)
-{
-	GraphicsPSO pso;
-	if (m_PSOs.find(psoName) != m_PSOs.end())
-	{
-		pso = m_PSOs[psoName];
-	}
-	else
-	{
-		pso = m_PSOs["defaultPSO"];
-	}
-	return pso;
-}
-
 void RenderEngine::StableFluidsTick(float deltaTime)
 {
+	m_stableFluids->Tick(deltaTime);
+	m_stableFluids->Execute(m_commandQueue.Get());
+
 	RenderMeshes("defaultPSO");
 	RenderGUI(true);
 }
@@ -428,7 +407,7 @@ void RenderEngine::RenderMeshes(const std::string& psoName)
 {
 	using namespace Renderer;
 
-	GraphicsPSO pso = GetPSO(psoName);
+	GraphicsPSO pso = GetGraphicsPSO(psoName);
 
 	m_commandAllocator->Reset();
 	ThrowIfFailed(m_commandList->Reset(m_commandAllocator.Get(), nullptr));
@@ -448,14 +427,17 @@ void RenderEngine::RenderMeshes(const std::string& psoName)
 			D3D12_RESOURCE_STATE_RENDER_TARGET
 		));
 
-	ID3D12DescriptorHeap* heaps[] = { m_hdrSRVHeap.Get() };
-	m_commandList->SetDescriptorHeaps(1, heaps);
+	if (m_world)
+	{
+		ID3D12DescriptorHeap* heaps[] = { m_world->m_hdrSrvHeap.GetHeap() };
+		m_commandList->SetDescriptorHeaps(1, heaps);
+		m_commandList->SetGraphicsRootDescriptorTable(0, m_world->m_hdrSrvHeap.GetGPUHandle(0));
+	}
 
 	m_commandList->ClearRenderTargetView(GetCurrentRtvCpuHandle(), rtvClearColor.data(), 0, nullptr);
 	m_commandList->ClearDepthStencilView(GetDSVCpuHandle(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
 	m_commandList->OMSetRenderTargets(1, &GetCurrentRtvCpuHandle(), TRUE, &GetDSVCpuHandle());
 
-	m_commandList->SetGraphicsRootDescriptorTable(0, m_hdrSRVHeap->GetGPUDescriptorHandleForHeapStart());
 
 	if (m_camera)
 	{
@@ -473,7 +455,6 @@ void RenderEngine::RenderMeshes(const std::string& psoName)
 		));
 
 	m_commandList->Close();
-
 	ID3D12CommandList* commands[] = { m_commandList.Get() };
 	m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
 }

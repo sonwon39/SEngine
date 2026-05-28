@@ -54,7 +54,7 @@ float3 GetOldPosition(int idx, float deltaTime)
 	return oldPosition;
 }
 
-[numthreads(GROUP_SIZE, 1, 1)]
+[numthreads(SF_GROUP_SIZE, 1, 1)]
 void main( uint3 DTid : SV_DispatchThreadID )
 {
 	uint3 gridDim = gLocalCB.gGridDim;

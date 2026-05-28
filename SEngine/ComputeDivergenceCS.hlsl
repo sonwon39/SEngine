@@ -3,7 +3,7 @@
 StructuredBuffer<float3>  gAdvectedVelocity : register(t0);
 RWStructuredBuffer<float> gDivergence       : register(u0);
 
-[numthreads(GROUP_SIZE, 1, 1)]
+[numthreads(SF_GROUP_SIZE, 1, 1)]
 void main(uint3 DTid : SV_DispatchThreadID)
 {
 	uint3 gridDim = gLocalCB.gGridDim;

@@ -20,6 +20,8 @@
 
 #include "Camera.h"
 #include "SPH.h"
+#include "StableFluids.h"
+
 
 class StaticMesh;
 
@@ -50,16 +52,12 @@ public:
 
 	void OnResize(int width, int height);
 
-public:
-	GraphicsPSO GetPSO(const std::string& psoName);
-
 protected:
 	void CreateCommandObjects();
 	void CreateSwapChain(IDXGIFactory7* factory);
 	void CreateMainDepthBuffer();
 	void CreateDepthBuffers();
 	void CreateDescriptorHeaps();
-	void CreateTextureBuffers();
 	void UpdateGUI();
 
 
@@ -146,13 +144,6 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_depthStencilBuffer;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_DSVHeap;
 
-	// hdr 버퍼
-private:
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_hdrRTVHeap;
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_hdrUAVHeap;
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_hdrSRVHeap;
-	Microsoft::WRL::ComPtr<ID3D12Resource> m_hdrBuffer;
-
 private:
 	POINT currMousPt = { 0,0 };
 	POINT prevMousePt = { 0,0 };
@@ -173,12 +164,20 @@ private:
 	float angle = 0.f;
 	float rotateSpeed = 90.f;
 
-	//sph
+	//// hdr 버퍼
+	//Texture2D m_hdrBuffer;
+	//DescriptorHeap m_hdrSrvHeap;
+	//DescriptorHeap m_hdrUavHeap;
+
+//sph
 private:
 	std::shared_ptr<SPH> m_sph;
 
+//stable fluids
+private:
+	std::shared_ptr<StableFluids> m_stableFluids;
 
-	//camera
+//camera
 private:
 	std::shared_ptr<Camera> m_camera;
 

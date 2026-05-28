@@ -34,5 +34,8 @@ namespace Renderer
 
     ID3D12PipelineState* GetPSO(std::string psoName);
 
+	GraphicsPSO GetGraphicsPSO(const std::string& psoName);
+
+	ComputePSO GetComputePSO(const std::string& psoName);
 
 } // namespace Renderer

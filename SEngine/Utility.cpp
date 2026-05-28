@@ -141,7 +141,7 @@ namespace GraphicsUtils {
 		buffer->SetName(name.c_str());
 
 	}
-	void Utility::CreateResourceView(Microsoft::WRL::ComPtr<ID3D12Resource>& buffer, DXGI_FORMAT format, bool bUseMsaa, D3D12_CPU_DESCRIPTOR_HANDLE& handle, const DescriptorType& type)
+	void Utility::CreateResourceView(ID3D12Resource* resource, DXGI_FORMAT format, bool bUseMsaa, D3D12_CPU_DESCRIPTOR_HANDLE& handle, const DescriptorType& type)
 	{
 		// 요청된 뷰 종류에 따라 분기. 동일한 리소스라도 사용 목적에 맞는 뷰를 별도로 생성해야 한다.
 		if (type == DescriptorType::RTV) {
@@ -156,7 +156,7 @@ namespace GraphicsUtils {
 			rtvDesc.Format = format;
 			rtvDesc.Texture2D.MipSlice = 0;
 
-			m_device->CreateRenderTargetView(buffer.Get(), &rtvDesc, handle);
+			m_device->CreateRenderTargetView(resource, &rtvDesc, handle);
 		}
 		else if (type == DescriptorType::UAV) {
 			// UAV 는 멀티샘플 텍스처에 바인딩할 수 없다. 잘못된 호출을 방지한다.
@@ -173,7 +173,7 @@ namespace GraphicsUtils {
 			uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
 			uavDesc.Format = format;
 			uavDesc.Texture2D.MipSlice = 0;
-			m_device->CreateUnorderedAccessView(buffer.Get(), nullptr, &uavDesc, handle);
+			m_device->CreateUnorderedAccessView(resource, nullptr, &uavDesc, handle);
 		}
 		else if (type == DescriptorType::SRV) {
 
@@ -187,7 +187,7 @@ namespace GraphicsUtils {
 			}
 			srvDesc.Format = format;
 			srvDesc.Texture2D.MipLevels = 1;
-			m_device->CreateShaderResourceView(buffer.Get(), &srvDesc, handle);
+			m_device->CreateShaderResourceView(resource, &srvDesc, handle);
 		}
 		else if (type == DescriptorType::DSV)
 		{
@@ -196,7 +196,7 @@ namespace GraphicsUtils {
 			dsvDesc.Texture2D.MipSlice = 0;
 			dsvDesc.Format = format;
 
-			m_device->CreateDepthStencilView(buffer.Get(), &dsvDesc, handle);
+			m_device->CreateDepthStencilView(resource, &dsvDesc, handle);
 		}
 	}
 

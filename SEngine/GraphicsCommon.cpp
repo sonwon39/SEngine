@@ -20,6 +20,7 @@ namespace Graphics
 	RootSignature g_commonRS;
 	RootSignature g_U1_RS;
 	RootSignature g_U1_C1_RS;
+	RootSignature g_U1_C2_RS;
 	RootSignature g_U2_C1_RS;
 	RootSignature g_S1_RS;
 	RootSignature g_S1_C1_RS;
@@ -29,6 +30,7 @@ namespace Graphics
 	RootSignature g_USC_RS;
 	RootSignature g_UUUC_RS;
 	RootSignature g_UC_RS;
+	RootSignature g_UCC_RS;
 	RootSignature g_UUC_RS;
 	RootSignature g_UUUSSC_RS;
 	RootSignature g_UUUUSSC_RS;
@@ -110,6 +112,12 @@ void Graphics::InitializeCommonState(const Microsoft::WRL::ComPtr<ID3D12Device5>
 	g_U1_C1_RS[1].InitCBV(0);
 	g_U1_C1_RS.Finalize(device, L"g_U1_C1_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
+	g_U1_C2_RS.Reset(3, 0);
+	g_U1_C2_RS[0].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 0, 1);
+	g_U1_C2_RS[1].InitCBV(0);
+	g_U1_C2_RS[2].InitCBV(1);
+	g_U1_C2_RS.Finalize(device, L"g_U1_C1_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
 	g_U2_C1_RS.Reset(2, 0);
 	g_U2_C1_RS[0].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 0, 2);
 	g_U2_C1_RS[1].InitCBV(0);
@@ -162,7 +170,13 @@ void Graphics::InitializeCommonState(const Microsoft::WRL::ComPtr<ID3D12Device5>
 	g_UC_RS[0].InitUAV(0);
 	g_UC_RS[1].InitCBV(0);
 	g_UC_RS.Finalize(device, L"g_UC_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-	
+
+	g_UCC_RS.Reset(3, 0);
+	g_UCC_RS[0].InitUAV(0);
+	g_UCC_RS[1].InitCBV(0);
+	g_UCC_RS[2].InitCBV(1);
+	g_UCC_RS.Finalize(device, L"g_UCC_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
 	g_UUC_RS.Reset(3, 0);
 	g_UUC_RS[0].InitUAV(0);
 	g_UUC_RS[1].InitUAV(1);

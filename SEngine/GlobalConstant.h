@@ -16,10 +16,16 @@ struct GlobalConstant
 
 struct MouseConstant
 {
+	float prevPosX;
+	float prevPosY;
+
 	float posX;
 	float posY;
+
 	float delX;
 	float delY;
+
+	bool  lButtonDown;
 };
 
 #endif

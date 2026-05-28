@@ -49,8 +49,8 @@ void SPH::Initialize(ID3D12Device5* device, ID3D12CommandAllocator* cmdAlloc, ID
 	m_sphParticleConstant.k = k;
 	m_sphParticleConstant.mu = mu;
 
-	m_sphParticleConstant.gGridMin = Vector3(-0.75, -0.9, -0.75);
-	m_sphParticleConstant.gGridMax = Vector3( 0.75,  0.9,  0.75);
+	m_sphParticleConstant.gGridMin = Vector3(-0.75f, -0.9f, -0.75f);
+	m_sphParticleConstant.gGridMax = Vector3( 0.75f,  0.9f,  0.75f);
 	cellSize = 2*h;
 	m_sphParticleConstant.gCellSize = cellSize;
 
