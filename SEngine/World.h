@@ -16,11 +16,16 @@ public:
 	virtual ~World() {};
 
 public:
-	void Initialize(ID3D12Device5* device);
+	void Initialize(ID3D12Device5* device, int width, int height);
 	void Tick(float deltaTime);
+
+public:
 	ID3D12Device5* GetDevice() {
 		return m_device;
 	}
+
+public:
+	void SetWindowSize(int width, int height);
 
 public:
 	UINT m_cbvSrvDescriptorSize = 0;
@@ -30,6 +35,8 @@ public:
 public:
 	HWND m_mainWnd;
 	std::shared_ptr<SEngineMouse> mouse;
+	UINT windowWidth;
+	UINT windowHeight;
 
 private:
 	ID3D12Device5* m_device;

@@ -5,9 +5,11 @@ World::World()
 	mouse = std::make_shared<SEngineMouse>();
 }
 
-void World::Initialize(ID3D12Device5* device)
+void World::Initialize(ID3D12Device5* device, int width, int height)
 {
 	m_device = device;
+
+	SetWindowSize(width, height);
 
 	m_cbvSrvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	m_rtvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
@@ -49,9 +51,16 @@ void World::Tick(float deltaTime)
 {
 	if (mouse)
 	{
-		mouse->Tick();
+		mouse->Tick(deltaTime);
 	}
 
 	gridCB.localConstant.deltaTime = deltaTime;
 	gridCB.Update();
+}
+
+void World::SetWindowSize(int width, int height)
+{
+	windowWidth = width;
+	windowHeight = height;
+
 }

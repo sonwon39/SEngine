@@ -6,6 +6,11 @@ RWTexture2D<float4> gVelocity : register(u1);
 
 ConstantBuffer<MouseConstant> gMouse : register(b1);
 
+float smootherstep(float x, float edge0 = 0.0f, float edge1 = 1.0f)
+{
+	x = clamp((x - edge0) / (edge1 - edge0), 0, 1);
+	return x * x * x * (3 * x * (2 * x - 5) + 10.0f);
+}
 
 [numthreads(SF_GROUP_SIZE, 1, 1)]
 void main(uint3 DTid : SV_DispatchThreadID)
@@ -22,18 +27,18 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		float deltaTime = gLocalCB.deltaTime;
 		float sigma = brushRadius / 2.5f;
 		
-		float2 pixelPos = float2(DTid.xy);
-		float2 mouseCurrPos = float2(gMouse.posX, gMouse.posY);
-		float2 mousePrevPos = float2(gMouse.prevPosX, gMouse.prevPosY);
-		
-		float2 velocity = (mouseCurrPos - mousePrevPos) / deltaTime;
-
-		float d = distance(pixelPos, mouseCurrPos);
-		float power = exp(-(d * d) / (sigma * sigma));
-
-		gDensity[DTid.xy].xyz += power * float3(1, 0, 0);
-		gVelocity[DTid.xy].xy += power * velocity * 10.f;
-		
-	}
+		float2 pixelPos = DTid.xy;
 	
+		float2 mouseCurrPos = float2(gMouse.posX, gMouse.posY);
+		float2 velocity = gMouse.velocity;
+
+		float d = distance(pixelPos, mouseCurrPos) / brushRadius;
+		float scale = smootherstep(1.0 - d);
+		
+		//scale = exp(-(d * d) / (sigma * sigma));
+
+		gDensity[DTid.xy].xyz += scale * float3(1, 0, 0);
+		gVelocity[DTid.xy].xy += scale * velocity;
+		
+	}	
 }

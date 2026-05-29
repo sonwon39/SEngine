@@ -40,25 +40,34 @@ void SEngineMouse::ConsumeRawDelta()
 	lastY = 0;
 }
 
-void SEngineMouse::Tick()
+void SEngineMouse::Tick(float deltaTime)
 {
 	POINT mousePos;
 	GetCursorPos(&mousePos);
 	ScreenToClient(m_world->m_mainWnd, &mousePos);
-		
+
+	int width = m_world->windowWidth;
+	int height = m_world->windowHeight;
+
+	float x = (mousePos.x + 0.5f) / width;
+	float y = (mousePos.y + 0.5f) / height;
+
+	currPos = Vector2(x, y);
+	currPos.Clamp(Vector2::Zero, Vector2(1, 1));
+
 	mouseCB.localConstant.posX = mousePos.x;
 	mouseCB.localConstant.posY = mousePos.y;
+
 	if (lBFlag)
 	{
 		lBFlag = false;
-		mouseCB.localConstant.prevPosX = mousePos.x;
-		mouseCB.localConstant.prevPosY = mousePos.y;
+		prevPos = currPos;
 	}
-	ConsumeRawDelta();
 
-	//std::cout << "Mouse Tick  " << mousePos.x << ' ' << mousePos.y << '\n';
+	Vector2 velocity = (currPos - prevPos) / deltaTime;
+	mouseCB.localConstant.velocity = velocity * 10.f;
+
 	mouseCB.Update();
 
-	mouseCB.localConstant.prevPosX = mousePos.x;
-	mouseCB.localConstant.prevPosY = mousePos.y;
+	prevPos = currPos;
 }

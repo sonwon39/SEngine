@@ -24,11 +24,9 @@ public:
 		lastX += x;
 		lastY += y;
 	}
-	void UpdatePosition(int x, int y) { posX = x; posY = y; }
 	void ConsumeRawDelta();
 
 public:
-	void Tick();
 	ConstantBuffer<MouseConstant> mouseCB;
 
 public:
@@ -36,8 +34,8 @@ public:
 	long lastX = 0;
 	long lastY = 0;
 
-	long posX = 0;
-	long posY = 0;
+	Vector2 currPos = Vector2::Zero;
+	Vector2 prevPos = Vector2::Zero;
 
 	// lButton 첫 클릭 여부 확인 flag
 	// 첫 클릭일 시 tick에서 prevpos를 현재 위치로 업데이트

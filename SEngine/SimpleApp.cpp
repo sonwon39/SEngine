@@ -103,7 +103,7 @@ bool Core::SimpleApp::InitDirectX()
 
 	Graphics::utility = std::make_shared<GraphicsUtils::Utility>(m_device.Get());
 
-	m_world->Initialize(m_device.Get());
+	m_world->Initialize(m_device.Get(), m_width, m_height);
 	
 	Graphics::InitializeCommonState(m_device);
 	Renderer::Initialize(m_device);
@@ -136,6 +136,10 @@ void Core::SimpleApp::OnResize()
 	if (m_renderEngine)
 	{
 		m_renderEngine->OnResize(m_width, m_height);
+	}
+	if (m_world)
+	{
+		m_world->SetWindowSize(m_width, m_height);
 	}
 }
 
