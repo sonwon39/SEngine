@@ -12,7 +12,7 @@ float smootherstep(float x, float edge0 = 0.0f, float edge1 = 1.0f)
 	return x * x * x * (3 * x * (2 * x - 5) + 10.0f);
 }
 
-[numthreads(SF_GROUP_SIZE, 1, 1)]
+[numthreads(SF_GROUP_SIZE_X, SF_GROUP_SIZE_Y, 1)]
 void main(uint3 DTid : SV_DispatchThreadID)
 {
 	float brushRadius = 50.f;

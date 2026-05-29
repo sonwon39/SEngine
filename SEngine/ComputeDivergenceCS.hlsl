@@ -1,38 +1,39 @@
 ﻿#include "StableFluidsUtility.hlsli"
 
-StructuredBuffer<float3>  gAdvectedVelocity : register(t0);
-RWStructuredBuffer<float> gDivergence       : register(u0);
+Texture2D<float4>   gVelocity   : register(t0);
+RWTexture2D<float>  gDivergence : register(u0);
 
-[numthreads(SF_GROUP_SIZE, 1, 1)]
+SamplerState gWrapLinearSampler : register(s0);
+
+[numthreads(SF_GROUP_SIZE_X, SF_GROUP_SIZE_Y, 1)]
 void main(uint3 DTid : SV_DispatchThreadID)
 {
-	uint3 gridDim = gLocalCB.gGridDim;
-	int maxIdx = gridDim.x * gridDim.y * gridDim.z - 1;
-	int idx = DTid.x;
 	
-	if (idx > maxIdx)
+	uint3 gridDim = gLocalCB.gGridDim;
+
+	if (DTid.x >= gridDim.x || DTid.y >= gridDim.y)
 		return;
 
-	float h2 = gLocalCB.h * 2.f;
+	float deltaTime = gLocalCB.deltaTime;
 
-	float3 vels[6]; // left, right, bottom, top, backward, forward
-	uint offsets[3] = { 1, gridDim.x, gridDim.x * gridDim.y };
+	float divergence = 0.f;
+
+	float2 dx = float2(1.f / (gridDim.x - 1.f), 1.f / (gridDim.y - 1.f));
+
+	int2 ufidx	 = uint2(DTid.x % gridDim.x, DTid.y % gridDim.y);
+	uint2 left	 = uint2(ufidx.x == 0 ? gridDim.x - 1 : ufidx.x - 1, ufidx.y);
+	uint2 right  = uint2(ufidx.x == gridDim.x - 1 ? 0 : ufidx.x + 1,	ufidx.y);
+	uint2 top	 = uint2(ufidx.x, ufidx.y == 0 ? gridDim.y - 1 : ufidx.y - 1);
+	uint2 bottom = uint2(ufidx.x, ufidx.y == gridDim.y - 1 ? 0 : ufidx.y + 1);
+
+	float2 leftVel	 = gVelocity[left].xy;
+	float2 rightVel = gVelocity[right].xy;
+	float2 topVel = gVelocity[top].xy;
+	float2 bottomVel = gVelocity[bottom].xy;
 
 	
-	float divergence = 0.f;
-	uint3 ufIdx = UnflattenIdx(idx);
-	for (uint i = 0; i < 3; i++)
-	{
-		uint j = i * 2;
-		uint offset = offsets[i];
-		
-		vels[j] = (ufIdx[i] > 0) ? gAdvectedVelocity[idx - offset] : gAdvectedVelocity[idx];
-		vels[j + 1] = (ufIdx[i] != gridDim[i] - 1) ?
-			gAdvectedVelocity[idx + offset] :
-			gAdvectedVelocity[idx];
+	divergence += (rightVel.x - leftVel.x) / 2.f;
+	divergence += (topVel.y - bottomVel.y) / 2.f;
+	gDivergence[DTid.xy] = divergence;
 
-		divergence += (vels[j + 1][i] - vels[j][i])/ h2;
-
-	}
-	gDivergence[idx] = divergence;
 }

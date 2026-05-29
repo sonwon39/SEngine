@@ -22,8 +22,11 @@
 #include "CompiledShaders/AddBlockOffsetsCS.h"
 #include "CompiledShaders/ScatterCS.h"
 
-#include "CompiledShaders/AddSmokesCS.h"
+#include "CompiledShaders/SourcingCS.h"
 #include "CompiledShaders/AdvectionCS.h"
+#include "CompiledShaders/ComputeDivergenceCS.h"
+#include "CompiledShaders/JacobiCS.h"
+#include "CompiledShaders/ComputeFinalVelocityCS.h"
 
 using namespace Graphics;
 using namespace Renderer;
@@ -95,8 +98,11 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 	ComputePSO pass3CPSO(L"pass3 CPSO");
 
 	// stable fluids
-	ComputePSO addSmokesCPSO(L"addSmokes CPSO");
+	ComputePSO sourcingCPSO(L"sourcing CPSO");
 	ComputePSO advectionCPSO(L"advection CPSO");
+	ComputePSO computeDivergenceCPSO(L"computeDivergence CPSO");
+	ComputePSO jacobiCPSO(L"jacobi CPSO");
+	ComputePSO computeFinalVelocityCPSO(L"computeFinalVelocity CPSO");
 
 	hdrFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -250,17 +256,35 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 	m_CPSOs["pass3CPSO"] = pass3CPSO;
 	cpsoNames.push_back("pass3CPSO");
 
-	addSmokesCPSO.SetRootSignature(g_U2_C2_RS);
-	addSmokesCPSO.SetComputeShader(g_pAddSmokesCS, sizeof(g_pAddSmokesCS));
-	addSmokesCPSO.Finalize(device);
-	m_CPSOs["addSmokesCPSO"] = addSmokesCPSO;
-	cpsoNames.push_back("addSmokesCPSO");
+	sourcingCPSO.SetRootSignature(g_U2_C2_RS);
+	sourcingCPSO.SetComputeShader(g_pSourcingCS, sizeof(g_pSourcingCS));
+	sourcingCPSO.Finalize(device);
+	m_CPSOs["sourcingCPSO"] = sourcingCPSO;
+	cpsoNames.push_back("sourcingCPSO");
 
 	advectionCPSO.SetRootSignature(g_S2_U2_C1_RS);
 	advectionCPSO.SetComputeShader(g_pAdvectionCS, sizeof(g_pAdvectionCS));
 	advectionCPSO.Finalize(device);
 	m_CPSOs["advectionCPSO"] = advectionCPSO;
 	cpsoNames.push_back("advectionCPSO");
+
+	computeDivergenceCPSO.SetRootSignature(g_S1_U1_C1_RS);
+	computeDivergenceCPSO.SetComputeShader(g_pComputeDivergenceCS, sizeof(g_pComputeDivergenceCS));
+	computeDivergenceCPSO.Finalize(device);
+	m_CPSOs["computeDivergenceCPSO"] = computeDivergenceCPSO;
+	cpsoNames.push_back("computeDivergenceCPSO");
+
+	jacobiCPSO.SetRootSignature(g_S2_U1_C1_RS);
+	jacobiCPSO.SetComputeShader(g_pJacobiCS, sizeof(g_pJacobiCS));
+	jacobiCPSO.Finalize(device);
+	m_CPSOs["jacobiCPSO"] = jacobiCPSO;
+	cpsoNames.push_back("jacobiCPSO");
+
+	computeFinalVelocityCPSO.SetRootSignature(g_S1_U1_C1_RS);
+	computeFinalVelocityCPSO.SetComputeShader(g_pComputeFinalVelocityCS, sizeof(g_pComputeFinalVelocityCS));
+	computeFinalVelocityCPSO.Finalize(device);
+	m_CPSOs["computeFinalVelocityCPSO"] = computeFinalVelocityCPSO;
+	cpsoNames.push_back("computeFinalVelocityCPSO");
 }
 
 ID3D12PipelineState* Renderer::GetPSO(std::string psoName)

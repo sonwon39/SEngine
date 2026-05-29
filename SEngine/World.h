@@ -49,13 +49,24 @@ public:
 	Texture2D m_newDensityBuffer;
 	Texture2D m_newVelocityBuffer;
 
+	Texture2D m_divergenceBuffer;
+
+	Texture2D m_pressureBuffer[2];
+
 	DescriptorHeap m_renderDensityHeap;
-	DescriptorHeap m_addSmokesHeap;
+	DescriptorHeap m_sourcingHeap;
 	DescriptorHeap m_advectionHeap;
+	DescriptorHeap m_computeDivergenceHeap;
+	DescriptorHeap m_jacobiHeap;
+	DescriptorHeap m_computeFinalVelocityHeap;
 
 	UINT gridWidth = 1280;
 	UINT gridHeight = 720;
-	DXGI_FORMAT hdrFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	
+	DXGI_FORMAT densityFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	DXGI_FORMAT velocityFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	DXGI_FORMAT divergenceFormat = DXGI_FORMAT_R32_FLOAT;
+	DXGI_FORMAT pressureFormat = DXGI_FORMAT_R32_FLOAT;
 
 	ConstantBuffer<Grid> gridCB;
 };

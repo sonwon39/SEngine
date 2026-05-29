@@ -23,9 +23,18 @@ public:
 	void Tick(float deltaTime);
 
 	void CopyDensityAndVelocity();
-	void AddSmokes();
+	void Sourcing();
 	void Advection();
+	void ComputeDivergence();
+	void Jacobi(int idx);
+	void CopyPressure();
+	void Finalize();
 	void Execute(ID3D12CommandQueue* commandQueue);
+
+	void Dispatch();
+
+	void SetCPSO(const std::string psoName);
+
 
 private:
 	UINT m_cbvSrvDescriptorSize = 0;

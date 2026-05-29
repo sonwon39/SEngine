@@ -20,24 +20,43 @@ void World::Initialize(ID3D12Device5* device, int width, int height)
 	// heap 초기화
 	{
 		m_renderDensityHeap.Initialize(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
-		m_addSmokesHeap.Initialize(2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+		m_sourcingHeap.Initialize(2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 		m_advectionHeap.Initialize(4, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+		m_computeDivergenceHeap.Initialize(2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+		m_jacobiHeap.Initialize(3, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+		m_computeFinalVelocityHeap.Initialize(2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 	}
 	// 버퍼 초기화
 	{
 		D3D12_RESOURCE_FLAGS flag = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-		m_oldDensityBuffer.Initialize(gridWidth, gridHeight, hdrFormat, flag, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 0, L"density Buffer");
-		m_oldVelocityBuffer.Initialize(gridWidth, gridHeight, hdrFormat, flag, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 0, L"velocity Buffer");
-		m_newDensityBuffer.Initialize(gridWidth, gridHeight, hdrFormat, flag, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 0, L"density Buffer");
-		m_newVelocityBuffer.Initialize(gridWidth, gridHeight, hdrFormat, flag, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 0, L"velocity Buffer");
+		m_oldDensityBuffer.Initialize(gridWidth, gridHeight, densityFormat, flag, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 0, L"oldDensity Buffer");
+		m_oldVelocityBuffer.Initialize(gridWidth, gridHeight, densityFormat, flag, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 0, L"oldVelocity Buffer");
+		m_newDensityBuffer.Initialize(gridWidth, gridHeight, velocityFormat, flag, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 0, L"density Buffer");
+		m_newVelocityBuffer.Initialize(gridWidth, gridHeight, velocityFormat, flag, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 0, L"velocity Buffer");
+		m_divergenceBuffer.Initialize(gridWidth, gridHeight, divergenceFormat, flag, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 0, L"divergence Buffer");
+		for (size_t i = 0; i < 2; i++)
+		{
+			std::wstring name = L"pressure Buffer" + std::to_wstring(i);
+			m_pressureBuffer[i].Initialize(gridWidth, gridHeight, pressureFormat, flag, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 0, name);
+		}
 
-		m_addSmokesHeap.CreateResourceView(m_oldDensityBuffer.GetResource(), DescriptorType::UAV);
-		m_addSmokesHeap.CreateResourceView(m_oldVelocityBuffer.GetResource(), DescriptorType::UAV);
+		m_sourcingHeap.CreateResourceView(m_oldDensityBuffer.GetResource(), DescriptorType::UAV);
+		m_sourcingHeap.CreateResourceView(m_oldVelocityBuffer.GetResource(), DescriptorType::UAV);
 
 		m_advectionHeap.CreateResourceView(m_oldDensityBuffer.GetResource(), DescriptorType::SRV);
 		m_advectionHeap.CreateResourceView(m_oldVelocityBuffer.GetResource(), DescriptorType::SRV);
 		m_advectionHeap.CreateResourceView(m_newDensityBuffer.GetResource(), DescriptorType::UAV);
 		m_advectionHeap.CreateResourceView(m_newVelocityBuffer.GetResource(), DescriptorType::UAV);
+
+		m_computeDivergenceHeap.CreateResourceView(m_newVelocityBuffer.GetResource(), DescriptorType::SRV);
+		m_computeDivergenceHeap.CreateResourceView(m_divergenceBuffer.GetResource(), DescriptorType::UAV);
+
+		m_jacobiHeap.CreateResourceView(m_divergenceBuffer.GetResource(), DescriptorType::SRV);
+		m_jacobiHeap.CreateResourceView(m_pressureBuffer[0].GetResource(), DescriptorType::SRV);
+		m_jacobiHeap.CreateResourceView(m_pressureBuffer[1].GetResource(), DescriptorType::UAV);
+
+		m_computeFinalVelocityHeap.CreateResourceView(m_pressureBuffer[1].GetResource(), DescriptorType::SRV);
+		m_computeFinalVelocityHeap.CreateResourceView(m_newVelocityBuffer.GetResource(), DescriptorType::UAV);
 
 		m_renderDensityHeap.CreateResourceView(m_newDensityBuffer.GetResource(), DescriptorType::SRV);
 	}

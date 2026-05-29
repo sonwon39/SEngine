@@ -5,6 +5,7 @@
 #include <iostream>
 
 using namespace Graphics;
+using namespace DirectX::SimpleMath;
 
 SEngineMouse::SEngineMouse()
 {
@@ -53,7 +54,7 @@ void SEngineMouse::Tick(float deltaTime)
 	float y = (mousePos.y + 0.5f) / height;
 
 	currPos = Vector2(x, y);
-	currPos.Clamp(Vector2::Zero, Vector2(1, 1));
+	currPos.Clamp(Vector2(0,0), Vector2(1, 1));
 
 	mouseCB.localConstant.posX = mousePos.x;
 	mouseCB.localConstant.posY = mousePos.y;
@@ -65,7 +66,7 @@ void SEngineMouse::Tick(float deltaTime)
 	}
 
 	Vector2 velocity = (currPos - prevPos) / deltaTime;
-	mouseCB.localConstant.velocity = velocity * 10.f;
+	mouseCB.localConstant.velocity = velocity;
 
 	mouseCB.Update();
 

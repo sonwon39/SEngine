@@ -20,15 +20,27 @@ void Texture2D::Initialize(int width, int height, DXGI_FORMAT format, D3D12_RESO
 	m_currentState = state;
 }
 
-D3D12_RESOURCE_BARRIER Texture2D::Transition(D3D12_RESOURCE_STATES newState)
+bool Texture2D::Transition(
+	D3D12_RESOURCE_STATES newState,
+	D3D12_RESOURCE_BARRIER& outBarrier)
 {
-	
-	if (m_currentState == newState && newState == D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
+	if (m_currentState == newState)
 	{
-		return CD3DX12_RESOURCE_BARRIER::UAV(buffer.Get());
-	}
-	D3D12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(buffer.Get(), m_currentState, newState);
-	m_currentState = newState;
+		if (newState == D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
+		{
+			outBarrier = CD3DX12_RESOURCE_BARRIER::UAV(buffer.Get());
+			return true;
+		}
 
-	return barrier;
+		return false;
+	}
+
+	outBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
+		buffer.Get(),
+		m_currentState,
+		newState
+	);
+
+	m_currentState = newState;
+	return true;
 }

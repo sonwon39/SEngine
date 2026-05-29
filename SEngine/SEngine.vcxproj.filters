@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="StableFluids">
+      <UniqueIdentifier>{88bc703d-b646-4d6e-a388-a7c6af925d7e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SPH">
+      <UniqueIdentifier>{a91a835f-bbb3-42c8-ae1d-6efaa5943568}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -54,12 +60,6 @@
     <ClCompile Include="Camera.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="SPH.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="StableFluids.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
     <ClCompile Include="SEngineMouse.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
@@ -74,6 +74,12 @@
     </ClCompile>
     <ClCompile Include="DescriptorHeap.cpp">
       <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="StableFluids.cpp">
+      <Filter>StableFluids</Filter>
+    </ClCompile>
+    <ClCompile Include="SPH.cpp">
+      <Filter>SPH</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -131,12 +137,6 @@
     <ClInclude Include="Camera.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="SPH.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="StableFluids.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="Grid.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
@@ -155,29 +155,74 @@
     <ClInclude Include="DescriptorHeap.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="StableFluids.h">
+      <Filter>StableFluids</Filter>
+    </ClInclude>
+    <ClInclude Include="SPH.h">
+      <Filter>SPH</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="DefaultVS.hlsl" />
     <FxCompile Include="DefaultPS.hlsl" />
     <FxCompile Include="DefaultCS.hlsl" />
-    <FxCompile Include="ParticleSimulationCS.hlsl" />
-    <FxCompile Include="ParticleRenderPS.hlsl" />
-    <FxCompile Include="ParticleRenderVS.hlsl" />
-    <FxCompile Include="ComputeForcesCS.hlsl" />
-    <FxCompile Include="ComputePressureCS.hlsl" />
-    <FxCompile Include="ComputeDensityCS.hlsl" />
-    <FxCompile Include="SPHSimulationCS.hlsl" />
-    <FxCompile Include="ParticleRenderGS.hlsl" />
-    <FxCompile Include="PrefixSumCS.hlsl" />
-    <FxCompile Include="CountingCS.hlsl" />
-    <FxCompile Include="AddBlockOffsetsCS.hlsl" />
-    <FxCompile Include="ScanBlocksCS.hlsl" />
-    <FxCompile Include="ScatterCS.hlsl" />
-    <FxCompile Include="ClearCounterCS.hlsl" />
-    <FxCompile Include="AdvectionCS.hlsl" />
-    <FxCompile Include="ComputeDivergenceCS.hlsl" />
-    <FxCompile Include="AddVelocityAndDensityCS.hlsl" />
-    <FxCompile Include="AddSmokesCS.hlsl" />
+    <FxCompile Include="SourcingCS.hlsl">
+      <Filter>StableFluids</Filter>
+    </FxCompile>
+    <FxCompile Include="AdvectionCS.hlsl">
+      <Filter>StableFluids</Filter>
+    </FxCompile>
+    <FxCompile Include="ComputeDivergenceCS.hlsl">
+      <Filter>StableFluids</Filter>
+    </FxCompile>
+    <FxCompile Include="ParticleSimulationCS.hlsl">
+      <Filter>SPH</Filter>
+    </FxCompile>
+    <FxCompile Include="ParticleRenderGS.hlsl">
+      <Filter>SPH</Filter>
+    </FxCompile>
+    <FxCompile Include="ParticleRenderPS.hlsl">
+      <Filter>SPH</Filter>
+    </FxCompile>
+    <FxCompile Include="ParticleRenderVS.hlsl">
+      <Filter>SPH</Filter>
+    </FxCompile>
+    <FxCompile Include="PrefixSumCS.hlsl">
+      <Filter>SPH</Filter>
+    </FxCompile>
+    <FxCompile Include="ScanBlocksCS.hlsl">
+      <Filter>SPH</Filter>
+    </FxCompile>
+    <FxCompile Include="ScatterCS.hlsl">
+      <Filter>SPH</Filter>
+    </FxCompile>
+    <FxCompile Include="SPHSimulationCS.hlsl">
+      <Filter>SPH</Filter>
+    </FxCompile>
+    <FxCompile Include="AddBlockOffsetsCS.hlsl">
+      <Filter>SPH</Filter>
+    </FxCompile>
+    <FxCompile Include="ClearCounterCS.hlsl">
+      <Filter>SPH</Filter>
+    </FxCompile>
+    <FxCompile Include="ComputeDensityCS.hlsl">
+      <Filter>SPH</Filter>
+    </FxCompile>
+    <FxCompile Include="ComputeForcesCS.hlsl">
+      <Filter>SPH</Filter>
+    </FxCompile>
+    <FxCompile Include="ComputePressureCS.hlsl">
+      <Filter>SPH</Filter>
+    </FxCompile>
+    <FxCompile Include="CountingCS.hlsl">
+      <Filter>SPH</Filter>
+    </FxCompile>
+    <FxCompile Include="JacobiCS.hlsl">
+      <Filter>StableFluids</Filter>
+    </FxCompile>
+    <FxCompile Include="ComputeFinalVelocityCS.hlsl">
+      <Filter>StableFluids</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -185,12 +230,20 @@
       <Filter>헤더 파일</Filter>
     </None>
     <None Include="DefaultCommon.hlsli" />
-    <None Include="ParticleCommon.hlsli" />
-    <None Include="SPHUtility.hlsli" />
-    <None Include="CountingSortCommon.hlsli" />
-    <None Include="StableFluidsUtility.hlsli" />
     <None Include="ConstantBuffer.inl">
       <Filter>헤더 파일</Filter>
+    </None>
+    <None Include="ParticleCommon.hlsli">
+      <Filter>SPH</Filter>
+    </None>
+    <None Include="SPHUtility.hlsli">
+      <Filter>SPH</Filter>
+    </None>
+    <None Include="StableFluidsUtility.hlsli">
+      <Filter>StableFluids</Filter>
+    </None>
+    <None Include="CountingSortCommon.hlsli">
+      <Filter>SPH</Filter>
     </None>
   </ItemGroup>
 </Project>

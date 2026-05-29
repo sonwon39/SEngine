@@ -9,27 +9,27 @@ RWTexture2D<float4> gNewVelocity : register(u1);
 SamplerState gWarpLinearSampler : register(s0);
 
 
-[numthreads(SF_GROUP_SIZE, 1, 1)]
+[numthreads(SF_GROUP_SIZE_X, SF_GROUP_SIZE_Y, 1)]
 void main( uint3 DTid : SV_DispatchThreadID )
 {
-	uint width, height;
-	gNewDensity.GetDimensions(width, height);
+	uint3 gridDim = gLocalCB.gGridDim;
 
-	if (DTid.x >= width || DTid.y >= height)
+	if (DTid.x >= gridDim.x || DTid.y >= gridDim.y)
 		return;
+
 
 	float deltaTime = gLocalCB.deltaTime;
 
-	float2 dx = float2(1.f / width, 1.f / height);
+	float2 dx = float2(1.f / gridDim.x, 1.f / gridDim.y);
 	float2 currPos = (DTid.xy + 0.5f) * dx;
 	
 	float2 velocity = gOldVelocity.SampleLevel(gWarpLinearSampler, currPos, 0).xy;
 	float2 prevPos = currPos - deltaTime * velocity;
 
 	float2 newVelocity = gOldVelocity.SampleLevel(gWarpLinearSampler, prevPos, 0).xy;
-	float4 newDensity = gOldDensity.SampleLevel(gWarpLinearSampler, prevPos, 0);
+	float3 newDensity = gOldDensity.SampleLevel(gWarpLinearSampler, prevPos, 0).rgb;
 	
 	gNewVelocity[DTid.xy].xy = newVelocity;
-	gNewDensity[DTid.xy] = newDensity;
+	gNewDensity[DTid.xy].rgb = newDensity;
 
 }

@@ -13,6 +13,7 @@ public:
 
 public:
 	void Initialize(int width, int height, DXGI_FORMAT format, D3D12_RESOURCE_FLAGS flags, D3D12_RESOURCE_STATES state, UINT miplevels, std::wstring name);
+	bool Transition(D3D12_RESOURCE_STATES newState, D3D12_RESOURCE_BARRIER& outBarrier);
 
 public:
 	int m_width;
@@ -21,7 +22,6 @@ public:
 public:
 	ID3D12Resource* GetResource() const { return buffer.Get(); }
 	D3D12_GPU_VIRTUAL_ADDRESS GetGPUVirtualAddress() const { return buffer->GetGPUVirtualAddress(); }
-	D3D12_RESOURCE_BARRIER Transition(D3D12_RESOURCE_STATES newState);
 
 private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> buffer;

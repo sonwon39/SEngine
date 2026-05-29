@@ -34,8 +34,8 @@ public:
 	long lastX = 0;
 	long lastY = 0;
 
-	Vector2 currPos = Vector2::Zero;
-	Vector2 prevPos = Vector2::Zero;
+	DirectX::SimpleMath::Vector2 currPos = DirectX::SimpleMath::Vector2(0, 0);
+	DirectX::SimpleMath::Vector2 prevPos = DirectX::SimpleMath::Vector2(0, 0);
 
 	// lButton 첫 클릭 여부 확인 flag
 	// 첫 클릭일 시 tick에서 prevpos를 현재 위치로 업데이트
