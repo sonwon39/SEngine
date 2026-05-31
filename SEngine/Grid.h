@@ -8,8 +8,8 @@ using namespace DirectX::SimpleMath;
 using namespace DirectX;
 #endif
 
-#define SF_GROUP_SIZE_X 16
-#define SF_GROUP_SIZE_Y 16
+#define SF_GROUP_SIZE_X 32
+#define SF_GROUP_SIZE_Y 32
 
 struct Grid
 {

@@ -23,8 +23,11 @@ struct MouseConstant
 	float delY;
 
 	XMFLOAT2 velocity;
-
 	bool  lButtonDown;
+	float dummy1;
+
+	XMFLOAT3 color;
+	float dummy2;
 };
 
 #endif

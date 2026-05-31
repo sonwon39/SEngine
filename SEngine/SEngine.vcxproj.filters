@@ -137,9 +137,6 @@
     <ClInclude Include="Camera.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="Grid.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="SEngineMouse.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
@@ -160,6 +157,9 @@
     </ClInclude>
     <ClInclude Include="SPH.h">
       <Filter>SPH</Filter>
+    </ClInclude>
+    <ClInclude Include="Grid.h">
+      <Filter>StableFluids</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

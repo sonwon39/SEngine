@@ -429,6 +429,13 @@ void RenderEngine::RenderMeshes(const std::string& psoName)
 
 	if (m_world)
 	{
+		std::vector<D3D12_RESOURCE_BARRIER> barriers0;
+		D3D12_RESOURCE_BARRIER barrier;
+		if (m_world->m_newDensityBuffer.Transition(D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, barrier)) barriers0.push_back(barrier);
+
+		m_commandList->ResourceBarrier(barriers0.size(), barriers0.data());
+
+
 		ID3D12DescriptorHeap* heaps[] = { m_world->m_renderDensityHeap.GetHeap() };
 		m_commandList->SetDescriptorHeaps(1, heaps);
 		m_commandList->SetGraphicsRootDescriptorTable(0, m_world->m_renderDensityHeap.GetGPUHandle(0));

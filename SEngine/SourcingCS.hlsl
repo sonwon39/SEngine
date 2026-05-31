@@ -21,6 +21,8 @@ void main(uint3 DTid : SV_DispatchThreadID)
 
 	if (DTid.x >= width || DTid.y >= height)
 		return;
+
+	gDensity[DTid.xy] = max(0.0, gDensity[DTid.xy] - 0.001);
 	
 	if (gMouse.lButtonDown)
 	{
@@ -37,7 +39,8 @@ void main(uint3 DTid : SV_DispatchThreadID)
 		
 		//scale = exp(-(d * d) / (sigma * sigma));
 
-		gDensity[DTid.xy].xyz += scale * float3(1, 0, 0);
+		float3 color = gMouse.color;
+		gDensity[DTid.xy].xyz += scale * color;
 		gVelocity[DTid.xy].xy += scale * velocity;
 		
 	}	

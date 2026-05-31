@@ -18,18 +18,15 @@ void main( uint3 DTid : SV_DispatchThreadID )
 		return;
 
 
-	float deltaTime = gLocalCB.deltaTime;
+	float dt = gLocalCB.deltaTime;
 
 	float2 dx = float2(1.f / gridDim.x, 1.f / gridDim.y);
 	float2 currPos = (DTid.xy + 0.5f) * dx;
 	
-	float2 velocity = gOldVelocity.SampleLevel(gWarpLinearSampler, currPos, 0).xy;
-	float2 prevPos = currPos - deltaTime * velocity;
-
-	float2 newVelocity = gOldVelocity.SampleLevel(gWarpLinearSampler, prevPos, 0).xy;
-	float3 newDensity = gOldDensity.SampleLevel(gWarpLinearSampler, prevPos, 0).rgb;
+	float2 vel = gOldVelocity.SampleLevel(gWarpLinearSampler, currPos, 0).xy;
+	float2 prevPos = currPos - vel * dt;
 	
-	gNewVelocity[DTid.xy].xy = newVelocity;
-	gNewDensity[DTid.xy].rgb = newDensity;
+	gNewVelocity[DTid.xy] = gOldVelocity.SampleLevel(gWarpLinearSampler, prevPos, 0);
+	gNewDensity[DTid.xy] = gOldDensity.SampleLevel(gWarpLinearSampler, prevPos, 0);
 
 }

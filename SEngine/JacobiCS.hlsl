@@ -15,21 +15,25 @@ void main(uint3 DTid : SV_DispatchThreadID)
 	if (DTid.x >= gridDim.x || DTid.y >= gridDim.y)
 		return;
 
-	int2 ufidx = uint2(DTid.x % gridDim.x, DTid.y % gridDim.y);
-	float2 dx = float2(1.f / (gridDim.x - 1.f), 1.f / (gridDim.y - 1.f));
+	if (DTid.x == 0 && DTid.y == 0)
+	{
+		gNewPressure[DTid.xy] = 0.f;
+		return;
+	}
 	
-	uint2 left = uint2(ufidx.x == 0 ? gridDim.x - 1 : ufidx.x - 1, ufidx.y) * dx;
-	uint2 right = uint2(ufidx.x == gridDim.x - 1 ? 0 : ufidx.x + 1, ufidx.y) * dx;
-	uint2 top = uint2(ufidx.x, ufidx.y == 0 ? gridDim.y - 1 : ufidx.y - 1) * dx;
-	uint2 bottom = uint2(ufidx.x, ufidx.y == gridDim.y - 1 ? 0 : ufidx.y + 1) * dx;
+	uint2 left = uint2(DTid.x == 0 ? gridDim.x - 1 : DTid.x - 1, DTid.y);
+	uint2 right = uint2(DTid.x == gridDim.x - 1 ? 0 : DTid.x + 1, DTid.y);
+	uint2 up = uint2(DTid.x, DTid.y == gridDim.y - 1 ? 0 : DTid.y + 1);
+	uint2 down = uint2(DTid.x, DTid.y == 0 ? gridDim.y - 1 : DTid.y - 1);
 
-	float2 leftP = gOldPressure[left];
-	float2 rightP = gOldPressure[right];
-	float2 topP = gOldPressure[top];
-	float2 bottomP = gOldPressure[bottom];
+	float leftP = gOldPressure[left];
+	float rightP = gOldPressure[right];
+	float upP = gOldPressure[up];
+	float downP = gOldPressure[down];
 
 	float divergence = gDivergence[DTid.xy];
+
+	float pressure = (leftP + rightP + upP + downP - divergence) * 0.25f;
 	
-	float pressure = (leftP + rightP + topP + bottomP + divergence) / 4.f;
 	gNewPressure[DTid.xy] = pressure;
 }

@@ -5,3 +5,5 @@
 - [SEngine layout and execution flow](reference_sengine_layout.md) — main → SimpleApp → RenderEngine → Tick/SPHSimulation; command list pools; where to plug new GPU work
 - [SEngine shader build pipeline](reference_sengine_shaders.md) — FxCompile rule, `$(OutDir)CompiledShaders/<Name>.h` + `g_p<Name>` convention, SM 6.0 (x64 only)
 - [SEngine D3D12 helpers and root-signature pool](reference_sengine_helpers.md) — `Graphics::utility`, named common RSes (`g_U2_C1_RS` etc.), `ThrowIfFailed`, PSO wrappers
+- [Grid projection sign-debugging lesson](feedback_grid_projection_sign_debugging.md) — check div/grad/Laplacian as one matched sign set first; grid-axis diamond = sign mismatch, not convergence
+- [Grid derivative sign convention](reference_grid_derivative_sign_convention.md) — central diff is always (larger index − smaller index); div & grad must match Jacobi's fixed-positive Laplacian, change them as a pair

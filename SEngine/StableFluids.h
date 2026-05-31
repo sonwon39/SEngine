@@ -25,6 +25,7 @@ public:
 	void CopyDensityAndVelocity();
 	void Sourcing();
 	void Advection();
+	void Projection();
 	void ComputeDivergence();
 	void Jacobi(int idx);
 	void CopyPressure();

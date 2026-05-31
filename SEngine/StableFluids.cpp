@@ -58,17 +58,11 @@ void StableFluids::Tick(float deltaTime)
 	m_commandAllocator->Reset();
 	m_commandList->Reset(m_commandAllocator.Get(), nullptr);
 
-	CopyDensityAndVelocity();
 	Sourcing();
+	Projection();
 	Advection();
-	ComputeDivergence();
 
-	for (size_t i = 0; i < 20; i++)
-	{
-		Jacobi(i);
-	}
-
-	Finalize();
+	CopyDensityAndVelocity();
 }
 
 void StableFluids::CopyDensityAndVelocity()
@@ -133,6 +127,18 @@ void StableFluids::Advection()
 	Dispatch();
 }
 
+void StableFluids::Projection()
+{
+	ComputeDivergence();
+
+	for (size_t i = 0; i < 100; i++)
+	{
+		Jacobi(i);
+	}
+
+	Finalize();
+}
+
 void StableFluids::ComputeDivergence()
 {
 	SetCPSO("computeDivergenceCPSO");
@@ -142,7 +148,7 @@ void StableFluids::ComputeDivergence()
 	vector<D3D12_RESOURCE_BARRIER> barriers;
 	D3D12_RESOURCE_BARRIER barrier;
 
-	if (m_world->m_newVelocityBuffer.Transition(D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, barrier)) barriers.push_back(barrier);
+	if (m_world->m_oldVelocityBuffer.Transition(D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, barrier)) barriers.push_back(barrier);
 	if (m_world->m_divergenceBuffer.Transition(D3D12_RESOURCE_STATE_UNORDERED_ACCESS, barrier)) barriers.push_back(barrier);
 	m_commandList->ResourceBarrier(barriers.size(), barriers.data());
 
@@ -160,26 +166,28 @@ void StableFluids::Jacobi(int idx)
 {
 	SetCPSO("jacobiCPSO");
 
-	DescriptorHeap& jacobiHeap = m_world->m_jacobiHeap;
+	int index0 = idx % 2;
+	int index1 = (idx + 1) % 2;
+
+	DescriptorHeap& jacobiHeap = m_world->m_jacobiHeap[index0];
+
 	vector<D3D12_RESOURCE_BARRIER> barriers;
 	D3D12_RESOURCE_BARRIER barrier;
 
-	if (m_world->m_pressureBuffer[0].Transition(D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, barrier)) barriers.push_back(barrier);
-	if (m_world->m_pressureBuffer[1].Transition(D3D12_RESOURCE_STATE_UNORDERED_ACCESS, barrier))	barriers.push_back(barrier);
-	if (idx == 0)
-	{
-		if (m_world->m_divergenceBuffer.Transition(D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, barrier)) barriers.push_back(barrier);
-	}
+	if (m_world->m_pressureBuffer[index0].Transition(D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, barrier)) barriers.push_back(barrier);
+	if (m_world->m_pressureBuffer[index1].Transition(D3D12_RESOURCE_STATE_UNORDERED_ACCESS, barrier)) barriers.push_back(barrier);
+	if (m_world->m_divergenceBuffer.Transition(D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, barrier)) barriers.push_back(barrier);
+	
 	m_commandList->ResourceBarrier(barriers.size(), barriers.data());
 
 	ID3D12DescriptorHeap* heaps[] = { jacobiHeap.GetHeap() };
 	m_commandList->SetDescriptorHeaps(1, heaps);
 	m_commandList->SetComputeRootDescriptorTable(0, jacobiHeap.GetGPUHandle(0));
-	m_commandList->SetComputeRootDescriptorTable(1, jacobiHeap.GetGPUHandle(1));
+	m_commandList->SetComputeRootDescriptorTable(1, jacobiHeap.GetGPUHandle(2));
 	m_commandList->SetComputeRootConstantBufferView(2, m_world->gridCB.GetGPUAddress());
 
 	Dispatch();
-	CopyPressure();
+	//CopyPressure();
 }
 
 void StableFluids::CopyPressure()
@@ -204,8 +212,8 @@ void StableFluids::Finalize()
 	vector<D3D12_RESOURCE_BARRIER> barriers;
 	D3D12_RESOURCE_BARRIER barrier;
 
-	if (m_world->m_newVelocityBuffer.Transition(D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, barrier)) barriers.push_back(barrier);
-	if (m_world->m_divergenceBuffer.Transition(D3D12_RESOURCE_STATE_UNORDERED_ACCESS, barrier)) barriers.push_back(barrier);
+	if (m_world->m_pressureBuffer[1].Transition(D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, barrier)) barriers.push_back(barrier);
+	if (m_world->m_oldVelocityBuffer.Transition(D3D12_RESOURCE_STATE_UNORDERED_ACCESS, barrier)) barriers.push_back(barrier);
 	m_commandList->ResourceBarrier(barriers.size(), barriers.data());
 
 	ID3D12DescriptorHeap* heaps[] = { heap.GetHeap() };
@@ -216,6 +224,7 @@ void StableFluids::Finalize()
 
 	Dispatch();
 }
+
 void StableFluids::Execute(ID3D12CommandQueue* commandQueue)
 {
 	m_commandList->Close();

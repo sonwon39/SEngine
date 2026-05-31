@@ -57,11 +57,11 @@ public:
 	DescriptorHeap m_sourcingHeap;
 	DescriptorHeap m_advectionHeap;
 	DescriptorHeap m_computeDivergenceHeap;
-	DescriptorHeap m_jacobiHeap;
+	DescriptorHeap m_jacobiHeap[2];
 	DescriptorHeap m_computeFinalVelocityHeap;
 
-	UINT gridWidth = 1280;
-	UINT gridHeight = 720;
+	UINT gridWidth = 512;
+	UINT gridHeight = 512;
 	
 	DXGI_FORMAT densityFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	DXGI_FORMAT velocityFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
@@ -69,4 +69,7 @@ public:
 	DXGI_FORMAT pressureFormat = DXGI_FORMAT_R32_FLOAT;
 
 	ConstantBuffer<Grid> gridCB;
+
+public:
+	std::vector<DirectX::SimpleMath::Vector3> colors;
 };

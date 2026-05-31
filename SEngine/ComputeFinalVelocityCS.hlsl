@@ -16,18 +16,18 @@ void main(uint3 DTid : SV_DispatchThreadID)
 
 	int2 ufidx = uint2(DTid.x % gridDim.x, DTid.y % gridDim.y);
 	
-	uint2 left = uint2(ufidx.x == 0 ? gridDim.x - 1 : ufidx.x - 1, ufidx.y);
-	uint2 right = uint2(ufidx.x == gridDim.x - 1 ? 0 : ufidx.x + 1, ufidx.y);
-	uint2 top = uint2(ufidx.x, ufidx.y == 0 ? gridDim.y - 1 : ufidx.y - 1);
-	uint2 bottom = uint2(ufidx.x, ufidx.y == gridDim.y - 1 ? 0 : ufidx.y + 1);
-	
-	
+	uint2 left = uint2(DTid.x == 0 ? gridDim.x - 1 : DTid.x - 1, DTid.y);
+	uint2 right = uint2(DTid.x == gridDim.x - 1 ? 0 : DTid.x + 1, DTid.y);
+	uint2 up = uint2(DTid.x, DTid.y == gridDim.y - 1 ? 0 : DTid.y + 1);
+	uint2 down = uint2(DTid.x, DTid.y == 0 ? gridDim.y - 1 : DTid.y - 1);
+
 	float leftP = gPressure[left];
 	float rightP = gPressure[right];
-	float topP = gPressure[top];
-	float bottomP = gPressure[bottom];
+	float upP = gPressure[up];
+	float downP = gPressure[down];
 
-	float2 divergenceP = float2(rightP - leftP , topP- bottomP) / 2.f;
+	float dx = 2.f;
+	float2 divergenceP = float2(rightP - leftP, upP - downP) * 0.5f;
 		
 	gVelocity[DTid.xy].xy -= divergenceP;
 }

@@ -268,7 +268,7 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 	m_CPSOs["advectionCPSO"] = advectionCPSO;
 	cpsoNames.push_back("advectionCPSO");
 
-	computeDivergenceCPSO.SetRootSignature(g_S1_U1_C1_RS);
+	computeDivergenceCPSO.SetRootSignature(g_S1_U3_C1_RS);
 	computeDivergenceCPSO.SetComputeShader(g_pComputeDivergenceCS, sizeof(g_pComputeDivergenceCS));
 	computeDivergenceCPSO.Finalize(device);
 	m_CPSOs["computeDivergenceCPSO"] = computeDivergenceCPSO;

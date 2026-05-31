@@ -3,6 +3,7 @@
 #include "World.h"
 
 #include <iostream>
+#include <algorithm>
 
 using namespace Graphics;
 using namespace DirectX::SimpleMath;
@@ -43,6 +44,8 @@ void SEngineMouse::ConsumeRawDelta()
 
 void SEngineMouse::Tick(float deltaTime)
 {
+	static int i = 0;
+
 	POINT mousePos;
 	GetCursorPos(&mousePos);
 	ScreenToClient(m_world->m_mainWnd, &mousePos);
@@ -52,8 +55,13 @@ void SEngineMouse::Tick(float deltaTime)
 
 	float x = (mousePos.x + 0.5f) / width;
 	float y = (mousePos.y + 0.5f) / height;
+	float ndcX = (mousePos.x * 2.f) / width - 1.f;
+	float ndcY = (-mousePos.y * 2.f) / height + 1.f;
 
-	currPos = Vector2(x, y);
+	ndcX = std::clamp(ndcX, -1.0f, 1.0f);
+	ndcY = std::clamp(ndcY, -1.0f, 1.0f);
+
+	currPos = Vector2(ndcX, -ndcY);
 	currPos.Clamp(Vector2(0,0), Vector2(1, 1));
 
 	mouseCB.localConstant.posX = mousePos.x;
@@ -61,12 +69,15 @@ void SEngineMouse::Tick(float deltaTime)
 
 	if (lBFlag)
 	{
+		int index = i % m_world->colors.size();
 		lBFlag = false;
 		prevPos = currPos;
+		mouseCB.localConstant.color = m_world->colors[index];
+		i++;
 	}
 
-	Vector2 velocity = (currPos - prevPos) / deltaTime;
-	mouseCB.localConstant.velocity = velocity;
+	Vector2 velocity = (currPos - prevPos);
+	mouseCB.localConstant.velocity = velocity * 10.f;
 
 	mouseCB.Update();
 
