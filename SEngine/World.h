@@ -7,7 +7,7 @@
 #include "SEngineMouse.h"
 #include "Texture2D.h"
 #include "DescriptorHeap.h"
-#include "Grid.h"
+#include "StableFluids/Grid.h"
 #include "ConstantBuffer.h"
 
 class World {
@@ -51,13 +51,20 @@ public:
 
 	Texture2D m_divergenceBuffer;
 
+	Texture2D m_curlBuffer;
+
 	Texture2D m_pressureBuffer[2];
 
 	DescriptorHeap m_renderDensityHeap;
 	DescriptorHeap m_sourcingHeap;
+	DescriptorHeap m_computeCurlHeap;
+	DescriptorHeap m_vorticityConfinementHeap;
+
 	DescriptorHeap m_advectionHeap;
+
 	DescriptorHeap m_computeDivergenceHeap;
 	DescriptorHeap m_jacobiHeap[2];
+
 	DescriptorHeap m_computeFinalVelocityHeap;
 
 	UINT gridWidth = 512;
@@ -67,6 +74,7 @@ public:
 	DXGI_FORMAT velocityFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	DXGI_FORMAT divergenceFormat = DXGI_FORMAT_R32_FLOAT;
 	DXGI_FORMAT pressureFormat = DXGI_FORMAT_R32_FLOAT;
+	DXGI_FORMAT curlFormat = DXGI_FORMAT_R32_FLOAT;
 
 	ConstantBuffer<Grid> gridCB;
 

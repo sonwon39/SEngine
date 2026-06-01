@@ -19,20 +19,12 @@ public:
 
 public:
 	void UpdateLButtonDownState(bool newState);
-	void AddRawDelta(long x, long y)
-	{
-		lastX += x;
-		lastY += y;
-	}
-	void ConsumeRawDelta();
 
 public:
 	ConstantBuffer<MouseConstant> mouseCB;
 
 public:
 	bool lButtonDown = false;
-	long lastX = 0;
-	long lastY = 0;
 
 	DirectX::SimpleMath::Vector2 currPos = DirectX::SimpleMath::Vector2(0, 0);
 	DirectX::SimpleMath::Vector2 prevPos = DirectX::SimpleMath::Vector2(0, 0);

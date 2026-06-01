@@ -5,7 +5,6 @@
 #include "GraphicsCommon.h"
 #include "Renderer.h"
 #include "RootSignature.h"
-#include "StableFluids.h"
 
 using namespace Renderer;
 

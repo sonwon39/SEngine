@@ -23,6 +23,8 @@
 #include "CompiledShaders/ScatterCS.h"
 
 #include "CompiledShaders/SourcingCS.h"
+#include "CompiledShaders/ComputeCurlCS.h"
+#include "CompiledShaders/VorticityConfinementCS.h"
 #include "CompiledShaders/AdvectionCS.h"
 #include "CompiledShaders/ComputeDivergenceCS.h"
 #include "CompiledShaders/JacobiCS.h"
@@ -99,6 +101,8 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 
 	// stable fluids
 	ComputePSO sourcingCPSO(L"sourcing CPSO");
+	ComputePSO computeCurlCPSO(L"computeCurl CPSO");
+	ComputePSO vorticityConfinementCPSO(L"vorticityConfinement CPSO");
 	ComputePSO advectionCPSO(L"advection CPSO");
 	ComputePSO computeDivergenceCPSO(L"computeDivergence CPSO");
 	ComputePSO jacobiCPSO(L"jacobi CPSO");
@@ -261,6 +265,18 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 	sourcingCPSO.Finalize(device);
 	m_CPSOs["sourcingCPSO"] = sourcingCPSO;
 	cpsoNames.push_back("sourcingCPSO");
+
+	computeCurlCPSO.SetRootSignature(g_S1_U1_C1_RS);
+	computeCurlCPSO.SetComputeShader(g_pComputeCurlCS, sizeof(g_pComputeCurlCS));
+	computeCurlCPSO.Finalize(device);
+	m_CPSOs["computeCurlCPSO"] = computeCurlCPSO;
+	cpsoNames.push_back("computeCurlCPSO");
+
+	vorticityConfinementCPSO.SetRootSignature(g_S1_U1_C1_RS);
+	vorticityConfinementCPSO.SetComputeShader(g_pVorticityConfinementCS, sizeof(g_pVorticityConfinementCS));
+	vorticityConfinementCPSO.Finalize(device);
+	m_CPSOs["vorticityConfinementCPSO"] = vorticityConfinementCPSO;
+	cpsoNames.push_back("vorticityConfinementCPSO");
 
 	advectionCPSO.SetRootSignature(g_S2_U2_C1_RS);
 	advectionCPSO.SetComputeShader(g_pAdvectionCS, sizeof(g_pAdvectionCS));

@@ -59,6 +59,7 @@ void StableFluids::Tick(float deltaTime)
 	m_commandList->Reset(m_commandAllocator.Get(), nullptr);
 
 	Sourcing();
+	
 	Projection();
 	Advection();
 
@@ -74,7 +75,7 @@ void StableFluids::CopyDensityAndVelocity()
 	if (m_world->m_oldVelocityBuffer.Transition(D3D12_RESOURCE_STATE_COPY_DEST, barrier)) barriers0.push_back(barrier);
 	if (m_world->m_newDensityBuffer.Transition(D3D12_RESOURCE_STATE_COPY_SOURCE, barrier)) barriers0.push_back(barrier);
 	if (m_world->m_newVelocityBuffer.Transition(D3D12_RESOURCE_STATE_COPY_SOURCE, barrier)) barriers0.push_back(barrier);
-	m_commandList->ResourceBarrier(barriers0.size(), barriers0.data());
+	m_commandList->ResourceBarrier((UINT)barriers0.size(), barriers0.data());
 
 	m_commandList->CopyResource(m_world->m_oldDensityBuffer.GetResource(), m_world->m_newDensityBuffer.GetResource());
 	m_commandList->CopyResource(m_world->m_oldVelocityBuffer.GetResource(), m_world->m_newVelocityBuffer.GetResource());
@@ -82,23 +83,77 @@ void StableFluids::CopyDensityAndVelocity()
 
 void StableFluids::Sourcing()
 {
+	AddSource();
+	AddVorticity();
+}
+
+void StableFluids::AddSource()
+{
 	SetCPSO("sourcingCPSO");
 
-	Texture2D& oldDensity = m_world->m_oldDensityBuffer;
 	DescriptorHeap& sourcingHeap = m_world->m_sourcingHeap;
-
 	vector<D3D12_RESOURCE_BARRIER> barriers0;
 	D3D12_RESOURCE_BARRIER barrier;
 
 	if (m_world->m_oldDensityBuffer.Transition(D3D12_RESOURCE_STATE_UNORDERED_ACCESS, barrier)) barriers0.push_back(barrier);
 	if (m_world->m_oldVelocityBuffer.Transition(D3D12_RESOURCE_STATE_UNORDERED_ACCESS, barrier)) barriers0.push_back(barrier);
-	m_commandList->ResourceBarrier(barriers0.size(), barriers0.data());
+	m_commandList->ResourceBarrier((UINT)barriers0.size(), barriers0.data());
 
 	ID3D12DescriptorHeap* heaps[] = { sourcingHeap.GetHeap() };
 	m_commandList->SetDescriptorHeaps(1, heaps);
 	m_commandList->SetComputeRootDescriptorTable(0, sourcingHeap.GetGPUHandle(0));
 	m_commandList->SetComputeRootConstantBufferView(1, m_world->gridCB.GetGPUAddress());
 	m_commandList->SetComputeRootConstantBufferView(2, m_world->mouse->mouseCB.GetGPUAddress());
+
+	Dispatch();
+}
+
+void StableFluids::AddVorticity()
+{
+	ComputeVelocityCurl();
+	VorticityConfinement();
+}
+
+void StableFluids::ComputeVelocityCurl()
+{
+	SetCPSO("computeCurlCPSO");
+
+	DescriptorHeap& heap = m_world->m_computeCurlHeap;
+
+	vector<D3D12_RESOURCE_BARRIER> barriers;
+	D3D12_RESOURCE_BARRIER barrier;
+
+	if (m_world->m_curlBuffer.Transition(D3D12_RESOURCE_STATE_UNORDERED_ACCESS, barrier)) barriers.push_back(barrier);
+	if (m_world->m_oldVelocityBuffer.Transition(D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, barrier)) barriers.push_back(barrier);
+	m_commandList->ResourceBarrier((UINT)barriers.size(), barriers.data());
+
+	ID3D12DescriptorHeap* heaps[] = { heap.GetHeap() };
+	m_commandList->SetDescriptorHeaps(1, heaps);
+	m_commandList->SetComputeRootDescriptorTable(0, heap.GetGPUHandle(0));
+	m_commandList->SetComputeRootDescriptorTable(1, heap.GetGPUHandle(1));
+	m_commandList->SetComputeRootConstantBufferView(2, m_world->gridCB.GetGPUAddress());
+
+	Dispatch();
+}
+
+void StableFluids::VorticityConfinement()
+{
+	SetCPSO("vorticityConfinementCPSO");
+
+	DescriptorHeap& heap = m_world->m_vorticityConfinementHeap;
+
+	vector<D3D12_RESOURCE_BARRIER> barriers;
+	D3D12_RESOURCE_BARRIER barrier;
+
+	if (m_world->m_curlBuffer.Transition(D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, barrier)) barriers.push_back(barrier);
+	if (m_world->m_oldVelocityBuffer.Transition(D3D12_RESOURCE_STATE_UNORDERED_ACCESS, barrier)) barriers.push_back(barrier);
+	m_commandList->ResourceBarrier((UINT)barriers.size(), barriers.data());
+
+	ID3D12DescriptorHeap* heaps[] = { heap.GetHeap() };
+	m_commandList->SetDescriptorHeaps(1, heaps);
+	m_commandList->SetComputeRootDescriptorTable(0, heap.GetGPUHandle(0));
+	m_commandList->SetComputeRootDescriptorTable(1, heap.GetGPUHandle(1));
+	m_commandList->SetComputeRootConstantBufferView(2, m_world->gridCB.GetGPUAddress());
 
 	Dispatch();
 }
@@ -116,7 +171,7 @@ void StableFluids::Advection()
 	if (m_world->m_oldVelocityBuffer.Transition(D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, barrier)) barriers.push_back(barrier);
 	if (m_world->m_newDensityBuffer.Transition(D3D12_RESOURCE_STATE_UNORDERED_ACCESS, barrier)) barriers.push_back(barrier);
 	if (m_world->m_newVelocityBuffer.Transition(D3D12_RESOURCE_STATE_UNORDERED_ACCESS, barrier)) barriers.push_back(barrier);
-	m_commandList->ResourceBarrier(barriers.size(), barriers.data());
+	m_commandList->ResourceBarrier((UINT)barriers.size(), barriers.data());
 
 	ID3D12DescriptorHeap* heaps[] = { advectionHeap.GetHeap() };
 	m_commandList->SetDescriptorHeaps(1, heaps);
@@ -131,7 +186,7 @@ void StableFluids::Projection()
 {
 	ComputeDivergence();
 
-	for (size_t i = 0; i < 100; i++)
+	for (int i = 0; i < 100; i++)
 	{
 		Jacobi(i);
 	}
@@ -150,7 +205,7 @@ void StableFluids::ComputeDivergence()
 
 	if (m_world->m_oldVelocityBuffer.Transition(D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, barrier)) barriers.push_back(barrier);
 	if (m_world->m_divergenceBuffer.Transition(D3D12_RESOURCE_STATE_UNORDERED_ACCESS, barrier)) barriers.push_back(barrier);
-	m_commandList->ResourceBarrier(barriers.size(), barriers.data());
+	m_commandList->ResourceBarrier((UINT)barriers.size(), barriers.data());
 
 	ID3D12DescriptorHeap* heaps[] = { computeDivergenceHeap.GetHeap() };
 	m_commandList->SetDescriptorHeaps(1, heaps);
@@ -178,7 +233,7 @@ void StableFluids::Jacobi(int idx)
 	if (m_world->m_pressureBuffer[index1].Transition(D3D12_RESOURCE_STATE_UNORDERED_ACCESS, barrier)) barriers.push_back(barrier);
 	if (m_world->m_divergenceBuffer.Transition(D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, barrier)) barriers.push_back(barrier);
 	
-	m_commandList->ResourceBarrier(barriers.size(), barriers.data());
+	m_commandList->ResourceBarrier((UINT)barriers.size(), barriers.data());
 
 	ID3D12DescriptorHeap* heaps[] = { jacobiHeap.GetHeap() };
 	m_commandList->SetDescriptorHeaps(1, heaps);
@@ -198,7 +253,7 @@ void StableFluids::CopyPressure()
 
 	if (m_world->m_pressureBuffer[0].Transition(D3D12_RESOURCE_STATE_COPY_DEST, barrier)) barriers.push_back(barrier);
 	if (m_world->m_pressureBuffer[1].Transition(D3D12_RESOURCE_STATE_COPY_SOURCE, barrier)) barriers.push_back(barrier);
-	m_commandList->ResourceBarrier(barriers.size(), barriers.data());
+	m_commandList->ResourceBarrier((UINT)barriers.size(), barriers.data());
 
 	m_commandList->CopyResource(m_world->m_pressureBuffer[0].GetResource(), m_world->m_pressureBuffer[1].GetResource());
 }
@@ -214,7 +269,7 @@ void StableFluids::Finalize()
 
 	if (m_world->m_pressureBuffer[1].Transition(D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, barrier)) barriers.push_back(barrier);
 	if (m_world->m_oldVelocityBuffer.Transition(D3D12_RESOURCE_STATE_UNORDERED_ACCESS, barrier)) barriers.push_back(barrier);
-	m_commandList->ResourceBarrier(barriers.size(), barriers.data());
+	m_commandList->ResourceBarrier((UINT)barriers.size(), barriers.data());
 
 	ID3D12DescriptorHeap* heaps[] = { heap.GetHeap() };
 	m_commandList->SetDescriptorHeaps(1, heaps);
@@ -234,8 +289,8 @@ void StableFluids::Execute(ID3D12CommandQueue* commandQueue)
 
 void StableFluids::Dispatch()
 {
-	UINT width = m_world->gridCB.localConstant.gGridDim.x;
-	UINT height = m_world->gridCB.localConstant.gGridDim.y;
+	UINT width = (UINT)m_world->gridCB.localConstant.gGridDim.x;
+	UINT height = (UINT)m_world->gridCB.localConstant.gGridDim.y;
 	UINT groupCountX = (width + SF_GROUP_SIZE_X - 1) / SF_GROUP_SIZE_X;
 	UINT groupCountY = (height + SF_GROUP_SIZE_Y - 1) / SF_GROUP_SIZE_Y;
 	m_commandList->Dispatch(groupCountX, groupCountY, 1);

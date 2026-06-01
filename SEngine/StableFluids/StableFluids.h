@@ -4,7 +4,6 @@
 #include "directxtk12\SimpleMath.h"
 #include "wrl.h"
 #include "d3d12.h"
-
 #include "PipelineState.h"
 
 class StableFluids
@@ -24,6 +23,10 @@ public:
 
 	void CopyDensityAndVelocity();
 	void Sourcing();
+	void AddSource();
+	void AddVorticity();
+	void ComputeVelocityCurl();
+	void VorticityConfinement();
 	void Advection();
 	void Projection();
 	void ComputeDivergence();
@@ -45,7 +48,5 @@ private:
 private:
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_commandList;
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_commandAllocator;
-
-
 
 };

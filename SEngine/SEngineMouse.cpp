@@ -33,14 +33,6 @@ void SEngineMouse::UpdateLButtonDownState(bool newState)
 	//std::cout << "UpdateLButtonDownState " << newState << '\n';
 }
 
-void SEngineMouse::ConsumeRawDelta()
-{
-	mouseCB.localConstant.delX = lastX;
-	mouseCB.localConstant.delY = lastY;
-
-	lastX = 0;
-	lastY = 0;
-}
 
 void SEngineMouse::Tick(float deltaTime)
 {

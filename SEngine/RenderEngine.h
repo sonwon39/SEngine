@@ -19,8 +19,8 @@
 #include "DefaultHLSLCompat.h"
 
 #include "Camera.h"
-#include "SPH.h"
-#include "StableFluids.h"
+#include "SPH/SPH.h"
+#include "StableFluids/StableFluids.h"
 
 
 class StaticMesh;

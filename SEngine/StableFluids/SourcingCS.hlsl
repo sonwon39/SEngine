@@ -1,5 +1,5 @@
 ﻿#include "StableFluidsUtility.hlsli"
-#include "GlobalConstant.h"
+#include "../GlobalConstant.h"
 
 RWTexture2D<float4> gDensity : register(u0);
 RWTexture2D<float4> gVelocity : register(u1);

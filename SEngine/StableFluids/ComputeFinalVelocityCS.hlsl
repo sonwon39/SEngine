@@ -14,8 +14,6 @@ void main(uint3 DTid : SV_DispatchThreadID)
 	if (DTid.x >= gridDim.x || DTid.y >= gridDim.y)
 		return;
 
-	int2 ufidx = uint2(DTid.x % gridDim.x, DTid.y % gridDim.y);
-	
 	uint2 left = uint2(DTid.x == 0 ? gridDim.x - 1 : DTid.x - 1, DTid.y);
 	uint2 right = uint2(DTid.x == gridDim.x - 1 ? 0 : DTid.x + 1, DTid.y);
 	uint2 up = uint2(DTid.x, DTid.y == gridDim.y - 1 ? 0 : DTid.y + 1);

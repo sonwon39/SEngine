@@ -2,7 +2,7 @@
 #define GRID_H
 
 #ifdef HLSL
-#include "HlslCompat.h"
+#include "../HLSLCompat.h"
 #else
 using namespace DirectX::SimpleMath;
 using namespace DirectX;

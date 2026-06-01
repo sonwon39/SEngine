@@ -195,7 +195,7 @@ void RenderEngine::OnResize(int width, int height)
 		m_height,
 		DXGI_FORMAT_UNKNOWN,
 		DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH);
-
+	
 	// 버퍼에 대한 RTV 재생성
 	CD3DX12_CPU_DESCRIPTOR_HANDLE handle(m_swapChainRTVHeap->GetCPUDescriptorHandleForHeapStart());
 	for (int i = 0; i < m_swapChainBufferCount; i++)
@@ -433,7 +433,7 @@ void RenderEngine::RenderMeshes(const std::string& psoName)
 		D3D12_RESOURCE_BARRIER barrier;
 		if (m_world->m_newDensityBuffer.Transition(D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, barrier)) barriers0.push_back(barrier);
 
-		m_commandList->ResourceBarrier(barriers0.size(), barriers0.data());
+		m_commandList->ResourceBarrier((UINT)barriers0.size(), barriers0.data());
 
 
 		ID3D12DescriptorHeap* heaps[] = { m_world->m_renderDensityHeap.GetHeap() };

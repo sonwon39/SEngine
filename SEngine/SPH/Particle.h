@@ -2,7 +2,7 @@
 #define PARTICLE_H
 
 #ifdef HLSL
-#include "HlslCompat.h"
+#include "../HlslCompat.h"
 #else
 using namespace DirectX::SimpleMath;
 using namespace DirectX;

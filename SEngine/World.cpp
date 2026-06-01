@@ -24,6 +24,8 @@ void World::Initialize(ID3D12Device5* device, int width, int height)
 	{
 		m_renderDensityHeap.Initialize(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 		m_sourcingHeap.Initialize(2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+		m_computeCurlHeap.Initialize(2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+		m_vorticityConfinementHeap.Initialize(2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 		m_advectionHeap.Initialize(4, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 		m_computeDivergenceHeap.Initialize(4, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 		m_jacobiHeap[0].Initialize(3, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
@@ -38,6 +40,7 @@ void World::Initialize(ID3D12Device5* device, int width, int height)
 		m_newDensityBuffer.Initialize(gridWidth, gridHeight, densityFormat, flag, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 0, L"density Buffer");
 		m_newVelocityBuffer.Initialize(gridWidth, gridHeight, velocityFormat, flag, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 0, L"velocity Buffer");
 		m_divergenceBuffer.Initialize(gridWidth, gridHeight, divergenceFormat, flag, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 0, L"divergence Buffer");
+		m_curlBuffer.Initialize(gridWidth, gridHeight, curlFormat, flag, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 0, L"divergence Buffer");
 		for (size_t i = 0; i < 2; i++)
 		{
 			std::wstring name = L"pressure Buffer" + std::to_wstring(i);
@@ -46,6 +49,12 @@ void World::Initialize(ID3D12Device5* device, int width, int height)
 
 		m_sourcingHeap.CreateResourceView(m_oldDensityBuffer.GetResource(), DescriptorType::UAV);
 		m_sourcingHeap.CreateResourceView(m_oldVelocityBuffer.GetResource(), DescriptorType::UAV);
+
+		m_computeCurlHeap.CreateResourceView(m_oldVelocityBuffer.GetResource(), DescriptorType::SRV);
+		m_computeCurlHeap.CreateResourceView(m_curlBuffer.GetResource(), DescriptorType::UAV);
+
+		m_vorticityConfinementHeap.CreateResourceView(m_curlBuffer.GetResource(), DescriptorType::SRV);
+		m_vorticityConfinementHeap.CreateResourceView(m_oldVelocityBuffer.GetResource(), DescriptorType::UAV);
 
 		m_advectionHeap.CreateResourceView(m_oldDensityBuffer.GetResource(), DescriptorType::SRV);
 		m_advectionHeap.CreateResourceView(m_oldVelocityBuffer.GetResource(), DescriptorType::SRV);
