@@ -10,14 +10,6 @@
     <Filter Include="App">
       <UniqueIdentifier>{5aad71fd-2cc8-4bc3-9426-98c1065291a9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="h">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
-    </Filter>
-    <Filter Include="cpp">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
     <Filter Include="Buffer">
       <UniqueIdentifier>{87d1a468-b8da-40c1-a82d-cb2d697a75c1}</UniqueIdentifier>
     </Filter>
@@ -30,43 +22,54 @@
     <Filter Include="Engine">
       <UniqueIdentifier>{ba981bf4-f1e1-4923-9070-4e25a6d0d488}</UniqueIdentifier>
     </Filter>
+    <Filter Include="_cpp">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="_h">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="AssetManager">
+      <UniqueIdentifier>{1237e0ea-d42c-4640-b03a-f0a2366cf3d6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Timer.cpp">
-      <Filter>cpp</Filter>
+      <Filter>_cpp</Filter>
     </ClCompile>
     <ClCompile Include="StaticMesh.cpp">
-      <Filter>cpp</Filter>
+      <Filter>_cpp</Filter>
     </ClCompile>
     <ClCompile Include="Renderer.cpp">
-      <Filter>cpp</Filter>
+      <Filter>_cpp</Filter>
     </ClCompile>
     <ClCompile Include="PipelineState.cpp">
-      <Filter>cpp</Filter>
+      <Filter>_cpp</Filter>
     </ClCompile>
     <ClCompile Include="GraphicsCommon.cpp">
-      <Filter>cpp</Filter>
+      <Filter>_cpp</Filter>
     </ClCompile>
     <ClCompile Include="Utility.cpp">
-      <Filter>cpp</Filter>
+      <Filter>_cpp</Filter>
     </ClCompile>
     <ClCompile Include="RootSignature.cpp">
-      <Filter>cpp</Filter>
+      <Filter>_cpp</Filter>
     </ClCompile>
     <ClCompile Include="GeometryGenerator.cpp">
-      <Filter>cpp</Filter>
+      <Filter>_cpp</Filter>
     </ClCompile>
     <ClCompile Include="Camera.cpp">
-      <Filter>cpp</Filter>
+      <Filter>_cpp</Filter>
     </ClCompile>
     <ClCompile Include="SEngineMouse.cpp">
-      <Filter>cpp</Filter>
+      <Filter>_cpp</Filter>
     </ClCompile>
     <ClCompile Include="ConstantBuffer.cpp">
-      <Filter>cpp</Filter>
+      <Filter>_cpp</Filter>
     </ClCompile>
     <ClCompile Include="DescriptorHeap.cpp">
-      <Filter>cpp</Filter>
+      <Filter>_cpp</Filter>
     </ClCompile>
     <ClCompile Include="BaseApp.cpp">
       <Filter>App</Filter>
@@ -116,58 +119,67 @@
     <ClCompile Include="Engine\World.cpp">
       <Filter>Engine</Filter>
     </ClCompile>
+    <ClCompile Include="Engine\Level.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="AssetManager\ModelLoader.cpp">
+      <Filter>AssetManager</Filter>
+    </ClCompile>
+    <ClCompile Include="AssetManager\TextureLoader.cpp">
+      <Filter>AssetManager</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Timer.h">
-      <Filter>h</Filter>
+      <Filter>_h</Filter>
     </ClInclude>
     <ClInclude Include="PipelineState.h">
-      <Filter>h</Filter>
+      <Filter>_h</Filter>
     </ClInclude>
     <ClInclude Include="Utility.h">
-      <Filter>h</Filter>
+      <Filter>_h</Filter>
     </ClInclude>
     <ClInclude Include="Renderer.h">
-      <Filter>h</Filter>
+      <Filter>_h</Filter>
     </ClInclude>
     <ClInclude Include="Mesh.h">
-      <Filter>h</Filter>
+      <Filter>_h</Filter>
     </ClInclude>
     <ClInclude Include="GraphicsCommon.h">
-      <Filter>h</Filter>
+      <Filter>_h</Filter>
     </ClInclude>
     <ClInclude Include="StaticMesh.h">
-      <Filter>h</Filter>
+      <Filter>_h</Filter>
     </ClInclude>
     <ClInclude Include="Vertex.h">
-      <Filter>h</Filter>
+      <Filter>_h</Filter>
     </ClInclude>
     <ClInclude Include="RootSignature.h">
-      <Filter>h</Filter>
+      <Filter>_h</Filter>
     </ClInclude>
     <ClInclude Include="GeometryGenerator.h">
-      <Filter>h</Filter>
+      <Filter>_h</Filter>
     </ClInclude>
     <ClInclude Include="HLSLCompat.h">
-      <Filter>h</Filter>
+      <Filter>_h</Filter>
     </ClInclude>
     <ClInclude Include="DefaultHLSLCompat.h">
-      <Filter>h</Filter>
+      <Filter>_h</Filter>
     </ClInclude>
     <ClInclude Include="GlobalConstant.h">
-      <Filter>h</Filter>
+      <Filter>_h</Filter>
     </ClInclude>
     <ClInclude Include="Camera.h">
-      <Filter>h</Filter>
+      <Filter>_h</Filter>
     </ClInclude>
     <ClInclude Include="SEngineMouse.h">
-      <Filter>h</Filter>
+      <Filter>_h</Filter>
     </ClInclude>
     <ClInclude Include="ConstantBuffer.h">
-      <Filter>h</Filter>
+      <Filter>_h</Filter>
     </ClInclude>
     <ClInclude Include="DescriptorHeap.h">
-      <Filter>h</Filter>
+      <Filter>_h</Filter>
     </ClInclude>
     <ClInclude Include="BaseApp.h">
       <Filter>App</Filter>
@@ -200,7 +212,7 @@
       <Filter>Buffer</Filter>
     </ClInclude>
     <ClInclude Include="InputHelper.h">
-      <Filter>h</Filter>
+      <Filter>_h</Filter>
     </ClInclude>
     <ClInclude Include="GameFramework\CollisionComponent.h">
       <Filter>GameFamework</Filter>
@@ -246,6 +258,24 @@
     </ClInclude>
     <ClInclude Include="Engine\World.h">
       <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Level.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="AssetManager\ModelLoader.h">
+      <Filter>AssetManager</Filter>
+    </ClInclude>
+    <ClInclude Include="AssetManager\TextureLoader.h">
+      <Filter>AssetManager</Filter>
+    </ClInclude>
+    <ClInclude Include="AssetManager\Asset.h">
+      <Filter>AssetManager</Filter>
+    </ClInclude>
+    <ClInclude Include="AssetManager\BlendData.h">
+      <Filter>AssetManager</Filter>
+    </ClInclude>
+    <ClInclude Include="DataType.h">
+      <Filter>AssetManager</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -319,11 +349,11 @@
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="Utility.inl">
-      <Filter>h</Filter>
+      <Filter>_h</Filter>
     </None>
     <None Include="DefaultCommon.hlsli" />
     <None Include="ConstantBuffer.inl">
-      <Filter>h</Filter>
+      <Filter>_h</Filter>
     </None>
     <None Include="StableFluids\StableFluidsUtility.hlsli">
       <Filter>StableFluids</Filter>
@@ -338,7 +368,7 @@
       <Filter>SPH</Filter>
     </None>
     <None Include="StaticMesh.inl">
-      <Filter>h</Filter>
+      <Filter>_h</Filter>
     </None>
     <None Include="VertexBuffer.inl">
       <Filter>Buffer</Filter>
@@ -348,6 +378,9 @@
     </None>
     <None Include="GPUBuffer.inl">
       <Filter>Buffer</Filter>
+    </None>
+    <None Include="AssetManager\Asset.inl">
+      <Filter>AssetManager</Filter>
     </None>
   </ItemGroup>
 </Project>

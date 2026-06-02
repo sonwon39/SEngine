@@ -1,0 +1,146 @@
+﻿#include "TextureLoader.h"
+
+#include "Directxtk12/DDSTextureLoader.h"
+#include "directxtk12/ResourceUploadBatch.h"
+#include <omp.h>
+
+#include "Renderer.h"
+#include "GraphicsCommon.h"
+#include "Engine/World.h"
+#include "DataType.h"
+
+using namespace Graphics;
+
+namespace fs = std::filesystem;
+
+
+std::ostream& operator<<(std::ostream& out, const TextureInfo& info)
+{
+	out << ", Offset : " << info.offset << " , size : " << info.size;
+	out << '\n';
+
+	return out;
+}
+
+TextureLoader::TextureLoader()
+{
+}
+
+TextureLoader::TextureLoader(std::string path, ID3D12Device5* device)
+	:folder(path)
+{
+	count = 0;
+	binPath = folder + "textures.bin";
+	idxPath = folder + "textures.idx";
+}
+
+void TextureLoader::InitHeap(UINT heapSize)
+{
+	heap.Initialize(heapSize, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+}
+
+void TextureLoader::LoadIdx()
+{
+	std::ifstream idx(idxPath.c_str(), std::ios::binary);
+
+	idx.read(reinterpret_cast<char*>(&count), sizeof(count));
+
+	std::cout << "dds count : " << count << '\n';
+
+	for (uint32_t i = 0; i < count; i++)
+	{
+		TextureInfo info;
+		uint32_t nameLen;
+
+		idx.read(reinterpret_cast<char*>(&nameLen), sizeof(nameLen));
+		std::string filename(nameLen, ' ');
+
+		idx.read(filename.data(), nameLen);
+		idx.read(reinterpret_cast<char*>(&info.offset), sizeof(info.offset));
+		idx.read(reinterpret_cast<char*>(&info.size), sizeof(info.size));
+
+		//std::cout << "File name : " << filename << info;
+		textureMap[filename] = info;
+		nameMap[i] = filename;
+		idxMap[filename] = i;
+		filenames.push_back(filename);
+	}
+}
+
+void TextureLoader::LoadTextures(ID3D12GraphicsCommandList* commandList)
+{
+	ID3D12Device5* m_device = m_world->GetDevice();
+	srvOffset = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	textures.resize(count);
+
+	m_ddsBlobs.clear();
+	m_uploadHeaps.clear();
+	m_ddsBlobs.reserve(count);
+	m_uploadHeaps.reserve(count);
+
+	std::ifstream bin(binPath, std::ios::binary);
+
+	for (int i = 0; i < count; i++)
+	{
+		std::string filename = nameMap[i];
+
+		bool isCubeMap = filename.find("CubeMap") != std::string::npos;
+		bool isAlbedo = (filename.find("albedo") != std::string::npos) ||
+			(filename.find("Albedo") != std::string::npos);
+
+		TextureInfo info = textureMap.at(filename);
+		uint64_t size = info.size;
+
+		// DDS 바이트는 멤버 벡터에 보관해야 한다. subresources[].pData 가 이 메모리를 가리키기 때문.
+		m_ddsBlobs.emplace_back(size);
+		std::vector<uint8_t>& texture = m_ddsBlobs.back();
+		bin.seekg(info.offset);
+		bin.read(reinterpret_cast<char*>(texture.data()), size);
+
+		DDS_LOADER_FLAGS flags = isAlbedo
+			? DirectX::DX12::DDS_LOADER_FORCE_SRGB
+			: DirectX::DX12::DDS_LOADER_DEFAULT;
+
+		Microsoft::WRL::ComPtr<ID3D12Resource> gpu;
+		Microsoft::WRL::ComPtr<ID3D12Resource> upload;
+
+		utility->CreateTextureFromDDS(texture.data(), size, gpu, upload, flags, commandList);
+
+		if (isCubeMap)
+			heap.CreateResourceView(gpu.Get(), DescriptorType::SRV, ViewDimensionType::TEXTURECUBE);
+		else
+			heap.CreateResourceView(gpu.Get(), DescriptorType::SRV, ViewDimensionType::TEXTURE2D);
+
+		textures[i] = gpu;
+		m_uploadHeaps.push_back(upload);  // GPU 복사 완료까지 보관
+	}
+}
+
+
+D3D12_GPU_DESCRIPTOR_HANDLE TextureLoader::GetGPUHandle(const int & idx) const
+{
+	return heap.GetGPUHandle(idx);
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE TextureLoader::GetGPUHandle(const std::string & filename) const
+{
+	uint32_t idx = 0;
+	auto it = idxMap.find(filename);
+	if (it != idxMap.end())
+	{
+		idx = it->second;
+	}
+	return heap.GetGPUHandle(idx);
+}
+
+ID3D12Resource* TextureLoader::GetTexture(const std::string& filename) const
+{
+	const std::string test;
+	uint32_t idx = 0;
+	auto it = idxMap.find(filename);
+	if (it != idxMap.end())
+	{
+		idx = it->second;
+	}
+	return textures[idx].Get();
+}

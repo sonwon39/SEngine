@@ -109,7 +109,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3d12.lib;dxgi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;DirectXTK12.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <FxCompile>
       <ShaderModel>6.0</ShaderModel>
@@ -133,7 +133,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3d12.lib;dxgi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;DirectXTK12.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <FxCompile>
       <ShaderModel>6.0</ShaderModel>
@@ -143,9 +143,12 @@
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AssetManager\ModelLoader.cpp" />
+    <ClCompile Include="AssetManager\TextureLoader.cpp" />
     <ClCompile Include="BaseApp.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="ConstantBuffer.cpp" />
+    <ClCompile Include="Engine\Level.cpp" />
     <ClCompile Include="Engine\RenderEngine.cpp" />
     <ClCompile Include="Engine\World.cpp" />
     <ClCompile Include="GameFramework\Actor.cpp" />
@@ -173,10 +176,16 @@
     <ClCompile Include="Utility.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AssetManager\Asset.h" />
+    <ClInclude Include="AssetManager\BlendData.h" />
+    <ClInclude Include="AssetManager\ModelLoader.h" />
+    <ClInclude Include="AssetManager\TextureLoader.h" />
     <ClInclude Include="BaseApp.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="ConstantBuffer.h" />
+    <ClInclude Include="DataType.h" />
     <ClInclude Include="DefaultHLSLCompat.h" />
+    <ClInclude Include="Engine\Level.h" />
     <ClInclude Include="Engine\RenderEngine.h" />
     <ClInclude Include="Engine\World.h" />
     <ClInclude Include="GameFramework\Actor.h" />
@@ -305,6 +314,7 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="AssetManager\Asset.inl" />
     <None Include="ConstantBuffer.inl" />
     <None Include="DefaultCommon.hlsli" />
     <None Include="GPUBuffer.inl" />

@@ -25,13 +25,13 @@ inline void StaticMesh::Initialize(ID3D12Device5* device, ID3D12GraphicsCommandL
 	for (size_t i = 0; i < meshCount; i++)
 	{
 		const auto& mesh = meshes[i];
-		VertexBuffer v;
-		IndexBuffer i;
-		v.Initialize<V>(mesh.m_vertices, D3D12_RESOURCE_FLAG_NONE, commandList);
-		i.Initialize<I>(mesh.m_indices, D3D12_RESOURCE_FLAG_NONE, commandList);
+		VertexBuffer vertexBuffer;
+		IndexBuffer indexBuffer;
+		vertexBuffer.Initialize<V>(mesh.m_vertices, D3D12_RESOURCE_FLAG_NONE, commandList);
+		indexBuffer.Initialize<I>(mesh.m_indices, D3D12_RESOURCE_FLAG_NONE, commandList);
 
-		m_vertexBuffers.push_back(v);
-		m_indexBuffers.push_back(i);
+		m_vertexBuffers.push_back(vertexBuffer);
+		m_indexBuffers.push_back(indexBuffer);
 		
 	}
 }

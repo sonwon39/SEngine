@@ -28,15 +28,16 @@ void DescriptorHeap::Initialize(UINT numDescriptors, D3D12_DESCRIPTOR_HEAP_TYPE 
 	utility->CreateDescriptorHeap(numDescriptors, type, m_heap, nodeMask, flag);
 }
 
-void DescriptorHeap::CreateResourceView(ID3D12Resource* resource, const DescriptorType& descriptorType)
+void DescriptorHeap::CreateResourceView(ID3D12Resource* resource, const DescriptorType& descriptorType, const ViewDimensionType& viewDimesionType)
 {
 	DXGI_FORMAT format = resource->GetDesc().Format;
+	UINT mipLevel = resource->GetDesc().MipLevels;
 	CD3DX12_CPU_DESCRIPTOR_HANDLE handle(m_heap->GetCPUDescriptorHandleForHeapStart(), m_heapIdx, descriptorIncrementSize);
-	utility->CreateResourceView(resource, format, false, handle, descriptorType);
+	utility->CreateResourceView(resource, format, false, handle, descriptorType, viewDimesionType, mipLevel);
 	m_heapIdx++;
 }
 
-D3D12_GPU_DESCRIPTOR_HANDLE DescriptorHeap::GetGPUHandle(int offset)
+D3D12_GPU_DESCRIPTOR_HANDLE DescriptorHeap::GetGPUHandle(int offset) const
 {
 	CD3DX12_GPU_DESCRIPTOR_HANDLE handle(m_heap->GetGPUDescriptorHandleForHeapStart(), offset, descriptorIncrementSize);
 	return handle;

@@ -9,7 +9,9 @@
 #include "directx/d3dx12.h"
 #include "dxgi1_6.h"
 #include <directxtk12/SimpleMath.h>
+#include <directxtk12/DDSTextureLoader.h>
 
+#include "DataType.h"
 
 //#include "StaticMesh.h"
 class StaticMesh;
@@ -21,17 +23,7 @@ class StaticMesh;
 
 template<typename V, typename I> class Mesh;
 
-/**
- * 디스크립터 종류를 식별하기 위한 열거형.
- * 디스크립터 힙에 뷰를 생성할 때 어떤 종류의 뷰를 만들지 결정한다.
- */
-enum DescriptorType
-{
-	RTV,	// Render Target View
-	UAV,	// Unordered Access View
-	SRV,	// Shader Resource View
-	DSV		// Depth Stencil View
-};
+
 
 /**
  * ANSI(MBCS) 문자열을 와이드 문자열(UTF-16)로 변환한다.
@@ -220,6 +212,8 @@ namespace GraphicsUtils {
 		void CreateTextureBuffer(Microsoft::WRL::ComPtr<ID3D12Resource>& buffer, UINT width, UINT height, DXGI_FORMAT format, D3D12_RESOURCE_FLAGS flags, D3D12_RESOURCE_STATES state,
 			UINT mipLevels, std::wstring name);
 
+
+
 		/**
 		 * 주어진 리소스에 대해 지정한 종류의 뷰(RTV/UAV/SRV/DSV)를 생성한다.
 		 *
@@ -229,7 +223,8 @@ namespace GraphicsUtils {
 		 * @param handle   뷰가 기록될 CPU 디스크립터 핸들.
 		 * @param type     생성할 뷰의 종류.
 		 */
-		void CreateResourceView(ID3D12Resource* resource, DXGI_FORMAT format, bool bUseMsaa, D3D12_CPU_DESCRIPTOR_HANDLE& handle, const DescriptorType& type);
+		void CreateResourceView(ID3D12Resource* resource, DXGI_FORMAT format, bool bUseMsaa, D3D12_CPU_DESCRIPTOR_HANDLE& handle, const DescriptorType& type, const ViewDimensionType& viewType = ViewDimensionType::TEXTURE2D, UINT miplevel = 0);
+
 
 		void CreateStructuredResourceView(Microsoft::WRL::ComPtr<ID3D12Resource>& buffer, DXGI_FORMAT forma, D3D12_CPU_DESCRIPTOR_HANDLE& handle, const DescriptorType& type , UINT count, UINT64 dataSize);
 
@@ -238,6 +233,30 @@ namespace GraphicsUtils {
 		void CreateBuffer(const std::vector<DataType>& data, Microsoft::WRL::ComPtr<ID3D12Resource>& gpu, Microsoft::WRL::ComPtr<ID3D12Resource>& upload, D3D12_RESOURCE_FLAGS flag, ID3D12GraphicsCommandList* commandList);
 
 		void CreateBuffer(Microsoft::WRL::ComPtr<ID3D12Resource>& buffer, D3D12_HEAP_TYPE heapType, UINT size, D3D12_RESOURCE_FLAGS flags, D3D12_RESOURCE_STATES state, std::wstring name);
+
+		/**
+		 * DDS 메모리 블록으로부터 텍스처 리소스를 생성하고 GPU 업로드 명령을 기록한다.
+		 *
+		 * 흐름은 CreateBuffer 의 (UPLOAD 힙 생성 → COPY_DEST 전이 → UpdateSubresources → 최종 상태 전이)
+		 * 과 동일하며, DEFAULT 힙 리소스의 desc 만 DirectXTK 가 DDS 헤더에서 파싱해 채워 준다.
+		 *
+		 * @param ddsBytes    DDS 파일 전체 바이트.
+		 * @param ddsSize     ddsBytes 길이.
+		 * @param gpu         [out] DEFAULT 힙에 생성된 텍스처 리소스. 종료 상태는 PIXEL_SHADER_RESOURCE.
+		 * @param upload      [out] 복사용 UPLOAD 힙. 호출자가 ExecuteCommandLists 완료까지 alive 유지.
+		 * @param loadFlags   sRGB 강제 등 DirectXTK DDS 로더 플래그.
+		 * @param commandList 업로드 명령을 기록할 그래픽스 커맨드 리스트.
+		 *
+		 * @note ddsBytes 메모리도 ExecuteCommandLists 완료까지 호출자가 alive 유지해야 한다
+		 *       (반환된 subresource 디스크립션이 그 안을 가리키기 때문).
+		 * @note Compute 등 PS 외 stage 에서 sampling 하려면 호출자가 추가 barrier 를 발행해야 한다.
+		 */
+		void CreateTextureFromDDS(
+			const uint8_t* ddsBytes, size_t ddsSize,
+			Microsoft::WRL::ComPtr<ID3D12Resource>& gpu,
+			Microsoft::WRL::ComPtr<ID3D12Resource>& upload,
+			DirectX::DDS_LOADER_FLAGS loadFlags,
+			ID3D12GraphicsCommandList* commandList);
 	};
 }
 #include "Utility.inl"

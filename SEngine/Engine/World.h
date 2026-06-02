@@ -10,6 +10,7 @@
 #include "StableFluids/Grid.h"
 #include "ConstantBuffer.h"
 #include "GPUBuffer.h"
+#include "Level.h"
 
 class World {
 public:
@@ -85,4 +86,7 @@ public:
 
 public:
 	bool m_captureDirty = false;
+
+private:
+	std::shared_ptr<Level>  m_level;
 };

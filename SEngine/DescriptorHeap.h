@@ -3,8 +3,8 @@
 #include "wrl.h"
 #include "d3d12.h"
 #include <string>
+#include "DataType.h"
 
-enum DescriptorType;
 
 class DescriptorHeap {
 public:
@@ -13,11 +13,11 @@ public:
 
 public:
 	void Initialize(UINT numDescriptors, D3D12_DESCRIPTOR_HEAP_TYPE type, UINT nodeMask, D3D12_DESCRIPTOR_HEAP_FLAGS flag);
-	void CreateResourceView(ID3D12Resource* resource, const DescriptorType& descriptorType);
+	void CreateResourceView(ID3D12Resource* resource, const DescriptorType& descriptorType, const ViewDimensionType& viewDimesionType = ViewDimensionType::TEXTURE2D);
 
 public:
 	ID3D12DescriptorHeap* GetHeap() const { return m_heap.Get(); }
-	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUHandle(int offset);
+	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUHandle(int offset) const;
 
 private:
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_heap;

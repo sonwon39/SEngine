@@ -82,7 +82,7 @@ void Actor::OnRegister()
 
 DirectX::SimpleMath::Vector3 Actor::GetActorLocation() const
 {
-	return m_rootComponent ? m_rootComponent->GetLocation() : DirectX::SimpleMath::Vector3::Zero;
+	return m_rootComponent ? m_rootComponent->GetLocation() : DirectX::SimpleMath::Vector3(0.f,0.f,0.f);
 }
 
 DirectX::SimpleMath::Vector3 Actor::GetActorFrontDir() const

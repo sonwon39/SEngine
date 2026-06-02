@@ -3,6 +3,8 @@
 #include <fstream>
 #include <iostream>
 
+#include <directxtk12/DDSTextureLoader.h>
+
 DxException::DxException(HRESULT hr, const std::wstring& functionName, const std::wstring& filename, int lineNumber) :
 	ErrorCode(hr),
 	FunctionName(functionName),
@@ -138,12 +140,14 @@ namespace GraphicsUtils {
 		buffer->SetName(name.c_str());
 	}
 
-
-
-	void Utility::CreateResourceView(ID3D12Resource* resource, DXGI_FORMAT format, bool bUseMsaa, D3D12_CPU_DESCRIPTOR_HANDLE& handle, const DescriptorType& type)
+	void Utility::CreateResourceView(ID3D12Resource* resource, DXGI_FORMAT format, bool bUseMsaa, D3D12_CPU_DESCRIPTOR_HANDLE& handle, const DescriptorType& type, const ViewDimensionType& viewType, UINT miplevel)
 	{
 		// 요청된 뷰 종류에 따라 분기. 동일한 리소스라도 사용 목적에 맞는 뷰를 별도로 생성해야 한다.
 		if (type == DescriptorType::RTV) {
+			if (viewType == ViewDimensionType::TEXTURECUBE) {
+				std::cout << "RTV는 TEXTURECUBE를 사용할 수 없습니다" << std::endl;
+				return;
+			}
 			D3D12_RENDER_TARGET_VIEW_DESC rtvDesc;
 			ZeroMemory(&rtvDesc, sizeof(rtvDesc));
 			if (bUseMsaa) {
@@ -163,12 +167,15 @@ namespace GraphicsUtils {
 				std::cout << "UAV는 MSAA를 사용할 수 없습니다" << std::endl;
 				return;
 			}
+			if (viewType == ViewDimensionType::TEXTURECUBE) {
+				std::cout << "UAV는 TEXTURECUBE를 사용할 수 없습니다" << std::endl;
+				return;
+			}
 			D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc;
 			ZeroMemory(&uavDesc, sizeof(uavDesc));
 
 			uavDesc.Format = format;
 			uavDesc.Texture2D.MipSlice = 0;
-			uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
 			uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
 			uavDesc.Format = format;
 			uavDesc.Texture2D.MipSlice = 0;
@@ -182,14 +189,18 @@ namespace GraphicsUtils {
 				srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DMS;
 			}
 			else {
-				srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+				srvDesc.ViewDimension = viewType == ViewDimensionType::TEXTURE2D ? D3D12_SRV_DIMENSION_TEXTURE2D : D3D12_SRV_DIMENSION_TEXTURECUBE;
 			}
 			srvDesc.Format = format;
-			srvDesc.Texture2D.MipLevels = 1;
+			srvDesc.Texture2D.MipLevels = miplevel;
 			m_device->CreateShaderResourceView(resource, &srvDesc, handle);
 		}
 		else if (type == DescriptorType::DSV)
 		{
+			if (viewType == ViewDimensionType::TEXTURECUBE) {
+				std::cout << "DSV는 TEXTURECUBE를 사용할 수 없습니다" << std::endl;
+				return;
+			}
 			D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
 			dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 			dsvDesc.Texture2D.MipSlice = 0;
@@ -224,6 +235,62 @@ namespace GraphicsUtils {
 
 			m_device->CreateShaderResourceView(buffer.Get(), &srvDesc, handle);
 		}
+	}
+
+	void Utility::CreateTextureFromDDS(
+		const uint8_t* ddsBytes, size_t ddsSize,
+		ComPtr<ID3D12Resource>& gpu,
+		ComPtr<ID3D12Resource>& upload,
+		DirectX::DDS_LOADER_FLAGS loadFlags,
+		ID3D12GraphicsCommandList* commandList)
+	{
+		// (1) DDS 헤더 파싱 → DEFAULT 힙 텍스처 생성. 데스크탑(non-Xbox) 빌드에서 초기 상태는 COMMON.
+		//     subresources[].pData 는 ddsBytes 내부를 가리키므로 호출자가 ExecuteCommandLists 완료까지 alive 유지해야 한다.
+		std::vector<D3D12_SUBRESOURCE_DATA> subresources;
+		ThrowIfFailed(DirectX::LoadDDSTextureFromMemoryEx(
+			m_device,
+			ddsBytes,
+			ddsSize,
+			0,
+			D3D12_RESOURCE_FLAG_NONE,
+			loadFlags,
+			gpu.ReleaseAndGetAddressOf(),
+			subresources));
+
+		// (2) mip / face 를 모두 담을 수 있는 UPLOAD 힙 크기 계산 (row pitch 정렬 포함).
+		const UINT64 uploadSize = GetRequiredIntermediateSize(
+			gpu.Get(), 0, static_cast<UINT>(subresources.size()));
+
+		// (3) UPLOAD 힙 생성. CreateBuffer 와 동일 패턴.
+		ThrowIfFailed(m_device->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+			D3D12_HEAP_FLAG_NONE,
+			&CD3DX12_RESOURCE_DESC::Buffer(uploadSize),
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr,
+			IID_PPV_ARGS(upload.ReleaseAndGetAddressOf())
+		));
+
+		// (4) COMMON → COPY_DEST. CreateBuffer (3) 과 같은 전이.
+		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
+			gpu.Get(),
+			D3D12_RESOURCE_STATE_COMMON,
+			D3D12_RESOURCE_STATE_COPY_DEST));
+
+		// (5) 모든 mip / face 를 한 번에 복사 기록. CreateBuffer 의 단일 subresource 와 호출 형태만 다르다.
+		UpdateSubresources(
+			commandList,
+			gpu.Get(),
+			upload.Get(),
+			0, 0,
+			static_cast<UINT>(subresources.size()),
+			subresources.data());
+
+		// (6) COPY_DEST → PIXEL_SHADER_RESOURCE. PS sampling 외 용도면 호출자가 별도 barrier 처리.
+		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
+			gpu.Get(),
+			D3D12_RESOURCE_STATE_COPY_DEST,
+			D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE));
 	}
 
 
