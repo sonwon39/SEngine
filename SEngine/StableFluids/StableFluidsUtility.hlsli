@@ -1,7 +1,7 @@
 ﻿#define HLSL
 #include "Grid.h"
 
-ConstantBuffer<Grid> gLocalCB : register(b0);
+ConstantBuffer<SFLocalConstant> gLocalCB : register(b0);
 
 uint FlatIdx(int3 c)
 {

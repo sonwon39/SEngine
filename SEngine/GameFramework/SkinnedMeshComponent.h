@@ -7,8 +7,6 @@
 class StaticMesh;
 enum ActorState;
 
-
-
 class SkinnedMeshComponent : public PrimitiveComponent
 {
 public:

@@ -3,18 +3,14 @@
 #include "d3d12.h"
 #include <string>
 
-//#include "TextureLoader.h"
-//#include "Delegate.h"
 #include "physx\PxPhysicsAPI.h"
 #include "PhysXMode.h"
 
 class PrimitiveComponent;
 struct ActorData;
 
-//DECLARE_DELEGATE_OneParam(ComponentBeginOverlapSignature, PrimitiveComponent*)
-//DECLARE_DELEGATE_OneParam(ComponentEndOverlapSignature, PrimitiveComponent*)
-
-
+// 렌더 가능한 + 물리 표현을 갖는 SceneComponent. 가시성, PSO/텍스처 이름,
+// PhysX 트랜스폼 동기화를 담당한다. (PhysX 연동은 추후 활성화 예정)
 class PrimitiveComponent : public SceneComponent {
 public:
 	PrimitiveComponent(Actor* owner);
@@ -36,7 +32,6 @@ public:
 	//ComponentEndOverlapSignature OnComponentEndOverlap;
 
 public:
-	class World* GetWorld() const;
 	std::string GetName() const;
 	std::string GetTextureName() const { return m_textureName; };
 	std::string GetPSOName() const { return m_psoName; };

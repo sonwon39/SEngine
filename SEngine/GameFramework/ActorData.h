@@ -33,7 +33,6 @@ struct ActorData
 	std::string mesh;
 	std::string material;
 	std::string psoName;
-	//DirectX::SimpleMath::Vector3 pos;
 	bool useSimulate;
 	PhysXMode mode = PhysXMode::PM_Default;
 	bool updateConstants;
@@ -53,7 +52,6 @@ struct LightData
 	Vector4 color;
 	Vector3 dir;
 };
-
 
 struct AnimData
 {

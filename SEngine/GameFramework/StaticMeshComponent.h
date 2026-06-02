@@ -13,7 +13,6 @@ public:
 
 public:
 	void SetMesh(std::shared_ptr<StaticMesh> newMesh);
-	//void SetActorData(const ActorData& ad);
 
 public:
 	StaticMesh* GetMesh() const { return m_mesh.get(); }

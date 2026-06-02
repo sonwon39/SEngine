@@ -1,7 +1,7 @@
 ﻿#include "PrimitiveComponent.h"
 #include "Actor.h"
-#include "World.h"
-#include "PhysXEngine.h"
+#include "Engine/World.h"
+//#include "PhysXEngine.h"
 #include "ActorData.h"
 
 PrimitiveComponent::PrimitiveComponent(Actor* owner)
@@ -14,10 +14,6 @@ PrimitiveComponent::~PrimitiveComponent()
 {
 }
 
-World* PrimitiveComponent::GetWorld() const
-{
-    return m_owner ? m_owner->GetWorld() : nullptr;
-}
 
 std::string PrimitiveComponent::GetName() const
 {
@@ -37,13 +33,14 @@ physx::PxTransform PrimitiveComponent::GetPxTransform() const
 
 void PrimitiveComponent::OnRegister()
 {
-    SceneComponent::OnRegister();
+    // 비활성화: 현재 World에는 RegisterPrimitive가 없음. PhysX 재도입 시 아래 등록 로직을 복구할 것.
+    /*  SceneComponent::OnRegister();
 
     World* world = GetWorld();
     if (world)
     {
         world->RegisterPrimitive(this, m_usePhysX);
-    }
+    }*/
 }
 
 void PrimitiveComponent::SyncFromPhysX(const physx::PxTransform& transform)

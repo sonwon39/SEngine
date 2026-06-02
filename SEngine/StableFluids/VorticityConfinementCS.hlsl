@@ -25,8 +25,9 @@ void main(uint3 DTid : SV_DispatchThreadID)
 	float downW = gCurl[down];
 	
 	float w = gCurl[DTid.xy];
-	
-	float2 curlDivergence = float2(abs(rightW - leftW), abs(upW - downW)) * 0.5f;
+
+	float2 dx = float2(1.f / gridDim.x, 1.f / gridDim.y);
+	float2 curlDivergence = float2(abs(rightW - leftW) / (2.f * dx.x), abs(upW - downW) / (2.f * dx.y));
 
 	
 	if (length(curlDivergence) < 1e-5)
@@ -37,7 +38,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
 	
 	float e = 0.2f;
 	
-	float2 vorticity = e * cross(N, omega).xy;
+	float2 vorticity = e * cross(N, omega).xy * dx;
 		
 	gVelocity[DTid.xy].xy += vorticity;
 }

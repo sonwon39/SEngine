@@ -13,7 +13,7 @@ public:
 public:
 	DirectX::SimpleMath::Matrix	GetProjMatrix() const override { return  m_projMatrix; }
 
-public:
+	public:
 	void UpdateCameraInfo(const int& width, const int& height) override;
 
 private:

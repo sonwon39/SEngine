@@ -89,7 +89,7 @@ void World::InitStableFluidsResources(int width, int height)
 		m_renderDensityHeap.CreateResourceView(m_newDensityBuffer.GetResource(), DescriptorType::SRV);
 	}
 
-	Grid grid;
+	SFLocalConstant grid;
 	grid.gGridDim = Vector3(gridWidth, gridHeight, 1);
 	grid.h = 1.f;
 	gridCB.Initialize(grid);

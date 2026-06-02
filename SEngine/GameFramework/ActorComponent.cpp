@@ -1,6 +1,7 @@
 ﻿#include "ActorComponent.h"
 
 ActorComponent::ActorComponent(Actor* owner)
+	: m_owner(owner) 
 {
 }
 

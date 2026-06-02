@@ -1,7 +1,6 @@
 ﻿#include "StaticMeshComponent.h"
 #include "Actor.h"
 #include "StaticMesh.h"
-#include "PointCloudComponent.h"
 
 StaticMeshComponent::StaticMeshComponent(Actor* owner)
 	:PrimitiveComponent(owner)

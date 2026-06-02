@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "directxtk12/SpriteBatch.h"
 #include "directxtk12/SpriteFont.h"
@@ -6,7 +6,7 @@
 
 #include "BaseApp.h"
 #include "Renderer.h"
-#include "RenderEngine.h"
+#include "Engine/RenderEngine.h"
 
 namespace Core {
 	class SimpleApp : public BaseApp

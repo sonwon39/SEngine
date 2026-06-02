@@ -1,7 +1,6 @@
 ﻿#include "SkinnedMeshComponent.h"
 #include "Actor.h"
 #include "GraphicsCommon.h"
-#include "ModelLoader.h"
 #include "StaticMesh.h"
 
 SkinnedMeshComponent::SkinnedMeshComponent(Actor* owner)
@@ -21,7 +20,8 @@ void SkinnedMeshComponent::SetMesh(std::shared_ptr<StaticMesh> newMesh)
 
 void SkinnedMeshComponent::UpdateAnimation(const float& deltaTime)
 {
-	using namespace Graphics;
+	// 비활성화: 옛 World::skinnedMeshLoader에 의존하던 코드. 애니메이션 시스템 재도입 시 새 로더로 연결할 것.
+	/*using namespace Graphics;
 	if (bUpdateAnim && world && m_owner)
 	{
 		ActorState as = m_owner->GetActorState();
@@ -60,7 +60,7 @@ void SkinnedMeshComponent::UpdateAnimation(const float& deltaTime)
 		{
 			comp->UpdateAnimation(deltaTime);
 		}
-	}
+	}*/
 }
 
 void SkinnedMeshComponent::PlayMontage(const float& deltaTime)

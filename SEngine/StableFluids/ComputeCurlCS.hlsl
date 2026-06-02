@@ -30,8 +30,8 @@ void main(uint3 DTid : SV_DispatchThreadID)
 	float2 downVel = gVelocity[down].xy;
 
 	float2 dx = float2(1.f / gridDim.x, 1.f / gridDim.y);
-	dx = float2(1.f, 1.f);
 	
-	curl = ((upVel.x - downVel.x) - (rightVel.y - leftVel.y)) * 0.5f;
+	
+	curl = ((rightVel.y - leftVel.y) / (2.f * dx.x) - (upVel.x - downVel.x) / (2.f * dx.y));
 	gCrul[DTid.xy] = curl;
 }

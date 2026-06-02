@@ -1,5 +1,5 @@
 ﻿#include "CameraComponent.h"
-#include "World.h"
+#include "Engine/World.h"
 
 CameraComponent::CameraComponent(Actor* owner)
     : SceneComponent(owner)
@@ -29,8 +29,3 @@ void CameraComponent::UpdateCameraInfo(const int& width, const int& height)
     m_projMatrix = DirectX::XMMatrixPerspectiveFovLH(
         m_fovRadians, m_aspectRatio, m_nearZ, m_farZ);
 }
-//
-//World* CameraComponent::GetWorld() const
-//{
-//    return m_owner ? m_owner->GetWorld() : nullptr;
-//}

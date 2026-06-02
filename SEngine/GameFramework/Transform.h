@@ -13,14 +13,9 @@ struct Transform {
 	DirectX::SimpleMath::Quaternion quat;
 	DirectX::SimpleMath::Vector3 scale = DirectX::SimpleMath::Vector3(1.f, 1.f, 1.f);
 
+	// SRT 순서(scale → rotation → translation)로 합성한 모델 행렬. 행벡터 규약(row-major)이라 곱 순서가 S*R*T.
 	DirectX::SimpleMath::Matrix ToMatrix() const
 	{
-		DirectX::SimpleMath::Matrix mat;
-		mat = DirectX::XMMatrixRotationQuaternion(quat);
-		mat.m[3][0] = location.x;
-		mat.m[3][1] = location.y;
-		mat.m[3][2] = location.z;
-
 		return DirectX::SimpleMath::Matrix::CreateScale(scale) *
 			DirectX::SimpleMath::Matrix::CreateFromQuaternion(quat) *
 			DirectX::SimpleMath::Matrix::CreateTranslation(location);

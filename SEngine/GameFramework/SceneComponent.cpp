@@ -24,17 +24,14 @@ void SceneComponent::Attach(std::shared_ptr<SceneComponent> sceneComp)
 {
 	sceneComp->m_parent = this;
 	m_children.push_back(sceneComp);
-	//sceneComp->UpdateWorldTransform(localTransform);
-	UpdateConstantTransform();
-}
 
-void SceneComponent::SetSpeed(const float& newSpeed)
-{
-	m_speed = newSpeed;
-}
-void SceneComponent::SetRotateSpeed(const float& newSpeed)
-{
-	m_rotateSpeed = newSpeed;
+	// 부착 시점에 한 번만 타입을 확인해 캐싱한다(이후 조회는 dynamic_cast 없이 포인터 직접 사용).
+	if (auto* cam = dynamic_cast<CameraComponent*>(sceneComp.get()))
+		m_cameraComponent = cam;
+	if (auto* col = dynamic_cast<CollisionComponent*>(sceneComp.get()))
+		m_collisionComponent = col;
+
+	UpdateConstantTransform();
 }
 
 void SceneComponent::UpdateWorldTransform(const Transform& tr)
@@ -55,11 +52,6 @@ void SceneComponent::SetLocalConstant(const LocalConstant& newConstant)
 	localTransform.scale = s;
 
 	UpdateConstantTransform();
-
-	/*for (const auto& c : m_children)
-	{
-		c->UpdateWorldTransform(localTransform);
-	}*/
 }
 
 void SceneComponent::UpdateRotation(const int& mouseDeltaX, const int& mouseDeltaY, const float& deltaTime)
@@ -103,10 +95,7 @@ void SceneComponent::UpdateRotation(const int& mouseDeltaX, const int& mouseDelt
 void SceneComponent::SetLocation(const DirectX::SimpleMath::Vector3& newLocation)
 {
 	localTransform.location = newLocation;
-	//UpdateConstantLocation();
 	UpdateConstantTransform();
-
-
 }
 
 void SceneComponent::SetRotation(const DirectX::SimpleMath::Quaternion& newQuat)
@@ -114,11 +103,6 @@ void SceneComponent::SetRotation(const DirectX::SimpleMath::Quaternion& newQuat)
 	//TODO front direction도 회전 시켜야 함
 	localTransform.quat = newQuat;
 	UpdateConstantTransform();
-
-	//for (const auto& c : m_children)
-	//{
-	//	c->UpdateWorldTransform(localTransform);
-	//}
 }
 void SceneComponent::SetLocalTransform(const Matrix& newMatrix)
 {
@@ -163,91 +147,59 @@ void SceneComponent::SetCollisionScale(const Vector3& newScale)
 {
 	localConstant.collisionScale = newScale;
 }
+
 void SceneComponent::SetCollisionShape(const PhysXShape& newShape)
 {
 	localConstant.collisionShape = newShape;
 }
+
 void SceneComponent::AddLocation(const DirectX::SimpleMath::Vector3& delLocation)
 {
 	localTransform.location += delLocation;
-	//UpdateConstantLocation();
-	UpdateConstantTransform();
-
-	/*for (const auto& c : m_children)
-	{
-		c->UpdateWorldTransform(localTransform);
-	}*/
+	UpdateConstantTransform(); // 자식 전파까지 여기서 처리됨
 }
 
 void SceneComponent::AddRotation(const DirectX::SimpleMath::Quaternion& delQ)
 {
 	localTransform.quat *= delQ;
-	//UpdateConstantRotation();
 	UpdateConstantTransform();
-
-	/*for (const auto& c : m_children)
-	{
-		c->UpdateWorldTransform(localTransform);
-	}*/
 }
 
+// 콜리전 조회: 캐싱된 콜리전 컴포넌트가 있으면 그쪽 값, 없으면 자기 자신 값으로 폴백한다.
 DirectX::SimpleMath::Vector3 SceneComponent::GetCollisionScale() const
 {
-	for (const auto& c : m_children)
-	{
-		if (CollisionComponent* collisionCmp = dynamic_cast<CollisionComponent*>(c.get()))
-			return collisionCmp->GetCollisionScale();
-	}
-	return localConstant.collisionScale;
+	return m_collisionComponent ? m_collisionComponent->GetCollisionScale() : localConstant.collisionScale;
 }
 
 DirectX::SimpleMath::Quaternion SceneComponent::GetCollisionRotation() const
 {
-	for (const auto& c : m_children)
-	{
-		if (CollisionComponent* collisionCmp = dynamic_cast<CollisionComponent*>(c.get()))
-			return collisionCmp->GetRotation();
-	}
-	return GetRotation();
+	return m_collisionComponent ? m_collisionComponent->GetRotation() : GetRotation();
 }
 
 DirectX::SimpleMath::Vector3 SceneComponent::GetCollisionLocation() const
 {
-	for (const auto& c : m_children)
-	{
-		if (CollisionComponent* collisionCmp = dynamic_cast<CollisionComponent*>(c.get()))
-			return collisionCmp->GetLocation();
-	}
-	return GetLocation();
+	return m_collisionComponent ? m_collisionComponent->GetLocation() : GetLocation();
 }
 
 DirectX::SimpleMath::Vector3 SceneComponent::GetCollisionOffsetLocation() const
 {
-	for (const auto& c : m_children)
-	{
-		if (CollisionComponent* collisionCmp = dynamic_cast<CollisionComponent*>(c.get()))
-			return collisionCmp->GetLocalLocation();
-	}
-	return GetLocalLocation();
+	return m_collisionComponent ? m_collisionComponent->GetLocalLocation() : GetLocalLocation();
 }
+
 DirectX::SimpleMath::Quaternion SceneComponent::GetCollisionOffsetRotation() const
 {
-	for (const auto& c : m_children)
-	{
-		if (CollisionComponent* collisionCmp = dynamic_cast<CollisionComponent*>(c.get()))
-			return collisionCmp->GetLocalRotation();
-	}
-	return GetLocalRotation();
+	return m_collisionComponent ? m_collisionComponent->GetLocalRotation() : GetLocalRotation();
 }
+
 DirectX::SimpleMath::Quaternion SceneComponent::GetRotation() const
 {
-	Matrix M = localConstant.model.Transpose();
+	// 월드 회전. localConstant.model(전치된 GPU용)이 아니라 CPU 원본 m_worldMatrix에서 분해한다.
+	// Decompose는 비const 멤버 함수라 지역 복사본에서 호출한다.
+	Matrix m = m_worldMatrix;
 	Vector3 scale;
 	Quaternion rot;
 	Vector3 translation;
-
-	bool ok = M.Decompose(scale, rot, translation);
-
+	m.Decompose(scale, rot, translation);
 	return rot;
 }
 
@@ -263,10 +215,8 @@ DirectX::SimpleMath::Matrix SceneComponent::GetViewMatrix() const
 
 DirectX::SimpleMath::Matrix SceneComponent::GetCameraViewMatrix() const
 {
-	for (const auto& c : m_children)
-	{
-		return c->GetViewMatrix();
-	}
+	if (m_cameraComponent)
+		return m_cameraComponent->GetViewMatrix();
 	return XMMatrixLookToLH(GetLocation(), m_frontDirection, m_upDirection);
 }
 
@@ -285,73 +235,31 @@ void SceneComponent::OnRegister()
 
 DirectX::SimpleMath::Vector3 SceneComponent::GetCameraLocation() const
 {
-	for (const auto& c : m_children)
-	{
-		if (CameraComponent* cameraComp = dynamic_cast<CameraComponent*>(c.get()))
-		{
-			return c->GetLocation();
-		}
-	}
-	return DirectX::SimpleMath::Vector3::Zero;
+	return m_cameraComponent ? m_cameraComponent->GetLocation() : DirectX::SimpleMath::Vector3::Zero;
 }
 
 DirectX::SimpleMath::Matrix SceneComponent::GetProjMatrix() const
 {
-	for (const auto& c : m_children)
-	{
-		if (CameraComponent* cameraComp = dynamic_cast<CameraComponent*>(c.get()))
-		{
-			return c->GetProjMatrix();
-		}
-	}
-	return DirectX::SimpleMath::Matrix();
+	return m_cameraComponent ? m_cameraComponent->GetProjMatrix() : DirectX::SimpleMath::Matrix();
 }
 
 void SceneComponent::UpdateConstantTransform()
 {
-	auto mat = localTransform.ToMatrix() * worldTransform.ToMatrix();
+	// 로컬 * 부모월드 = 이 컴포넌트의 월드 행렬. 위치/회전 조회의 CPU 원본이다.
+	m_worldMatrix = localTransform.ToMatrix() * worldTransform.ToMatrix();
 
-	localConstant.model = mat;
-
-	localConstant.modelInvTranspose = localConstant.model.Invert();
-	localConstant.model = localConstant.model.Transpose();
+	// HLSL CB는 column-major를 기대하므로 model은 전치해서 보관하고,
+	// modelInvTranspose는 전치 전 행렬의 역행렬(= 노멀 변환용)로 계산한다.
+	localConstant.modelInvTranspose = m_worldMatrix.Invert();
+	localConstant.model = m_worldMatrix.Transpose();
 
 	for (const auto& c : m_children)
 	{
-		Transform t(mat);
+		Transform t(m_worldMatrix);
 		c->UpdateWorldTransform(t);
 	}
 }
 
-void SceneComponent::UpdateConstantLocation()
-{
-	auto loc = GetLocation();
-	localConstant.model = localConstant.model.Transpose();
-
-	localConstant.model.m[3][0] = loc.x;
-	localConstant.model.m[3][1] = loc.y;
-	localConstant.model.m[3][2] = loc.z;
-
-	localConstant.modelInvTranspose = localConstant.model.Invert();
-	localConstant.model = localConstant.model.Transpose();
-}
-
-void SceneComponent::UpdateConstantRotation()
-{
-	auto q = GetRotation();
-	localConstant.model = localConstant.model.Transpose();
-	DirectX::SimpleMath::Matrix mat = DirectX::XMMatrixRotationQuaternion(q);
-	for (int i = 0; i < 3; i++)
-	{
-		for (int j = 0; j < 3; j++)
-		{
-			localConstant.model.m[i][j] = mat.m[i][j];
-		}
-	}
-	localConstant.modelInvTranspose = localConstant.model.Invert();
-	localConstant.model = localConstant.model.Transpose();
-
-}
 void SceneComponent::UpdateMipState(int newForceMip0)
 {
 	localConstant.forceMip0 = newForceMip0;
@@ -360,6 +268,7 @@ void SceneComponent::UpdateMipState(int newForceMip0)
 		c->UpdateMipState(newForceMip0);
 	}
 }
+
 void SceneComponent::UpdateUseReflect(int newUseReflect)
 {
 	localConstant.useReflect = newUseReflect;
@@ -369,6 +278,7 @@ void SceneComponent::UpdateUseReflect(int newUseReflect)
 		c->UpdateUseReflect(newUseReflect);
 	}
 }
+
 void SceneComponent::UpdateTexTransform(const DirectX::SimpleMath::Matrix& texTransform)
 {
 	localConstant.texTransform = texTransform;
@@ -377,13 +287,9 @@ void SceneComponent::UpdateTexTransform(const DirectX::SimpleMath::Matrix& texTr
 		c->UpdateTexTransform(texTransform);
 	}
 }
+
 void  SceneComponent::UpdateCameraInfo(const int& width, const int& height)
 {
-	for (const auto& c : m_children)
-	{
-		if (CameraComponent* cameraComp = dynamic_cast<CameraComponent*>(c.get()))
-		{
-			return c->UpdateCameraInfo(width, height);
-		}
-	}
+	if (m_cameraComponent)
+		m_cameraComponent->UpdateCameraInfo(width, height);
 }

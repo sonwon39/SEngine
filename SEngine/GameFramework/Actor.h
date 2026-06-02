@@ -4,44 +4,43 @@
 #include "d3d12.h"
 #include "directxtk12\SimpleMath.h"
 
-//#include "TextureLoader.h"
 #include "SceneComponent.h"
 #include "ActorData.h"
 
 class World;
 class StaticMesh;
+class PrimitiveComponent;
+class SkinnedMeshComponent;
 
+// 씬에 배치되는 오브젝트의 기본 단위(언리얼 Actor 모델). 자체 트랜스폼은 갖지 않고
+// 루트 SceneComponent에 위임하며, 대부분의 메서드는 m_rootComponent로의 포워딩이다.
 class Actor
 {
 public:
 	Actor();
-	Actor(std::string actorName, World* world);
+	Actor(std::string actorName);
 
 public:
 	virtual void Initialize(std::shared_ptr<StaticMesh> mesh, const ActorData& ad);
 
 public:
 	virtual void Tick(const float& deltaTime);
-	virtual void Interact();
 
 public:
 	void UpdateRotation(const int& mouseDeltaX, const int& mouseDeltaY, const float& deltaTime);
 	void UpdateCameraInfo(const int& width, const int& height);
 	void SetActorLocation(const DirectX::SimpleMath::Vector3& newLocation);
-	//void SetActorRotation(const DirectX::SimpleMath::Matrix& newMat);
 	void SetActorRotation(const DirectX::SimpleMath::Quaternion& newQuat);
 	void UpdateActorLocation(const DirectX::SimpleMath::Vector3& delLocation);
 	void UpdateActorRotation(const DirectX::SimpleMath::Quaternion& delQuat);
 	void SetActorSpeed(const float& newSpeed);
 	void SetRootComponent(std::shared_ptr<SceneComponent> newRootComponent);
 
-
 public:
 	void OnRegister();
 
 public:
 	SceneComponent* GetRootComponent() const { return m_rootComponent.get(); }
-	World* GetWorld() const { return m_world; }
 	std::string GetName() const { return m_name; }
 
 public:
@@ -58,11 +57,9 @@ public:
 
 public:
 	void UpdateMipState(int newForceMip0);
-
 	void UpdateUseReflect(int newUseReflect);
 	void SetUpdateConstant(bool newState);
 	void UpdateAnimation(float deltaTime);
-	void SetActorData(const ActorData& ad);
 	void SetLocalConstant(const LocalConstant& newLocalConstant);
 	void SetTextureName(const std::string& newName);
 	void SetHeightScale(const float& heightScale);
@@ -71,9 +68,11 @@ public:
 
 protected:
 	std::shared_ptr<SceneComponent> m_rootComponent;
+	// 루트의 구체 타입 캐시. SetRootComponent에서 1회 산출 (각 Setter의 반복 dynamic_cast 제거)
+	PrimitiveComponent* m_rootPrimitive = nullptr;
+	SkinnedMeshComponent* m_rootSkinned = nullptr;
 	std::string m_name;
 
 private:
-	class World* m_world;
 	ActorState m_currentState;
 };

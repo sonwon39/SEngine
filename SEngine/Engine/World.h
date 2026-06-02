@@ -76,7 +76,7 @@ public:
 	DXGI_FORMAT pressureFormat = DXGI_FORMAT_R32_FLOAT;
 	DXGI_FORMAT curlFormat = DXGI_FORMAT_R32_FLOAT;
 
-	ConstantBuffer<Grid> gridCB;
+	ConstantBuffer<SFLocalConstant> gridCB;
 	std::vector<DirectX::SimpleMath::Vector3> colors;
 
 public:

@@ -1,6 +1,6 @@
 ﻿#include "SEngineMouse.h"
 #include "GraphicsCommon.h"
-#include "World.h"
+#include "Engine/World.h"
 
 #include <iostream>
 #include <algorithm>
@@ -54,7 +54,7 @@ void SEngineMouse::Tick(float deltaTime)
 	ndcY = std::clamp(ndcY, -1.0f, 1.0f);
 
 	currPos = Vector2(ndcX, -ndcY);
-	currPos.Clamp(Vector2(0,0), Vector2(1, 1));
+	currPos.Clamp(Vector2(-1,-1), Vector2(1, 1));
 
 	mouseCB.localConstant.posX = mousePos.x;
 	mouseCB.localConstant.posY = mousePos.y;
