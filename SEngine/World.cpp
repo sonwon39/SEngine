@@ -20,6 +20,14 @@ void World::Initialize(ID3D12Device5* device, int width, int height)
 
 	mouse->Initilize();
 
+	UINT testSize = width * height * sizeof(float) * 4;
+	m_test.Initialize(D3D12_HEAP_TYPE_READBACK, testSize, D3D12_RESOURCE_FLAG_NONE, D3D12_RESOURCE_STATE_COPY_DEST, L"test");
+
+	InitStableFluidsResources(width, height);
+}
+
+void World::InitStableFluidsResources(int width, int height)
+{
 	// heap 초기화
 	{
 		m_renderDensityHeap.Initialize(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
@@ -111,11 +119,17 @@ void World::Tick(float deltaTime)
 
 	gridCB.localConstant.deltaTime = deltaTime;
 	gridCB.Update();
+
+	if (m_captureDirty)
+	{
+		m_captureDirty = false;
+
+
+	}
 }
 
 void World::SetWindowSize(int width, int height)
 {
 	windowWidth = width;
 	windowHeight = height;
-
 }

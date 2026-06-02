@@ -11,13 +11,10 @@ StableFluids::StableFluids()
 {
 }
 
-
-
 void StableFluids::Initialize()
 {
 	InitCommands();
 }
-
 
 void StableFluids::InitCommands()
 {
@@ -40,7 +37,6 @@ void StableFluids::InitCommands()
 			));
 		m_commandList->Close();
 	}
-
 }
 
 void StableFluids::InitCPU()

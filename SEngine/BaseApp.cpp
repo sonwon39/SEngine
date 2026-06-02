@@ -181,11 +181,14 @@ LRESULT BaseApp::MainProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		}
 		break;
 	case WM_KEYDOWN:
+		if ((size_t)wParam == 'C' && m_world)
+		{
+			m_world->m_captureDirty = true;
+		}
 		break;
 	case WM_KEYUP:
 		break;
 	case WM_MBUTTONUP:
-
 	case WM_MOUSEWHEEL:
 	case WM_XBUTTONDOWN:
 	case WM_XBUTTONUP:

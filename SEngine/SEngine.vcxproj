@@ -103,7 +103,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(OutDir);$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OutDir);$(ProjectDir);$(vcpkg)\installed\x64-windows\include\physx;$(vcpkg)\installed\x64-windows\include</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -127,7 +127,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(OutDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OutDir);$(ProjectDir);$(vcpkg)\installed\x64-windows\include\physx;$(vcpkg)\installed\x64-windows\include</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -146,6 +146,14 @@
     <ClCompile Include="BaseApp.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="ConstantBuffer.cpp" />
+    <ClCompile Include="GameFramework\Actor.cpp" />
+    <ClCompile Include="GameFramework\ActorComponent.cpp" />
+    <ClCompile Include="GameFramework\CameraComponent.cpp" />
+    <ClCompile Include="GameFramework\CollisionComponent.cpp" />
+    <ClCompile Include="GameFramework\PrimitiveComponent.cpp" />
+    <ClCompile Include="GameFramework\SceneComponent.cpp" />
+    <ClCompile Include="GameFramework\SkinnedMeshComponent.cpp" />
+    <ClCompile Include="GameFramework\StaticMeshComponent.cpp" />
     <ClCompile Include="GeometryGenerator.cpp" />
     <ClCompile Include="GraphicsCommon.cpp" />
     <ClCompile Include="main.cpp" />
@@ -169,12 +177,27 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="ConstantBuffer.h" />
     <ClInclude Include="DefaultHLSLCompat.h" />
+    <ClInclude Include="GameFramework\Actor.h" />
+    <ClInclude Include="GameFramework\ActorComponent.h" />
+    <ClInclude Include="GameFramework\ActorData.h" />
+    <ClInclude Include="GameFramework\CameraComponent.h" />
+    <ClInclude Include="GameFramework\CollisionComponent.h" />
+    <ClInclude Include="GameFramework\PhysXMode.h" />
+    <ClInclude Include="GameFramework\PrimitiveComponent.h" />
+    <ClInclude Include="GameFramework\SceneComponent.h" />
+    <ClInclude Include="GameFramework\SkinnedMeshComponent.h" />
+    <ClInclude Include="GameFramework\StaticMeshComponent.h" />
+    <ClInclude Include="GameFramework\Transform.h" />
     <ClInclude Include="GeometryGenerator.h" />
     <ClInclude Include="GlobalConstant.h" />
+    <ClInclude Include="GPUBuffer.h" />
     <ClInclude Include="GraphicsCommon.h" />
     <ClInclude Include="HLSLCompat.h" />
+    <ClInclude Include="IndexBuffer.h" />
+    <ClInclude Include="InputHelper.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="DescriptorHeap.h" />
+    <ClInclude Include="PBR\PBRHLSLCompat.h" />
     <ClInclude Include="SEngineMouse.h" />
     <ClInclude Include="PipelineState.h" />
     <ClInclude Include="RenderEngine.h" />
@@ -190,6 +213,7 @@
     <ClInclude Include="Timer.h" />
     <ClInclude Include="Utility.h" />
     <ClInclude Include="Vertex.h" />
+    <ClInclude Include="VertexBuffer.h" />
     <ClInclude Include="World.h" />
   </ItemGroup>
   <ItemGroup>
@@ -282,12 +306,16 @@
   <ItemGroup>
     <None Include="ConstantBuffer.inl" />
     <None Include="DefaultCommon.hlsli" />
+    <None Include="GPUBuffer.inl" />
+    <None Include="IndexBuffer.inl" />
     <None Include="packages.config" />
     <None Include="SPH\CountingSortCommon.hlsli" />
     <None Include="SPH\ParticleCommon.hlsli" />
     <None Include="SPH\SPHUtility.hlsli" />
     <None Include="StableFluids\StableFluidsUtility.hlsli" />
+    <None Include="StaticMesh.inl" />
     <None Include="Utility.inl" />
+    <None Include="VertexBuffer.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

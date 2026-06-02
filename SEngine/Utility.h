@@ -236,6 +236,8 @@ namespace GraphicsUtils {
 
 		template<typename DataType>
 		void CreateBuffer(const std::vector<DataType>& data, Microsoft::WRL::ComPtr<ID3D12Resource>& gpu, Microsoft::WRL::ComPtr<ID3D12Resource>& upload, D3D12_RESOURCE_FLAGS flag, ID3D12GraphicsCommandList* commandList);
+
+		void CreateBuffer(Microsoft::WRL::ComPtr<ID3D12Resource>& buffer, D3D12_HEAP_TYPE heapType, UINT size, D3D12_RESOURCE_FLAGS flags, D3D12_RESOURCE_STATES state, std::wstring name);
 	};
 }
 #include "Utility.inl"

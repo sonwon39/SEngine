@@ -58,7 +58,7 @@ int Core::SimpleApp::Run()
 		}
 	}
 
-	std::cout << "Run 함수 종료\n";
+	std::cout << "Quit Run()\n";
 	//m_renderEngine->Quit();
 	return (int)msg.wParam;
 }

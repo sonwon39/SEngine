@@ -18,6 +18,15 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
+    <Filter Include="Buffer">
+      <UniqueIdentifier>{87d1a468-b8da-40c1-a82d-cb2d697a75c1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameFamework">
+      <UniqueIdentifier>{06f065ce-1c91-481e-bcfa-dc43b62ef4b6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PBR">
+      <UniqueIdentifier>{1b090650-8c6a-4f31-bc7c-2ba05c4f5662}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Timer.cpp">
@@ -56,9 +65,6 @@
     <ClCompile Include="ConstantBuffer.cpp">
       <Filter>cpp</Filter>
     </ClCompile>
-    <ClCompile Include="Texture2D.cpp">
-      <Filter>cpp</Filter>
-    </ClCompile>
     <ClCompile Include="World.cpp">
       <Filter>cpp</Filter>
     </ClCompile>
@@ -79,6 +85,33 @@
     </ClCompile>
     <ClCompile Include="SPH\SPH.cpp">
       <Filter>SPH</Filter>
+    </ClCompile>
+    <ClCompile Include="Texture2D.cpp">
+      <Filter>Buffer</Filter>
+    </ClCompile>
+    <ClCompile Include="GameFramework\ActorComponent.cpp">
+      <Filter>cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="GameFramework\SceneComponent.cpp">
+      <Filter>cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="GameFramework\CameraComponent.cpp">
+      <Filter>GameFamework</Filter>
+    </ClCompile>
+    <ClCompile Include="GameFramework\CollisionComponent.cpp">
+      <Filter>GameFamework</Filter>
+    </ClCompile>
+    <ClCompile Include="GameFramework\PrimitiveComponent.cpp">
+      <Filter>GameFamework</Filter>
+    </ClCompile>
+    <ClCompile Include="GameFramework\Actor.cpp">
+      <Filter>GameFamework</Filter>
+    </ClCompile>
+    <ClCompile Include="GameFramework\SkinnedMeshComponent.cpp">
+      <Filter>GameFamework</Filter>
+    </ClCompile>
+    <ClCompile Include="GameFramework\StaticMeshComponent.cpp">
+      <Filter>GameFamework</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -133,9 +166,6 @@
     <ClInclude Include="ConstantBuffer.h">
       <Filter>h</Filter>
     </ClInclude>
-    <ClInclude Include="Texture2D.h">
-      <Filter>h</Filter>
-    </ClInclude>
     <ClInclude Include="World.h">
       <Filter>h</Filter>
     </ClInclude>
@@ -159,6 +189,57 @@
     </ClInclude>
     <ClInclude Include="SPH\SPH.h">
       <Filter>SPH</Filter>
+    </ClInclude>
+    <ClInclude Include="VertexBuffer.h">
+      <Filter>Buffer</Filter>
+    </ClInclude>
+    <ClInclude Include="IndexBuffer.h">
+      <Filter>Buffer</Filter>
+    </ClInclude>
+    <ClInclude Include="Texture2D.h">
+      <Filter>Buffer</Filter>
+    </ClInclude>
+    <ClInclude Include="GPUBuffer.h">
+      <Filter>Buffer</Filter>
+    </ClInclude>
+    <ClInclude Include="InputHelper.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="GameFramework\CollisionComponent.h">
+      <Filter>GameFamework</Filter>
+    </ClInclude>
+    <ClInclude Include="GameFramework\PrimitiveComponent.h">
+      <Filter>GameFamework</Filter>
+    </ClInclude>
+    <ClInclude Include="GameFramework\StaticMeshComponent.h">
+      <Filter>GameFamework</Filter>
+    </ClInclude>
+    <ClInclude Include="GameFramework\SceneComponent.h">
+      <Filter>GameFamework</Filter>
+    </ClInclude>
+    <ClInclude Include="GameFramework\Actor.h">
+      <Filter>GameFamework</Filter>
+    </ClInclude>
+    <ClInclude Include="GameFramework\ActorComponent.h">
+      <Filter>GameFamework</Filter>
+    </ClInclude>
+    <ClInclude Include="GameFramework\ActorData.h">
+      <Filter>GameFamework</Filter>
+    </ClInclude>
+    <ClInclude Include="PBR\PBRHLSLCompat.h">
+      <Filter>PBR</Filter>
+    </ClInclude>
+    <ClInclude Include="GameFramework\PhysXMode.h">
+      <Filter>GameFamework</Filter>
+    </ClInclude>
+    <ClInclude Include="GameFramework\Transform.h">
+      <Filter>GameFamework</Filter>
+    </ClInclude>
+    <ClInclude Include="GameFramework\CameraComponent.h">
+      <Filter>GameFamework</Filter>
+    </ClInclude>
+    <ClInclude Include="GameFramework\SkinnedMeshComponent.h">
+      <Filter>GameFamework</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -249,6 +330,18 @@
     </None>
     <None Include="SPH\SPHUtility.hlsli">
       <Filter>SPH</Filter>
+    </None>
+    <None Include="StaticMesh.inl">
+      <Filter>h</Filter>
+    </None>
+    <None Include="VertexBuffer.inl">
+      <Filter>Buffer</Filter>
+    </None>
+    <None Include="IndexBuffer.inl">
+      <Filter>Buffer</Filter>
+    </None>
+    <None Include="GPUBuffer.inl">
+      <Filter>Buffer</Filter>
     </None>
   </ItemGroup>
 </Project>

@@ -12,46 +12,39 @@
 
 
 namespace Core {
-    class BaseApp {
+	class BaseApp {
 
-    public:
-        BaseApp();
-        BaseApp(int width, int height);
-        virtual ~BaseApp();
+	public:
+		BaseApp();
+		BaseApp(int width, int height);
+		virtual ~BaseApp();
 
-        virtual bool Initialize();
-        LRESULT MainProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-        virtual int Run() = 0;
+		virtual bool Initialize();
+		LRESULT MainProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+		virtual int Run() = 0;
 
-    private:
-        virtual bool InitDirectX() = 0;
-        virtual bool InitGUI() = 0;
+	private:
+		virtual bool InitDirectX() = 0;
+		virtual bool InitGUI() = 0;
 
-        // Called when the window is resized
-        virtual void OnResize() = 0;
-        virtual void OnCapture() {};
-        bool InitWindow();
+		// Called when the window is resized
+		virtual void OnResize() = 0;
+		virtual void OnCapture() {};
+		bool InitWindow();
 
-    protected:
-        bool IsWindowFocused();
+	protected:
+		bool IsWindowFocused();
 
-    public:
-        static BaseApp* m_appPtr;
-        Core::Timer m_timer;
+	public:
+		static BaseApp* m_appPtr;
+		Core::Timer m_timer;
 
-    protected:
-        int m_width;
-        int m_height;
-        
-        bool isFPSMode = true;
-        bool resizeDirty = false;
-        bool captureDirty = false;
+	protected:
+		int m_width;
+		int m_height;
 
-    protected:
-        bool bMouseFlag = false;
+		bool isFPSMode = true;
 
-    protected:
-        bool addDirty = false;
-        bool printDirty = false;
-    };
+		bool captureDirty = false;
+	};
 }

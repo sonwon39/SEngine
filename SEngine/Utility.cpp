@@ -134,13 +134,12 @@ namespace GraphicsUtils {
 				IID_PPV_ARGS(buffer.ReleaseAndGetAddressOf())
 			));
 		}
-
-
-
 		// PIX 등 디버깅 도구에서 식별 가능하도록 리소스에 이름을 부여한다.
 		buffer->SetName(name.c_str());
-
 	}
+
+
+
 	void Utility::CreateResourceView(ID3D12Resource* resource, DXGI_FORMAT format, bool bUseMsaa, D3D12_CPU_DESCRIPTOR_HANDLE& handle, const DescriptorType& type)
 	{
 		// 요청된 뷰 종류에 따라 분기. 동일한 리소스라도 사용 목적에 맞는 뷰를 별도로 생성해야 한다.

@@ -9,6 +9,7 @@
 #include "DescriptorHeap.h"
 #include "StableFluids/Grid.h"
 #include "ConstantBuffer.h"
+#include "GPUBuffer.h"
 
 class World {
 public:
@@ -17,12 +18,11 @@ public:
 
 public:
 	void Initialize(ID3D12Device5* device, int width, int height);
+	void InitStableFluidsResources(int width, int height);
 	void Tick(float deltaTime);
 
 public:
-	ID3D12Device5* GetDevice() {
-		return m_device;
-	}
+	ID3D12Device5* GetDevice() { return m_device; }
 
 public:
 	void SetWindowSize(int width, int height);
@@ -41,8 +41,8 @@ public:
 private:
 	ID3D12Device5* m_device;
 
+// stable fluids
 public:
-	// grid 버퍼
 	Texture2D m_oldDensityBuffer;
 	Texture2D m_oldVelocityBuffer;
 
@@ -69,7 +69,7 @@ public:
 
 	UINT gridWidth = 512;
 	UINT gridHeight = 512;
-	
+
 	DXGI_FORMAT densityFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	DXGI_FORMAT velocityFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	DXGI_FORMAT divergenceFormat = DXGI_FORMAT_R32_FLOAT;
@@ -77,7 +77,12 @@ public:
 	DXGI_FORMAT curlFormat = DXGI_FORMAT_R32_FLOAT;
 
 	ConstantBuffer<Grid> gridCB;
+	std::vector<DirectX::SimpleMath::Vector3> colors;
 
 public:
-	std::vector<DirectX::SimpleMath::Vector3> colors;
+	GPUBuffer m_test;
+	DXGI_FORMAT testFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
+
+public:
+	bool m_captureDirty = false;
 };
