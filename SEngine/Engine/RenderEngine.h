@@ -21,7 +21,7 @@
 #include "Camera.h"
 #include "SPH/SPH.h"
 #include "StableFluids/StableFluids.h"
-
+#include "ConstantBuffer.h"
 
 class StaticMesh;
 
@@ -65,10 +65,8 @@ protected:
 	void SPHTick(float deltaTime);
 	void StableFluidsTick(float deltaTime);
 	void RenderMeshes(const std::string& psoName);
-	void SortSPH(int idx);
-	void ComputeSPH(const std::string& psoName, int idx);
 	void RenderSPH(const std::string& psoName, bool clear, bool isFinal);
-	
+
 	void SPHSimulation();
 
 	//void Render(const std::string& psoName, int idx, RenderType renderType, bool isFinal, bool clear);
@@ -113,10 +111,6 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_resourceCommandList;
 
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_commandQueue;
-
-	UINT computeCommandCount = 5;
-	std::vector<Microsoft::WRL::ComPtr<ID3D12CommandAllocator>> m_computeCommandAllocators;
-	std::vector<Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>> m_computeCommandLists;
 
 private:
 	D3D12_VIEWPORT m_viewport;

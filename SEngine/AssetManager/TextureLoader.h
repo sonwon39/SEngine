@@ -10,6 +10,7 @@
 #include "wrl.h"
 #include "d3d12.h"
 #include "DescriptorHeap.h"
+#include "Texture2D.h"
 
 struct TextureInfo {
 	uint64_t offset;
@@ -19,15 +20,14 @@ struct TextureInfo {
 class TextureLoader {
 public:
 	TextureLoader();
-	TextureLoader(std::string path, ID3D12Device5* device);
+	TextureLoader(std::string path);
+	virtual ~TextureLoader();
 
 	void InitHeap(UINT heapSize);
 	void LoadIdx();
 
 	void LoadTextures(ID3D12GraphicsCommandList* commandList);
-
-	// ExecuteCommandLists -> Fence wait 가 끝난 뒤 호출자가 한 번 호출해 업로드 임시 리소스를 해제한다.
-	void FlushUploadKeepAlive() { m_ddsBlobs.clear(); m_uploadHeaps.clear(); }
+	void ClearBlobs();
 
 public:
 	DescriptorHeap* GetHeap() { return &heap; }
@@ -47,16 +47,9 @@ private:
 	std::unordered_map<uint32_t, std::string> nameMap;
 	std::map<std::string, uint32_t> idxMap;
 	
-	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> textures;
+	std::vector<Texture2D> textures;
 	DescriptorHeap heap;
 
-	// 텍스처 업로드용 keep-alive. ExecuteCommandLists 완료 시점까지 alive 유지해야 한다
-	// (LoadDDSTextureFromMemoryEx 의 subresources[].pData 가 m_ddsBlobs 내부를 가리키고,
-	//  GPU 복사 명령은 m_uploadHeaps 를 읽기 때문). FlushUploadKeepAlive() 로 해제.
-	std::vector<std::vector<uint8_t>> m_ddsBlobs;
-	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> m_uploadHeaps;
-	
-	UINT m_heapSize = 0;
 	UINT srvOffset = 0;
 
 

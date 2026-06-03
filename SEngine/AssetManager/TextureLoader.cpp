@@ -1,7 +1,4 @@
 ﻿#include "TextureLoader.h"
-
-#include "Directxtk12/DDSTextureLoader.h"
-#include "directxtk12/ResourceUploadBatch.h"
 #include <omp.h>
 
 #include "Renderer.h"
@@ -26,12 +23,17 @@ TextureLoader::TextureLoader()
 {
 }
 
-TextureLoader::TextureLoader(std::string path, ID3D12Device5* device)
+TextureLoader::TextureLoader(std::string path)
 	:folder(path)
 {
 	count = 0;
 	binPath = folder + "textures.bin";
 	idxPath = folder + "textures.idx";
+}
+
+TextureLoader::~TextureLoader()
+{
+	textures.clear();
 }
 
 void TextureLoader::InitHeap(UINT heapSize)
@@ -71,16 +73,13 @@ void TextureLoader::LoadTextures(ID3D12GraphicsCommandList* commandList)
 {
 	ID3D12Device5* m_device = m_world->GetDevice();
 	srvOffset = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	textures.resize(count);
 
-	m_ddsBlobs.clear();
-	m_uploadHeaps.clear();
-	m_ddsBlobs.reserve(count);
-	m_uploadHeaps.reserve(count);
+	textures.resize(count);
+	InitHeap(count);
 
 	std::ifstream bin(binPath, std::ios::binary);
 
-	for (int i = 0; i < count; i++)
+	for (uint32_t i = 0; i < count; i++)
 	{
 		std::string filename = nameMap[i];
 
@@ -91,31 +90,29 @@ void TextureLoader::LoadTextures(ID3D12GraphicsCommandList* commandList)
 		TextureInfo info = textureMap.at(filename);
 		uint64_t size = info.size;
 
-		// DDS 바이트는 멤버 벡터에 보관해야 한다. subresources[].pData 가 이 메모리를 가리키기 때문.
-		m_ddsBlobs.emplace_back(size);
-		std::vector<uint8_t>& texture = m_ddsBlobs.back();
+		
 		bin.seekg(info.offset);
-		bin.read(reinterpret_cast<char*>(texture.data()), size);
 
 		DDS_LOADER_FLAGS flags = isAlbedo
 			? DirectX::DX12::DDS_LOADER_FORCE_SRGB
 			: DirectX::DX12::DDS_LOADER_DEFAULT;
 
-		Microsoft::WRL::ComPtr<ID3D12Resource> gpu;
-		Microsoft::WRL::ComPtr<ID3D12Resource> upload;
-
-		utility->CreateTextureFromDDS(texture.data(), size, gpu, upload, flags, commandList);
+		textures[i].Initialize(bin, size, flags, commandList);
 
 		if (isCubeMap)
-			heap.CreateResourceView(gpu.Get(), DescriptorType::SRV, ViewDimensionType::TEXTURECUBE);
+			heap.CreateResourceView(textures[i].GetResource(), DescriptorType::SRV, ViewDimensionType::TEXTURECUBE);
 		else
-			heap.CreateResourceView(gpu.Get(), DescriptorType::SRV, ViewDimensionType::TEXTURE2D);
-
-		textures[i] = gpu;
-		m_uploadHeaps.push_back(upload);  // GPU 복사 완료까지 보관
+			heap.CreateResourceView(textures[i].GetResource(), DescriptorType::SRV, ViewDimensionType::TEXTURE2D);
 	}
 }
 
+void TextureLoader::ClearBlobs()
+{
+	for (uint32_t i = 0; i < count; i++)
+	{
+		textures[i].Clear();
+	}
+}
 
 D3D12_GPU_DESCRIPTOR_HANDLE TextureLoader::GetGPUHandle(const int & idx) const
 {
@@ -142,5 +139,5 @@ ID3D12Resource* TextureLoader::GetTexture(const std::string& filename) const
 	{
 		idx = it->second;
 	}
-	return textures[idx].Get();
+	return textures[idx].GetResource();
 }

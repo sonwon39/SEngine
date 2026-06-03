@@ -13,19 +13,36 @@ class SPH
 public:
 	SPH();
 
-	void Initialize(ID3D12Device5* device, ID3D12CommandAllocator* cmdAlloc, ID3D12GraphicsCommandList* cmdList);
-
 public:
-	void Initialize();
+	// 초기 particle upload 는 외부 resource cmdList 로 처리 (one-shot).
+	// 그 외 per-frame 시뮬레이션은 SPH 가 자체 보유한 m_commandList 에 모두 기록한다.
+	void Initialize(ID3D12Device5* device, ID3D12CommandAllocator* cmdAlloc, ID3D12GraphicsCommandList* cmdList);
+	void InitCommands();
 	void InitParticleCPU();
 	void InitParticleGPU(ID3D12CommandAllocator* cmdAlloc, ID3D12GraphicsCommandList* cmdList);
 
+public:
+	// per-frame 시뮬레이션 전체를 m_commandList 에 기록 (Sort → Density → Pressure → Forces → Simulation).
+	void Tick(float deltaTime);
+	// m_commandList Close + 외부 큐로 제출.
+	void Execute(ID3D12CommandQueue* commandQueue);
+
+	// render 는 메인 백버퍼 cmdList 가 필요하므로 외부 cmdList 수신 유지.
+	void Render(ID3D12GraphicsCommandList* commandList);
+
+	void Reset(ID3D12CommandAllocator* cmdAlloc, ID3D12GraphicsCommandList* cmdList);
 
 public:
-	void Tick(float deltaTime);
-	void Pass0(ID3D12GraphicsCommandList* commandList);
-	void Pass1(ID3D12GraphicsCommandList* commandList);
+	ID3D12DescriptorHeap* GetParticleUAVHeap(int idx) {	return m_sphParticleUAVHeap[idx].Get();}
 
+private:
+	void UpdateConstants(float deltaTime);
+	void SetCPSO(const std::string& psoName);
+
+	// counting-sort 파이프라인 — 모두 m_commandList 위에 기록.
+	void Sort();
+	void Pass0();
+	void Pass1();
 	// 재귀 전역 exclusive scan. cellCount 가 아무리 커도 동작 (필요한 만큼 level 자동 생성).
 	//   Pass2  = orchestrator. PSO/RootSig 전환 + barrier + 재귀 호출 책임.
 	//   Pass2a = 한 level의 view 바인딩 + dispatch (Pass1 스타일)
@@ -33,27 +50,24 @@ public:
 	// 진입 invariant: m_cellCounterBuffer 는 NON_PIXEL_SHADER_RESOURCE, 모든 m_pass2Levels 버퍼는 UNORDERED_ACCESS.
 	// 종료 invariant: 동일 (per-frame 재호출 가능).
 	// 최종 결과: m_pass2Levels[0].output (= cellStart, 전역 exclusive scan).
-	void Pass2(ID3D12GraphicsCommandList* commandList, int level = 0);
-	void Pass2a(ID3D12GraphicsCommandList* commandList, int level);
-	void Pass2b(ID3D12GraphicsCommandList* commandList, int level);
-
+	void Pass2(int level = 0);
+	void Pass2a(int level);
+	void Pass2b(int level);
 	// Pass3: cellId 기준 scatter. 매 frame Pass2 다음에 호출.
 	// 호출 전 caller 책임:
 	//   1) m_scatterCounterBuffer 를 0 으로 클리어 (ClearUAV 또는 zero-upload + CopyResource)
 	//   2) m_particleCellIdBuffer:  UAV → NON_PIXEL_SHADER_RESOURCE
 	//   3) m_pass2Levels[0].output: UAV → NON_PIXEL_SHADER_RESOURCE
 	// 결과: m_sortedSphParticleBuffer 에 cellId 순으로 정렬된 SPHParticle 들.
-	void Pass3(ID3D12GraphicsCommandList* commandList);
+	void Pass3();
 
-	void Sort(ID3D12GraphicsCommandList* commandList);
-	void Compute(ID3D12GraphicsCommandList* commandList);
+	// 4 단계 simulation compute — PSO/RootSig set + binding + dispatch 를 일괄 처리.
+	//   density / pressure / forces / simulation 모두 동일 binding 레이아웃 (g_UUUUSSC_RS).
+	void Compute(const std::string& psoName);
 
-	void Render(ID3D12GraphicsCommandList* commandList);
-
-	void Reset(ID3D12CommandAllocator* cmdAlloc, ID3D12GraphicsCommandList* cmdList);
-
-public:
-	ID3D12DescriptorHeap* GetParticleUAVHeap(int idx) {	return m_sphParticleUAVHeap[idx].Get();}
+private:
+	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_commandList;
+	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_commandAllocator;
 
 private:
 	int sphCurrParticleCount = 0;
@@ -84,7 +98,6 @@ private:
 	// Pass1: count
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_cellCounterBuffer;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_particleCellIdBuffer;
-	Microsoft::WRL::ComPtr<ID3D12Resource> m_outputBuffer;   // (사용처 미정, 기존 선언 유지)
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_cellCounterUpload;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_particleCellIdUpload;
@@ -112,26 +125,12 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_scatterCounterUpload;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_sortedSphParticleBuffer;    // [sphMaxParticleCount] — Pass3 출력 (정렬된 particle)
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_sortedSphParticleUpload;
-	Microsoft::WRL::ComPtr<ID3D12Resource> m_sortedIndicesBuffer;      
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_sortedIndicesBuffer;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_sortedIndicesUpload;		 // [cellCount]
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_sortedSphParticleHeap;
 
 	std::vector<UINT>        m_scatterCounter;       // init 용 (zeros)
 	std::vector<SPHParticle> m_sortedSphParticles;   // init 용
-
-	std::string pass0CPSOname = "pass0CPSO";
-	ComputePSO pass0CPSO;
-
-	std::string pass1CPSOname = "pass1CPSO";
-	ComputePSO pass1CPSO;
-
-	std::string pass2aCPSOname = "pass2aCPSO";
-	ComputePSO pass2aCPSO;
-	std::string pass2bCPSOname = "pass2bCPSO";
-	ComputePSO pass2bCPSO;
-
-	std::string pass3CPSOname = "pass3CPSO";
-	ComputePSO pass3CPSO;
 
 // sph particle 계수
 public:

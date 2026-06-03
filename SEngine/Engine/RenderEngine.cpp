@@ -21,6 +21,7 @@
 #include "GeometryGenerator.h"
 
 #include "StaticMesh.h"
+#include "AssetManager/TextureLoader.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace GraphicsUtils;
@@ -102,12 +103,19 @@ bool RenderEngine::InitScene()
 		Mesh<SimpleVertex, uint16_t> plane = GeometryGenerator::MakeSimpleRect(2.f, 2.f);
 		m_mesh = std::make_unique<StaticMesh>();
 		m_mesh->Initialize(m_device, m_resourceCommandList.Get(), plane);
-
-		m_resourceCommandList->Close();
-		ID3D12CommandList* commands[] = { m_resourceCommandList.Get() };
-		m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
-		FlushCommands();
 	}
+
+	std::shared_ptr<TextureLoader> texLoader;
+	// texture 준비
+	{
+		if (m_world)
+		{
+			texLoader = m_world->GetTextureLoader();
+			texLoader->LoadIdx();
+			texLoader->LoadTextures(m_resourceCommandList.Get());
+		}
+	}
+
 	// sph 초기화
 	{
 		m_sph = std::make_shared<SPH>();
@@ -116,12 +124,14 @@ bool RenderEngine::InitScene()
 	// stable fluids 초기화
 	{
 		m_stableFluids = std::make_shared<StableFluids>();
-		m_stableFluids->Initialize();
+		m_stableFluids->Initialize(m_width, m_height);
 	}
 
 	ID3D12CommandList* commands[] = { m_resourceCommandList.Get() };
 	m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
 	FlushCommands();
+
+	texLoader->ClearBlobs();
 
 	// camera settings
 	localConstant.model = DirectX::SimpleMath::Matrix();
@@ -152,7 +162,7 @@ bool RenderEngine::InitGUI()
 	io.IniFilename = nullptr;
 
 	ImGui::StyleColorsLight();
-	const char* fontPath = "Fonts/Hack-Regular.ttf";
+	const char* fontPath = "Assets/Fonts/Hack-Regular.ttf";
 	float fontSize = 15.0f;
 	// 폰트 로드 
 	io.Fonts->AddFontFromFileTTF(fontPath, fontSize);
@@ -164,7 +174,7 @@ bool RenderEngine::InitGUI()
 	m_device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_guiFontHeap));
 
 	// Setup Platform/Renderer backends
-	if(m_world)
+	if (m_world)
 		ImGui_ImplWin32_Init(m_world->m_mainWnd);
 
 	ImGui_ImplDX12_Init(m_device, m_swapChainBufferCount, Renderer::backBufferFormat,
@@ -195,7 +205,7 @@ void RenderEngine::OnResize(int width, int height)
 		m_height,
 		DXGI_FORMAT_UNKNOWN,
 		DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH);
-	
+
 	// 버퍼에 대한 RTV 재생성
 	CD3DX12_CPU_DESCRIPTOR_HANDLE handle(m_swapChainRTVHeap->GetCPUDescriptorHandleForHeapStart());
 	for (int i = 0; i < m_swapChainBufferCount; i++)
@@ -268,27 +278,6 @@ void RenderEngine::CreateCommandObjects()
 			IID_PPV_ARGS(&gui_commandList)
 		));
 
-	m_computeCommandAllocators.resize(computeCommandCount);
-	m_computeCommandLists.resize(computeCommandCount);
-
-	for (UINT i = 0; i < computeCommandCount; i++)
-	{
-		ThrowIfFailed(
-			m_device->CreateCommandAllocator(
-				D3D12_COMMAND_LIST_TYPE_DIRECT,
-				IID_PPV_ARGS(&m_computeCommandAllocators[i])
-			));
-
-		ThrowIfFailed(
-			m_device->CreateCommandList(
-				0,
-				D3D12_COMMAND_LIST_TYPE_DIRECT,
-				m_computeCommandAllocators[i].Get(),
-				nullptr,
-				IID_PPV_ARGS(&m_computeCommandLists[i])
-			));
-		m_computeCommandLists[i]->Close();
-	}
 	D3D12_COMMAND_QUEUE_DESC queueDesc;
 	ZeroMemory(&queueDesc, sizeof(queueDesc));
 	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
@@ -327,7 +316,7 @@ void RenderEngine::CreateSwapChain(IDXGIFactory7* factory)
 			&swapChain
 		));
 	}
-	
+
 
 	ThrowIfFailed(swapChain.As(&m_swapChain));
 
@@ -364,10 +353,6 @@ void RenderEngine::UpdateGUI()
 	//ImGui::SetWindowSize(ImVec2((float)m_guiWidth, (float)m_height));
 	ImGui::SetWindowPos(ImVec2(0.f, 0.f), ImGuiCond_Always);
 
-	if (ImGui::Button("Reset SPH"))
-	{
-		resetFlag = true;
-	}
 }
 
 // BOOKMARK
@@ -379,19 +364,11 @@ void RenderEngine::Tick(float deltaTime)
 
 void RenderEngine::SPHTick(float deltaTime)
 {
-	if (resetFlag && m_sph)
-	{
-		resetFlag = false;
-		m_sph->Reset(m_resourceCommandAllocator.Get(), m_resourceCommandList.Get());
-		ID3D12CommandList* commands[] = { m_resourceCommandList.Get() };
-		m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
-		FlushCommands();
+	m_sph->Tick(deltaTime);
+	m_sph->Execute(m_commandQueue.Get());
 
-	}
-	if (m_sph)
-		m_sph->Tick(deltaTime);
-
-	SPHSimulation();
+	RenderSPH("particleRenderPSO", true/*clear RT*/, false /*isFinal*/);
+	RenderGUI(true);
 }
 
 void RenderEngine::StableFluidsTick(float deltaTime)
@@ -427,18 +404,18 @@ void RenderEngine::RenderMeshes(const std::string& psoName)
 			D3D12_RESOURCE_STATE_RENDER_TARGET
 		));
 
-	if (m_world)
+	if (m_stableFluids)
 	{
 		std::vector<D3D12_RESOURCE_BARRIER> barriers0;
 		D3D12_RESOURCE_BARRIER barrier;
-		if (m_world->m_newDensityBuffer.Transition(D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, barrier)) barriers0.push_back(barrier);
+		if (m_stableFluids->m_newDensityBuffer.Transition(D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, barrier)) barriers0.push_back(barrier);
 
 		m_commandList->ResourceBarrier((UINT)barriers0.size(), barriers0.data());
 
 
-		ID3D12DescriptorHeap* heaps[] = { m_world->m_renderDensityHeap.GetHeap() };
+		ID3D12DescriptorHeap* heaps[] = { m_stableFluids->m_renderDensityHeap.GetHeap() };
 		m_commandList->SetDescriptorHeaps(1, heaps);
-		m_commandList->SetGraphicsRootDescriptorTable(0, m_world->m_renderDensityHeap.GetGPUHandle(0));
+		m_commandList->SetGraphicsRootDescriptorTable(0, m_stableFluids->m_renderDensityHeap.GetGPUHandle(0));
 	}
 
 	m_commandList->ClearRenderTargetView(GetCurrentRtvCpuHandle(), rtvClearColor.data(), 0, nullptr);
@@ -464,55 +441,6 @@ void RenderEngine::RenderMeshes(const std::string& psoName)
 	m_commandList->Close();
 	ID3D12CommandList* commands[] = { m_commandList.Get() };
 	m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
-}
-
-void RenderEngine::SortSPH(int idx)
-{
-	ID3D12CommandAllocator* alloc = m_computeCommandAllocators[0].Get();
-	ID3D12GraphicsCommandList* cmdList = m_computeCommandLists[0].Get();
-	alloc->Reset();
-	ThrowIfFailed(cmdList->Reset(alloc, nullptr));
-
-
-	m_sph->Sort(cmdList);
-	cmdList->Close();
-
-	ID3D12CommandList* commands[] = { cmdList };
-	m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
-}
-
-void RenderEngine::ComputeSPH(const std::string& psoName, int idx)
-{
-	//PIXBeginEvent(m_commandQueue.Get(), PIX_COLOR(255, 255, 0), psoName.c_str());
-
-	using namespace Renderer;
-
-	ComputePSO pso;
-	if (m_CPSOs.find(psoName) != m_CPSOs.end())
-	{
-		pso = m_CPSOs[psoName];
-	}
-	else
-	{
-		pso = m_CPSOs["defaultCPSO"];
-	}
-	ID3D12CommandAllocator* alloc = m_computeCommandAllocators[idx].Get();
-	ID3D12GraphicsCommandList* cmdList = m_computeCommandLists[idx].Get();
-
-	alloc->Reset();
-	ThrowIfFailed(cmdList->Reset(alloc, nullptr));
-
-	cmdList->SetPipelineState(pso.GetPSO());
-	cmdList->SetComputeRootSignature(pso.GetRootSignature()->GetSignature());
-
-	m_sph->Compute(cmdList);
-
-	cmdList->Close();
-
-	ID3D12CommandList* commands[] = { cmdList };
-	m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
-	//FlushResourceCommands();
-	//PIXEndEvent(m_commandQueue.Get());
 }
 
 void RenderEngine::RenderSPH(const std::string& psoName, bool clear, bool isFinal)
@@ -644,17 +572,9 @@ void RenderEngine::RenderGUI(bool isFinal)
 
 void RenderEngine::SPHSimulation()
 {
-	int i = 0;
-
-	SortSPH(i++);
-
-	ComputeSPH("computeDensityCPSO", i++);
-	ComputeSPH("computePressureCPSO", i++);
-	ComputeSPH("computeForcesCPSO", i++);
-	ComputeSPH("sphSimulationCPSO", i++);
-
-	RenderSPH("particleRenderPSO", true/*clear RT*/, false /*isFinal*/);
-	RenderGUI(true);
+	// SPH 가 Tick 안에서 sort + 4 compute 를 자체 m_commandList 한 개에 기록하고,
+	// Execute 로 한 번에 submit. StableFluids 와 동일 패턴.
+	
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE RenderEngine::GetCurrentRtvCpuHandle() const

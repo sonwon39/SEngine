@@ -290,7 +290,7 @@ namespace GraphicsUtils {
 		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
 			gpu.Get(),
 			D3D12_RESOURCE_STATE_COPY_DEST,
-			D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE));
+			D3D12_RESOURCE_STATE_COMMON));
 	}
 
 

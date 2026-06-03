@@ -1,24 +1,14 @@
-﻿#include "SPH.h"
+#include "SPH.h"
 #include <random>
 #include <iostream>
 
 #include "GraphicsCommon.h"
+#include "Engine/World.h"
 #include "Renderer.h"
 #include "RootSignature.h"
 
+using namespace Graphics;
 using namespace Renderer;
-
-void SetPSO(const std::string& psoName, ComputePSO& pso)
-{
-	if (m_CPSOs.find(psoName) != m_CPSOs.end())
-	{
-		pso = m_CPSOs[psoName];
-	}
-	else
-	{
-		std::cout << "can't find pso -" << psoName << '\n';
-	}
-}
 
 SPH::SPH()
 {
@@ -78,15 +68,18 @@ void SPH::Initialize(ID3D12Device5* device, ID3D12CommandAllocator* cmdAlloc, ID
 		}
 	}
 
+	// per-frame 시뮬레이션 전용 command list/allocator 생성 (StableFluids 와 동일 패턴).
+	InitCommands();
+
 	// heap 생성
 	utility->CreateDescriptorHeap(2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, m_sphParticleUAVHeap[0], 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 	utility->CreateDescriptorHeap(2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, m_sphParticleUAVHeap[1], 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 	utility->CreateDescriptorHeap(2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, m_sphParticleSRVHeap, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 	utility->CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, m_sortedSphParticleHeap, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
-	
+
 	InitParticleCPU();
 	InitParticleGPU(cmdAlloc, cmdList);
-	
+
 	utility->CreateConstantBuffer(sizeof(SPHParticleLocalConstant), m_sphParticleLocalCB, &pSPHParticleLocalCB);
 	memcpy(pSPHParticleLocalCB, &m_sphParticleConstant, sizeof(SPHParticleLocalConstant));
 
@@ -99,15 +92,33 @@ void SPH::Initialize(ID3D12Device5* device, ID3D12CommandAllocator* cmdAlloc, ID
 		scanCB.gScanCount = lvl.scanCount;
 		memcpy(lvl.pCb, &scanCB, sizeof(SPHParticleLocalConstant));
 	}
-	SetPSO(pass0CPSOname, pass0CPSO);
-	SetPSO(pass1CPSOname, pass1CPSO);
-	SetPSO(pass2aCPSOname, pass2aCPSO);
-	SetPSO(pass2bCPSOname, pass2bCPSO);
-	SetPSO(pass3CPSOname, pass3CPSO);
 }
 
-void SPH::Tick(float deltaTime)
-{	
+void SPH::InitCommands()
+{
+	if (m_world && m_world->GetDevice())
+	{
+		auto device = m_world->GetDevice();
+		ThrowIfFailed(
+			device->CreateCommandAllocator(
+				D3D12_COMMAND_LIST_TYPE_DIRECT,
+				IID_PPV_ARGS(&m_commandAllocator)
+			));
+
+		ThrowIfFailed(
+			device->CreateCommandList(
+				0,
+				D3D12_COMMAND_LIST_TYPE_DIRECT,
+				m_commandAllocator.Get(),
+				nullptr,
+				IID_PPV_ARGS(&m_commandList)
+			));
+		m_commandList->Close();
+	}
+}
+
+void SPH::UpdateConstants(float deltaTime)
+{
 	if (countTick < sphMaxParticleCount)
 	{
 		countTick += sphCountIncreaseSpeed * deltaTime;
@@ -123,66 +134,133 @@ void SPH::Tick(float deltaTime)
 	memcpy(pSPHParticleLocalCB, &m_sphParticleConstant, sizeof(SPHParticleLocalConstant));
 }
 
-// 버퍼 clear용
-void SPH::Pass0(ID3D12GraphicsCommandList* commandList)
+// 한 프레임의 시뮬레이션 전체 (counting-sort + density/pressure/forces/simulation)
+// 를 m_commandList 한 개에 기록.
+//   진입 상태 가정: SPH 의 모든 GPU buffer 가 COMMON (이전 ExecuteCommandLists 이후 decay).
+//   종료 상태: m_commandList 가 열린(open) 채로 모든 dispatch 기록 완료. Execute() 가 close+submit 담당.
+void SPH::Tick(float deltaTime)
 {
-	commandList->SetPipelineState(pass0CPSO.GetPSO());
-	commandList->SetComputeRootSignature(pass0CPSO.GetRootSignature()->GetSignature());
-	
-	commandList->SetComputeRootUnorderedAccessView(0, m_cellCounterBuffer->GetGPUVirtualAddress());
-	commandList->SetComputeRootUnorderedAccessView(1, m_scatterCounterBuffer->GetGPUVirtualAddress());
-	commandList->SetComputeRootConstantBufferView(2, m_sphParticleLocalCB->GetGPUVirtualAddress());
+	UpdateConstants(deltaTime);
 
-	UINT groupCount = (cellCount + GROUP_SIZE - 1) / GROUP_SIZE;
-	commandList->Dispatch(groupCount, 1, 1);
+	m_commandAllocator->Reset();
+	m_commandList->Reset(m_commandAllocator.Get(), nullptr);
+
+	// ── Counting-sort ───────────────────────────────────────────────────────
+	// 종료 후 상태:
+	//   m_cellCounterBuffer, m_particleCellIdBuffer, m_pass2Levels[0].output → NON_PIXEL_SHADER_RESOURCE
+	//   m_scatterCounterBuffer, m_sortedSphParticleBuffer, m_sortedIndicesBuffer, m_sphParticleBuffer[idx] → UAV
+	Sort();
+
+	// ── Sort → Compute Density ──────────────────────────────────────────────
+	// Sort:Pass3 가 방금 쓴 m_sortedSphParticleBuffer / m_sortedIndicesBuffer 를 density 가 UAV 로 다시 읽음.
+	// 동일 UAV write→read 이므로 UAV barrier 필요.
+	{
+		D3D12_RESOURCE_BARRIER bs[2] = {
+			CD3DX12_RESOURCE_BARRIER::UAV(m_sortedSphParticleBuffer.Get()),
+			CD3DX12_RESOURCE_BARRIER::UAV(m_sortedIndicesBuffer.Get()),
+		};
+		m_commandList->ResourceBarrier(2, bs);
+	}
+
+	// ── Density → Pressure ──────────────────────────────────────────────────
+	// density 가 curr_particles.density 를 쓰고 pressure 가 이를 읽는다 (동일 UAV).
+	Compute("computeDensityCPSO");
+	{
+		auto b = CD3DX12_RESOURCE_BARRIER::UAV(m_sphParticleBuffer[1 - m_sphHeapIdx].Get());
+		m_commandList->ResourceBarrier(1, &b);
+	}
+
+	// ── Pressure → Forces ───────────────────────────────────────────────────
+	// pressure 가 curr_particles.pressure 를 쓰고 forces 가 density/pressure 를 모두 읽는다.
+	Compute("computePressureCPSO");
+	{
+		auto b = CD3DX12_RESOURCE_BARRIER::UAV(m_sphParticleBuffer[1 - m_sphHeapIdx].Get());
+		m_commandList->ResourceBarrier(1, &b);
+	}
+
+	// ── Forces → Simulation ─────────────────────────────────────────────────
+	// forces 가 curr_particles.acceleration 을 쓰고 simulation 이 이를 읽는다.
+	Compute("computeForcesCPSO");
+	{
+		auto b = CD3DX12_RESOURCE_BARRIER::UAV(m_sphParticleBuffer[1 - m_sphHeapIdx].Get());
+		m_commandList->ResourceBarrier(1, &b);
+	}
+
+	Compute("sphSimulationCPSO");
 }
 
-void SPH::Pass1(ID3D12GraphicsCommandList* commandList)
+void SPH::Execute(ID3D12CommandQueue* commandQueue)
+{
+	m_commandList->Close();
+	ID3D12CommandList* commands[] = { m_commandList.Get() };
+	commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
+}
+
+void SPH::SetCPSO(const std::string& psoName)
+{
+	ComputePSO cpso = Renderer::GetComputePSO(psoName);
+	m_commandList->SetPipelineState(cpso.GetPSO());
+	m_commandList->SetComputeRootSignature(cpso.GetRootSignature()->GetSignature());
+}
+
+// 버퍼 clear용
+void SPH::Pass0()
+{
+	SetCPSO("pass0CPSO");
+
+	m_commandList->SetComputeRootUnorderedAccessView(0, m_cellCounterBuffer->GetGPUVirtualAddress());
+	m_commandList->SetComputeRootUnorderedAccessView(1, m_scatterCounterBuffer->GetGPUVirtualAddress());
+	m_commandList->SetComputeRootConstantBufferView(2, m_sphParticleLocalCB->GetGPUVirtualAddress());
+
+	UINT groupCount = (cellCount + GROUP_SIZE - 1) / GROUP_SIZE;
+	m_commandList->Dispatch(groupCount, 1, 1);
+}
+
+void SPH::Pass1()
 {
 	auto& particle = m_sphParticleBuffer[m_sphHeapIdx];
 
-	commandList->SetPipelineState(pass1CPSO.GetPSO());
-	commandList->SetComputeRootSignature(pass1CPSO.GetRootSignature()->GetSignature());
+	SetCPSO("pass1CPSO");
 
-	commandList->SetComputeRootUnorderedAccessView(0, particle->GetGPUVirtualAddress());
-	commandList->SetComputeRootUnorderedAccessView(1, m_cellCounterBuffer->GetGPUVirtualAddress());
-	commandList->SetComputeRootUnorderedAccessView(2, m_particleCellIdBuffer->GetGPUVirtualAddress());
-	commandList->SetComputeRootConstantBufferView(3, m_sphParticleLocalCB->GetGPUVirtualAddress());
+	m_commandList->SetComputeRootUnorderedAccessView(0, particle->GetGPUVirtualAddress());
+	m_commandList->SetComputeRootUnorderedAccessView(1, m_cellCounterBuffer->GetGPUVirtualAddress());
+	m_commandList->SetComputeRootUnorderedAccessView(2, m_particleCellIdBuffer->GetGPUVirtualAddress());
+	m_commandList->SetComputeRootConstantBufferView(3, m_sphParticleLocalCB->GetGPUVirtualAddress());
 
 	UINT groupXCount = (sphMaxParticleCount + GROUP_SIZE - 1) / GROUP_SIZE;
-	commandList->Dispatch(groupXCount, 1, 1);
+	m_commandList->Dispatch(groupXCount, 1, 1);
 }
 
 // Pass2a: per-block exclusive scan + emit block totals.
 //   bindings (ScanBlocksCS.hlsl): t0=gInput(SRV), u0=gOutput(UAV), u1=gBlockSums(UAV), b0=GridCB(CBV)
 //   input:  level 0 → m_cellCounterBuffer,  level k>0 → m_pass2Levels[k-1].blockSums
 //   output, blockSums, cb 는 모두 m_pass2Levels[level] 안에 있음.
-void SPH::Pass2a(ID3D12GraphicsCommandList* commandList, int level)
+void SPH::Pass2a(int level)
 {
 	auto& lvl = m_pass2Levels[level];
 	D3D12_GPU_VIRTUAL_ADDRESS in_va = (level == 0)
 		? m_cellCounterBuffer->GetGPUVirtualAddress()
 		: m_pass2Levels[level - 1].blockSums->GetGPUVirtualAddress();
 
-	commandList->SetComputeRootShaderResourceView (0, in_va);
-	commandList->SetComputeRootUnorderedAccessView(1, lvl.output->GetGPUVirtualAddress());
-	commandList->SetComputeRootUnorderedAccessView(2, lvl.blockSums->GetGPUVirtualAddress());
-	commandList->SetComputeRootConstantBufferView (3, lvl.cb->GetGPUVirtualAddress());
-	commandList->Dispatch(lvl.blockCount, 1, 1);
+	m_commandList->SetComputeRootShaderResourceView (0, in_va);
+	m_commandList->SetComputeRootUnorderedAccessView(1, lvl.output->GetGPUVirtualAddress());
+	m_commandList->SetComputeRootUnorderedAccessView(2, lvl.blockSums->GetGPUVirtualAddress());
+	m_commandList->SetComputeRootConstantBufferView (3, lvl.cb->GetGPUVirtualAddress());
+	m_commandList->Dispatch(lvl.blockCount, 1, 1);
 }
 
 // Pass2b: m_pass2Levels[level].output[i] += m_pass2Levels[level+1].output[i / GROUP_SIZE]
 //   bindings (AddBlockOffsetsCS.hlsl): u0=gPartial(UAV), t0=gScannedBlockSums(SRV), b0=GridCB(CBV)
 //   terminal level (lastLevel) 에서는 호출하지 않음 — 재귀 종료.
-void SPH::Pass2b(ID3D12GraphicsCommandList* commandList, int level)
+void SPH::Pass2b(int level)
 {
 	auto& lvl = m_pass2Levels[level];
 	auto& sub = m_pass2Levels[level + 1];   // 한 level 깊은 곳의 output = scanned block sums
 
-	commandList->SetComputeRootUnorderedAccessView(0, lvl.output->GetGPUVirtualAddress());
-	commandList->SetComputeRootShaderResourceView (1, sub.output->GetGPUVirtualAddress());
-	commandList->SetComputeRootConstantBufferView (2, lvl.cb->GetGPUVirtualAddress());
-	commandList->Dispatch(lvl.blockCount, 1, 1);
+	m_commandList->SetComputeRootUnorderedAccessView(0, lvl.output->GetGPUVirtualAddress());
+	m_commandList->SetComputeRootShaderResourceView (1, sub.output->GetGPUVirtualAddress());
+	m_commandList->SetComputeRootConstantBufferView (2, lvl.cb->GetGPUVirtualAddress());
+	m_commandList->Dispatch(lvl.blockCount, 1, 1);
 }
 
 // 재귀 전역 exclusive scan.
@@ -198,16 +276,14 @@ void SPH::Pass2b(ID3D12GraphicsCommandList* commandList, int level)
 // 진입 조건: m_cellCounterBuffer 가 NON_PIXEL_SHADER_RESOURCE 상태.
 //           m_pass2Levels 모든 buffer 들이 UNORDERED_ACCESS 상태.
 // 종료 조건: 모든 buffer 상태가 진입 때와 동일하게 복원됨 (per-frame 재실행 가능).
-void SPH::Pass2(ID3D12GraphicsCommandList* commandList,	int level)
+void SPH::Pass2(int level)
 {
 	auto& lvl = m_pass2Levels[level];
 	const int lastLevel = (int)m_pass2Levels.size() - 1;
 
 	// ── Pass2a dispatch ──────────────────────────────────────────────────
-	commandList->SetPipelineState(pass2aCPSO.GetPSO());
-	commandList->SetComputeRootSignature(pass2aCPSO.GetRootSignature()->GetSignature());
-
-	Pass2a(commandList, level);
+	SetCPSO("pass2aCPSO");
+	Pass2a(level);
 
 	// terminal level: blockCount==1 → 단일 블록 안에서 scan 완료. 더 재귀 안 함.
 	if (level == lastLevel) return;
@@ -216,24 +292,23 @@ void SPH::Pass2(ID3D12GraphicsCommandList* commandList,	int level)
 	{
 		auto b = CD3DX12_RESOURCE_BARRIER::Transition(lvl.blockSums.Get(),
 			D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		commandList->ResourceBarrier(1, &b);
+		m_commandList->ResourceBarrier(1, &b);
 	}
 
 	// ── 재귀 ─────────────────────────────────────────────────────────────
-	Pass2(commandList, level + 1);
+	Pass2(level + 1);
 
 	// 재귀에서 돌아온 시점: m_pass2Levels[level+1].output 가 전역 scan 완료 상태 (UAV).
 	// Pass2b 는 이걸 SRV 로 읽음.
 	{
 		auto b = CD3DX12_RESOURCE_BARRIER::Transition(m_pass2Levels[level + 1].output.Get(),
 			D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		commandList->ResourceBarrier(1, &b);
+		m_commandList->ResourceBarrier(1, &b);
 	}
 
 	// ── Pass2b dispatch ──────────────────────────────────────────────────
-	commandList->SetPipelineState(pass2bCPSO.GetPSO());
-	commandList->SetComputeRootSignature(pass2bCPSO.GetRootSignature()->GetSignature());
-	Pass2b(commandList, level);
+	SetCPSO("pass2bCPSO");
+	Pass2b(level);
 
 	// ── 상태 복원 (다음 프레임 호출에서 UAV 로 다시 쓸 수 있도록) ─────────
 	{
@@ -243,7 +318,7 @@ void SPH::Pass2(ID3D12GraphicsCommandList* commandList,	int level)
 			CD3DX12_RESOURCE_BARRIER::Transition(m_pass2Levels[level + 1].output.Get(),
 				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS),
 		};
-		commandList->ResourceBarrier(2, barriers);
+		m_commandList->ResourceBarrier(2, barriers);
 	}
 }
 
@@ -256,26 +331,25 @@ void SPH::Pass2(ID3D12GraphicsCommandList* commandList,	int level)
 //     t1 = gCellStart       (SRV, = m_pass2Levels[0].output, from Pass2)
 //     b0 = gCB              (CBV, gCB.particleCount 으로 early-exit)
 //   Dispatch ceil(sphMaxParticleCount / GROUP_SIZE) — 셰이더가 particleCount 로 early-exit.
-void SPH::Pass3(ID3D12GraphicsCommandList* commandList)
+void SPH::Pass3()
 {
 	auto& particle = m_sphParticleBuffer[m_sphHeapIdx];
-	commandList->SetPipelineState(pass3CPSO.GetPSO());
-	commandList->SetComputeRootSignature(pass3CPSO.GetRootSignature()->GetSignature());
+	SetCPSO("pass3CPSO");
 
-	commandList->SetComputeRootUnorderedAccessView(0, particle->GetGPUVirtualAddress());
-	commandList->SetComputeRootUnorderedAccessView(1, m_scatterCounterBuffer->GetGPUVirtualAddress());
-	commandList->SetComputeRootUnorderedAccessView(2, m_sortedSphParticleBuffer->GetGPUVirtualAddress());
-	commandList->SetComputeRootUnorderedAccessView(3, m_sortedIndicesBuffer->GetGPUVirtualAddress());
-	commandList->SetComputeRootShaderResourceView (4, m_particleCellIdBuffer->GetGPUVirtualAddress());
-	commandList->SetComputeRootShaderResourceView (5, m_pass2Levels[0].output->GetGPUVirtualAddress());
-	commandList->SetComputeRootConstantBufferView (6, m_sphParticleLocalCB->GetGPUVirtualAddress());
+	m_commandList->SetComputeRootUnorderedAccessView(0, particle->GetGPUVirtualAddress());
+	m_commandList->SetComputeRootUnorderedAccessView(1, m_scatterCounterBuffer->GetGPUVirtualAddress());
+	m_commandList->SetComputeRootUnorderedAccessView(2, m_sortedSphParticleBuffer->GetGPUVirtualAddress());
+	m_commandList->SetComputeRootUnorderedAccessView(3, m_sortedIndicesBuffer->GetGPUVirtualAddress());
+	m_commandList->SetComputeRootShaderResourceView (4, m_particleCellIdBuffer->GetGPUVirtualAddress());
+	m_commandList->SetComputeRootShaderResourceView (5, m_pass2Levels[0].output->GetGPUVirtualAddress());
+	m_commandList->SetComputeRootConstantBufferView (6, m_sphParticleLocalCB->GetGPUVirtualAddress());
 
 	UINT groupXCount = (sphMaxParticleCount + GROUP_SIZE - 1) / GROUP_SIZE;
-	commandList->Dispatch(groupXCount, 1, 1);
+	m_commandList->Dispatch(groupXCount, 1, 1);
 }
 
 // 한 프레임의 counting-sort 파이프라인 전체 (Pass0 → 1 → 2 → 3) 를
-// 올바른 GPU sync barrier 와 함께 한 command list 안에서 실행.
+// 올바른 GPU sync barrier 와 함께 m_commandList 안에서 실행.
 //
 // 진입 상태 가정: 관련 buffer 들이 COMMON (이전 ExecuteCommandLists 후 decay).
 //   → 첫 SetCompute*ResourceView 호출이 implicit promotion (COMMON → UAV/SRV).
@@ -284,17 +358,17 @@ void SPH::Pass3(ID3D12GraphicsCommandList* commandList)
 //   m_scatterCounterBuffer, m_sortedSphParticleBuffer, m_sortedIndicesBuffer → UAV
 //   Pass2 내부 level buffer 들 → UAV (Pass2 자체 invariant)
 // 다음 ExecuteCommandLists 후 모두 COMMON 으로 decay → 다음 프레임 재진입 가능.
-void SPH::Sort(ID3D12GraphicsCommandList* commandList)
+void SPH::Sort()
 {
-	Pass0(commandList);
+	Pass0();
 
 	// Pass0 → Pass1: cellCounter 의 0-clear 가 Pass1 의 InterlockedAdd 보다 먼저 끝나야 함.
 	{
 		D3D12_RESOURCE_BARRIER b = CD3DX12_RESOURCE_BARRIER::UAV(m_cellCounterBuffer.Get());
-		commandList->ResourceBarrier(1, &b);
+		m_commandList->ResourceBarrier(1, &b);
 	}
 
-	Pass1(commandList);
+	Pass1();
 
 	// Pass1 → Pass2: Pass2a 의 level-0 입력이 m_cellCounterBuffer (SRV 슬롯).
 	//   Transition 은 prior UAV write 도 자동 drain 시켜주므로 별도 UAV barrier 불필요.
@@ -304,10 +378,10 @@ void SPH::Sort(ID3D12GraphicsCommandList* commandList)
 			m_cellCounterBuffer.Get(),
 			D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
 			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		commandList->ResourceBarrier(1, &b);
+		m_commandList->ResourceBarrier(1, &b);
 	}
 
-	Pass2(commandList);
+	Pass2();
 
 	// Pass2 → Pass3:
 	//   Pass3 의 SRV 입력 둘 (cellStart = m_pass2Levels[0].output, particleCellId) 를 UAV→SRV.
@@ -324,29 +398,31 @@ void SPH::Sort(ID3D12GraphicsCommandList* commandList)
 				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE),
 			CD3DX12_RESOURCE_BARRIER::UAV(m_scatterCounterBuffer.Get()),
 		};
-		commandList->ResourceBarrier(3, bs);
+		m_commandList->ResourceBarrier(3, bs);
 	}
 
-	Pass3(commandList);
+	Pass3();
 }
 
-void SPH::Compute(ID3D12GraphicsCommandList* commandList)
+void SPH::Compute(const std::string& psoName)
 {
+	SetCPSO(psoName);
+
 	auto& prevParticles = m_sphParticleBuffer[m_sphHeapIdx];
 	auto& currParticles = m_sphParticleBuffer[1 - m_sphHeapIdx];
 
-	commandList->SetComputeRootUnorderedAccessView(0, prevParticles->GetGPUVirtualAddress());
-	commandList->SetComputeRootUnorderedAccessView(1, currParticles->GetGPUVirtualAddress());
-	commandList->SetComputeRootUnorderedAccessView(2, m_sortedSphParticleBuffer->GetGPUVirtualAddress());
-	commandList->SetComputeRootUnorderedAccessView(3, m_sortedIndicesBuffer->GetGPUVirtualAddress());
+	m_commandList->SetComputeRootUnorderedAccessView(0, prevParticles->GetGPUVirtualAddress());
+	m_commandList->SetComputeRootUnorderedAccessView(1, currParticles->GetGPUVirtualAddress());
+	m_commandList->SetComputeRootUnorderedAccessView(2, m_sortedSphParticleBuffer->GetGPUVirtualAddress());
+	m_commandList->SetComputeRootUnorderedAccessView(3, m_sortedIndicesBuffer->GetGPUVirtualAddress());
 
-	commandList->SetComputeRootShaderResourceView(4, m_pass2Levels[0].output->GetGPUVirtualAddress());
-	commandList->SetComputeRootShaderResourceView(5, m_cellCounterBuffer->GetGPUVirtualAddress());
+	m_commandList->SetComputeRootShaderResourceView(4, m_pass2Levels[0].output->GetGPUVirtualAddress());
+	m_commandList->SetComputeRootShaderResourceView(5, m_cellCounterBuffer->GetGPUVirtualAddress());
 
-	commandList->SetComputeRootConstantBufferView(6, m_sphParticleLocalCB->GetGPUVirtualAddress());
+	m_commandList->SetComputeRootConstantBufferView(6, m_sphParticleLocalCB->GetGPUVirtualAddress());
 
 	UINT threadXCount = (sphCurrParticleCount + GROUP_SIZE - 1) / GROUP_SIZE;
-	commandList->Dispatch(threadXCount, 1, 1);
+	m_commandList->Dispatch(threadXCount, 1, 1);
 }
 
 void SPH::Render(ID3D12GraphicsCommandList* commandList)
@@ -378,12 +454,12 @@ void SPH::InitParticleCPU()
 {
 	sphCurrParticleCount = 0;
 	countTick = 0.f;
-	
+
 	std::random_device rd;
 	std::mt19937 gen(rd());
 
 	m_sphParticles.resize(sphMaxParticleCount);
-	
+
 	Vector3 basePosition0(-0.7f, 0.4f, 0.f);
 	Vector3 basePosition1(0.7f, 0.4f, 0.f);
 	Vector3 baseVelocity0(1.f, 0.f, 0.f);
@@ -409,12 +485,11 @@ void SPH::InitParticleCPU()
 			p.position = basePosition1 + Vector3(0.f, std::cos(theta), -std::sin(theta)) * randomDist(gen);
 			p.velocity = baseVelocity1 * velDist(gen);
 		}
-		
+
 		p.color = Vector3(0.0f, 0.0f, 1.0f);
 		p.acceleration = Vector3(0.f, 0.f, 0.f);
 		p.radius = particleRadius;
 	}
-	UINT groupCount = (cellCount + GROUP_SIZE - 1) / GROUP_SIZE;
 
 	m_cellCounter.resize(cellCount, 0);
 	m_particleCellId.resize(sphMaxParticleCount, 0);
@@ -424,9 +499,6 @@ void SPH::InitParticleCPU()
 void SPH::InitParticleGPU(ID3D12CommandAllocator* cmdAlloc, ID3D12GraphicsCommandList* cmdList)
 {
 	using namespace Graphics;
-
-	cmdAlloc->Reset();
-	cmdList->Reset(cmdAlloc, nullptr);
 
 	// structured gpu buffer 생성
 	D3D12_RESOURCE_FLAGS uavFlag = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;

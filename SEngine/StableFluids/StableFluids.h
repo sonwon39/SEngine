@@ -5,16 +5,24 @@
 #include "wrl.h"
 #include "d3d12.h"
 #include "PipelineState.h"
+#include "Texture2D.h"
+#include "DescriptorHeap.h"
+#include "ConstantBuffer.h"
+#include "Grid.h"
+
+class RenderEngine;
 
 class StableFluids
 {
+	friend class RenderEngine;
 public:
 	StableFluids();
 
 public:
-	void Initialize();
+	void Initialize(UINT width, UINT height);
 	void InitCommands();
-	void InitCPU();
+	void InitResources(UINT width, UINT height);
+
 	void InitGPU(ID3D12CommandAllocator* cmdAlloc, ID3D12GraphicsCommandList* cmdList);
 
 
@@ -49,4 +57,40 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_commandList;
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_commandAllocator;
 
+	// stable fluids
+protected:
+	Texture2D m_oldDensityBuffer;
+	Texture2D m_oldVelocityBuffer;
+
+	Texture2D m_newDensityBuffer;
+	Texture2D m_newVelocityBuffer;
+
+	Texture2D m_divergenceBuffer;
+
+	Texture2D m_curlBuffer;
+
+	Texture2D m_pressureBuffer[2];
+
+	DescriptorHeap m_renderDensityHeap;
+	DescriptorHeap m_sourcingHeap;
+	DescriptorHeap m_computeCurlHeap;
+	DescriptorHeap m_vorticityConfinementHeap;
+
+	DescriptorHeap m_advectionHeap;
+
+	DescriptorHeap m_computeDivergenceHeap;
+	DescriptorHeap m_jacobiHeap[2];
+
+	DescriptorHeap m_computeFinalVelocityHeap;
+
+	UINT gridWidth = 512;
+	UINT gridHeight = 512;
+
+	DXGI_FORMAT densityFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	DXGI_FORMAT velocityFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	DXGI_FORMAT divergenceFormat = DXGI_FORMAT_R32_FLOAT;
+	DXGI_FORMAT pressureFormat = DXGI_FORMAT_R32_FLOAT;
+	DXGI_FORMAT curlFormat = DXGI_FORMAT_R32_FLOAT;
+
+	ConstantBuffer<SFLocalConstant> gridCB;
 };

@@ -2,8 +2,9 @@
 
 #include "d3d12.h"
 #include <memory>
-
+#include <string>
 #include "directxtk12\SimpleMath.h"
+
 #include "SEngineMouse.h"
 #include "Texture2D.h"
 #include "DescriptorHeap.h"
@@ -11,19 +12,21 @@
 #include "ConstantBuffer.h"
 #include "GPUBuffer.h"
 #include "Level.h"
+#include "AssetManager/TextureLoader.h"
 
 class World {
 public:
 	World();
-	virtual ~World() {};
+	virtual ~World();
 
 public:
 	void Initialize(ID3D12Device5* device, int width, int height);
-	void InitStableFluidsResources(int width, int height);
+	//void InitStableFluidsResources(int width, int height);
 	void Tick(float deltaTime);
 
 public:
 	ID3D12Device5* GetDevice() { return m_device; }
+	std::shared_ptr<TextureLoader> GetTextureLoader() { return m_textureLoader; }
 
 public:
 	void SetWindowSize(int width, int height);
@@ -42,42 +45,7 @@ public:
 private:
 	ID3D12Device5* m_device;
 
-// stable fluids
 public:
-	Texture2D m_oldDensityBuffer;
-	Texture2D m_oldVelocityBuffer;
-
-	Texture2D m_newDensityBuffer;
-	Texture2D m_newVelocityBuffer;
-
-	Texture2D m_divergenceBuffer;
-
-	Texture2D m_curlBuffer;
-
-	Texture2D m_pressureBuffer[2];
-
-	DescriptorHeap m_renderDensityHeap;
-	DescriptorHeap m_sourcingHeap;
-	DescriptorHeap m_computeCurlHeap;
-	DescriptorHeap m_vorticityConfinementHeap;
-
-	DescriptorHeap m_advectionHeap;
-
-	DescriptorHeap m_computeDivergenceHeap;
-	DescriptorHeap m_jacobiHeap[2];
-
-	DescriptorHeap m_computeFinalVelocityHeap;
-
-	UINT gridWidth = 512;
-	UINT gridHeight = 512;
-
-	DXGI_FORMAT densityFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	DXGI_FORMAT velocityFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	DXGI_FORMAT divergenceFormat = DXGI_FORMAT_R32_FLOAT;
-	DXGI_FORMAT pressureFormat = DXGI_FORMAT_R32_FLOAT;
-	DXGI_FORMAT curlFormat = DXGI_FORMAT_R32_FLOAT;
-
-	ConstantBuffer<SFLocalConstant> gridCB;
 	std::vector<DirectX::SimpleMath::Vector3> colors;
 
 public:
@@ -88,5 +56,9 @@ public:
 	bool m_captureDirty = false;
 
 private:
-	std::shared_ptr<Level>  m_level;
+	std::shared_ptr<Level> m_level;
+
+private:
+	std::string texBuildPath = "Assets/Build/";
+	std::shared_ptr<TextureLoader> m_textureLoader;
 };

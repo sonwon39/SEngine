@@ -87,12 +87,12 @@ DirectX::SimpleMath::Vector3 Actor::GetActorLocation() const
 
 DirectX::SimpleMath::Vector3 Actor::GetActorFrontDir() const
 {
-	return m_rootComponent ? m_rootComponent->GetFrontDirection() : DirectX::SimpleMath::Vector3::Zero;
+	return m_rootComponent ? m_rootComponent->GetFrontDirection() : Vector3(0.f, 0.f, 0.f);
 }
 
 DirectX::SimpleMath::Vector3 Actor::GetCameraLocation() const
 {
-	return m_rootComponent ? m_rootComponent->GetCameraLocation() : DirectX::SimpleMath::Vector3::Zero;
+	return m_rootComponent ? m_rootComponent->GetCameraLocation() : Vector3(0.f, 0.f, 0.f);
 }
 
 DirectX::SimpleMath::Matrix Actor::GetProjMatrix() const
@@ -102,12 +102,12 @@ DirectX::SimpleMath::Matrix Actor::GetProjMatrix() const
 
 DirectX::SimpleMath::Vector3 Actor::GetActorUpDir() const
 {
-	return m_rootComponent ? m_rootComponent->GetUpDirection() : DirectX::SimpleMath::Vector3::Zero;
+	return m_rootComponent ? m_rootComponent->GetUpDirection() : Vector3(0.f, 0.f, 0.f);
 }
 
 DirectX::SimpleMath::Vector3 Actor::GetActorRightDir() const
 {
-	return m_rootComponent ? m_rootComponent->GetRightDirection() : DirectX::SimpleMath::Vector3::Zero;
+	return m_rootComponent ? m_rootComponent->GetRightDirection() : Vector3(0.f, 0.f, 0.f);
 }
 
 float Actor::GetActorSpeed() const

@@ -235,7 +235,7 @@ void SceneComponent::OnRegister()
 
 DirectX::SimpleMath::Vector3 SceneComponent::GetCameraLocation() const
 {
-	return m_cameraComponent ? m_cameraComponent->GetLocation() : DirectX::SimpleMath::Vector3::Zero;
+	return m_cameraComponent ? m_cameraComponent->GetLocation() : Vector3(0.f, 0.f, 0.f);
 }
 
 DirectX::SimpleMath::Matrix SceneComponent::GetProjMatrix() const
