@@ -1,5 +1,7 @@
 ﻿#pragma once
 #include "SceneComponent.h"
+#include "ConstantBuffer.h"
+#include "PBR/PBRHLSLCompat.h"
 #include "d3d12.h"
 #include <string>
 
@@ -46,6 +48,12 @@ public:
 	void SetUpdateConstant(bool newState) { m_updateConstant = newState; }
 	bool IsUpdateConstant() { return m_updateConstant; }
 
+public:
+	// per-primitive CB 소유: 컴포넌트가 GPU 자원의 생명주기를 책임진다.
+	// 매 프레임 MeshBatch::Render 진입 시 SyncCB()로 localConstant → GPU CB memcpy.
+	void SyncCB();
+	D3D12_GPU_VIRTUAL_ADDRESS GetCBGPUAddress();
+
 protected:
 	bool m_visible;
 	bool m_usePhysX = false;
@@ -53,4 +61,7 @@ protected:
 	bool m_updateConstant = false;
 	std::string m_textureName;
 	std::string m_psoName;
+
+	ConstantBuffer<LocalConstant> m_cb;
+	bool m_cbInitialized = false;
 };

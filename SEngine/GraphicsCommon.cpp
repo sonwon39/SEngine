@@ -42,6 +42,7 @@ namespace Graphics
 
 	std::shared_ptr<GraphicsUtils::Utility> utility;
 	std::shared_ptr<World> m_world;
+	std::shared_ptr<RenderEngine> m_renderEngine;
 }
 
 

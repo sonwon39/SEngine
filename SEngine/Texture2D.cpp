@@ -9,16 +9,13 @@ Texture2D::Texture2D()
 
 Texture2D::~Texture2D()
 {
-	if(buffer)
-		buffer.Reset();
 	Clear();
 }
 
 void Texture2D::Clear()
 {
+	GPUBuffer::Clear();
 	ddsBlob.clear();
-	if(upload)
-		upload.Reset();
 }
 
 void Texture2D::Initialize(int width, int height, DXGI_FORMAT format, D3D12_RESOURCE_FLAGS flags, D3D12_RESOURCE_STATES state, UINT miplevels, std::wstring name)
@@ -26,39 +23,15 @@ void Texture2D::Initialize(int width, int height, DXGI_FORMAT format, D3D12_RESO
 	m_width = width;
 	m_height = height;
 
-	utility->CreateTextureBuffer(buffer, width, height, format, flags, state, miplevels, name);
+	utility->CreateTextureBuffer(gpu, width, height, format, flags, state, miplevels, name);
 
 	m_currentState = state;
 }
 
 void Texture2D::Initialize(std::ifstream& bin, uint64_t size, DirectX::DX12::DDS_LOADER_FLAGS flags, ID3D12GraphicsCommandList* commandList, std::wstring name)
 {
+	bufferSize = size;
 	ddsBlob.reserve(size);
 	bin.read(reinterpret_cast<char*>(ddsBlob.data()), size);
-	utility->CreateTextureFromDDS(ddsBlob.data(), size, buffer, upload, flags, commandList);
-}
-
-bool Texture2D::Transition(
-	D3D12_RESOURCE_STATES newState,
-	D3D12_RESOURCE_BARRIER& outBarrier)
-{
-	if (m_currentState == newState)
-	{
-		if (newState == D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
-		{
-			outBarrier = CD3DX12_RESOURCE_BARRIER::UAV(buffer.Get());
-			return true;
-		}
-
-		return false;
-	}
-
-	outBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
-		buffer.Get(),
-		m_currentState,
-		newState
-	);
-
-	m_currentState = newState;
-	return true;
+	utility->CreateTextureFromDDS(ddsBlob.data(), size, gpu, upload, flags, commandList);
 }

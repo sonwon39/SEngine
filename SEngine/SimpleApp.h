@@ -6,7 +6,6 @@
 
 #include "BaseApp.h"
 #include "Renderer.h"
-#include "Engine/RenderEngine.h"
 
 namespace Core {
 	class SimpleApp : public BaseApp
@@ -44,8 +43,5 @@ namespace Core {
 		Microsoft::WRL::ComPtr <ID3D12CommandAllocator> m_commandAllocator;
 		Microsoft::WRL::ComPtr <ID3D12CommandQueue> m_commandQueue;
 		Microsoft::WRL::ComPtr <ID3D12GraphicsCommandList> m_commandList;
-
-	private:
-		std::shared_ptr<RenderEngine> m_renderEngine;
 	};
 }

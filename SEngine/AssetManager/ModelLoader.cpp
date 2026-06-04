@@ -5,7 +5,7 @@
 
 using namespace Graphics;
 
-void ModelLoader<Vertex, uint16_t>::Initialize(ID3D12GraphicsCommandList* commandList)
+void ModelLoader<Vertex, uint16_t>::Initialize()
 {
 	ID3D12Device5* device = m_world->GetDevice();
 	Asset<Vertex, uint16_t> cube;
@@ -16,112 +16,21 @@ void ModelLoader<Vertex, uint16_t>::Initialize(ID3D12GraphicsCommandList* comman
 	int sphereDetail = 30;
 	Asset<Vertex, uint16_t> sphere;
 	sphere.m_meshes.push_back({ GeometryGenerator::MakeSphere(sphereDetail, sphereRadius) });
+	assets["sphere"] = sphere;
 
 	int planeSize = 100;
 	Asset<Vertex, uint16_t> plane;
 	plane.m_meshes.push_back({ GeometryGenerator::MakePlane((float)planeSize, (float)planeSize, 50) });
-
-	std::shared_ptr<StaticMesh> cubeMesh = std::make_shared<StaticMesh>();
-	cubeMesh->Initialize<Vertex, uint16_t>(device, commandList, cube.m_meshes);
-
-	std::shared_ptr<StaticMesh> planeMesh = std::make_shared<StaticMesh>();
-	planeMesh->Initialize<Vertex, uint16_t>(device, commandList, plane.m_meshes);
-
-	std::shared_ptr<StaticMesh> sphereMesh = std::make_shared<StaticMesh>();
-	sphereMesh->Initialize<Vertex, uint16_t>(device, commandList, sphere.m_meshes);
-
-
-	meshesMap["cube"] = cubeMesh;
-	meshesMap["plane"] = planeMesh;
+	assets["plane"] = plane;
 }
 
-// BOOKMARK
-void ModelLoader<PBRVertex, uint16_t>::Initialize(ID3D12GraphicsCommandList* commandList)
+void ModelLoader<SimpleVertex, uint16_t>::Initialize()
 {
 	ID3D12Device5* device = m_world->GetDevice();
-	float sphereRadius = 0.5f;
-	int sphereDetail = 100;
-
-	Asset<PBRVertex, uint16_t> sphere;
-	sphere.m_meshes.push_back({ GeometryGenerator::PbrSphere(0.5f, 100, 100) });
-
-	float planeSize = 2.f * 100.f;
-	int div = 200;
-
-	Asset<PBRVertex, uint16_t> plane;
-	plane.m_meshes.push_back({ GeometryGenerator::PBRPlane(planeSize, planeSize, div, div) });
-
-	Asset<PBRVertex, uint16_t> cube;
-	cube.m_meshes.push_back({ GeometryGenerator::PBRCube(0.5,0.5,0.5,40,40,40) });
-
-	Asset<PBRVertex, uint16_t> simpleCube;
-	simpleCube.m_meshes.push_back({ GeometryGenerator::PBRCube(0.5,0.5,0.5,1,1,1) });
-
-	std::shared_ptr<StaticMesh> sphereMesh = std::make_shared<StaticMesh>();
-	sphereMesh->Initialize<PBRVertex, uint16_t>(device, commandList, sphere.m_meshes);
-
-	std::shared_ptr<StaticMesh> planeMesh = std::make_shared<StaticMesh>();
-	planeMesh->Initialize<PBRVertex, uint16_t>(device, commandList, plane.m_meshes);
-
-	std::shared_ptr<StaticMesh> sphereTanMesh = std::make_shared<StaticMesh>();
-	sphereTanMesh->Initialize<PBRVertex, uint16_t>(device, commandList, assets["sphere"].m_meshes);
-
-	std::shared_ptr<StaticMesh> cubeMesh = std::make_shared<StaticMesh>();
-	cubeMesh->Initialize<PBRVertex, uint16_t>(device, commandList, cube.m_meshes);
-
-	std::shared_ptr<StaticMesh> simpleCubeMesh = std::make_shared<StaticMesh>();
-	simpleCubeMesh->Initialize<PBRVertex, uint16_t>(device, commandList, simpleCube.m_meshes);
-
-	for (size_t i = 0; i < assets["large_castle_door_4k"].m_meshes.size(); i++)
-	{
-		std::string name = "door" + std::to_string(i);
-		std::shared_ptr<StaticMesh> doorMesh = std::make_shared<StaticMesh>();
-		doorMesh->Initialize<PBRVertex, uint16_t>(device, commandList, { assets["large_castle_door_4k"].m_meshes[i] });
-		meshesMap[name] = doorMesh;
-	}
-	for (auto& [name, asset] : assets)
-	{
-		if (name == "large_castle_door_4k")
-			continue;
-		std::shared_ptr<StaticMesh> mesh = std::make_shared<StaticMesh>();
-		mesh->Initialize<PBRVertex, uint16_t>(device, commandList, asset.m_meshes);
-		meshesMap[name] = mesh;
-	}
-
-	meshesMap["sphere"] = sphereMesh;
-	meshesMap["plane"] = planeMesh;
-	meshesMap["cube"] = cubeMesh;
-	meshesMap["simpleCube"] = simpleCubeMesh;
+	Asset<SimpleVertex, uint16_t> plane;
+	plane.m_meshes.push_back({ GeometryGenerator::MakeSimpleRect(2.f, 2.f) });
+	assets["plane"] = plane;
 }
-
-void ModelLoader<SkinnedVertex, uint16_t>::Initialize(ID3D12GraphicsCommandList* commandList)
-{
-	ID3D12Device5* device = m_world->GetDevice();
-	for (auto& [name, asset] : assets)
-	{
-		std::shared_ptr<StaticMesh> mesh = std::make_shared<StaticMesh>();
-
-		mesh->Initialize<SkinnedVertex, uint16_t>(device, commandList, asset.m_meshes);
-
-		meshesMap[name] = mesh;
-	}
-}
-
-void ModelLoader<SkinnedVertex, uint32_t>::Initialize(ID3D12GraphicsCommandList* commandList)
-{
-	ID3D12Device5* device = m_world->GetDevice();
-	for (auto& [name, asset] : assets)
-	{
-		if (asset.m_meshes.empty())
-		{
-			continue;
-		}
-		std::shared_ptr<StaticMesh> mesh = std::make_shared<StaticMesh>();
-		mesh->Initialize<SkinnedVertex, uint32_t>(device, commandList, asset.m_meshes);
-		meshesMap[name] = mesh;
-	}
-}
-
 
 void ModelLoader<Vertex, uint16_t>::ProcessMesh(Asset<Vertex, uint16_t>& asset, aiMesh* mesh, const aiScene* scene, DirectX::SimpleMath::Matrix tr, bool loadAnimation)
 {

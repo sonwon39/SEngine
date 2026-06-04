@@ -12,18 +12,43 @@ inline GPUBuffer::GPUBuffer()
 
 inline GPUBuffer::~GPUBuffer()
 {
+	Clear();
 }
 
-inline void GPUBuffer::Initialize(D3D12_HEAP_TYPE heapType, UINT size, D3D12_RESOURCE_FLAGS flags, D3D12_RESOURCE_STATES state, std::wstring name)
+inline void GPUBuffer::Clear()
 {
-	utility->CreateBuffer(gpu, heapType, size, flags, state, name);
+	if (upload)
+		upload.Reset();
 }
 
-template<typename DataType>
-inline void GPUBuffer::InitializeWithData(const std::vector<DataType>& data, D3D12_RESOURCE_FLAGS flag, ID3D12GraphicsCommandList* commandList, std::wstring name)
+inline void GPUBuffer::Reset()
 {
-	utility->CreateBuffer<DataType>(data, gpu, upload, flag, commandList);
-	bufferSize = UINT(data.size() * sizeof(DataType));
-	dataCount = UINT(data.size());
-	gpu->SetName(name.c_str());
+	if(gpu)
+		gpu.Reset();
+}
+
+inline bool GPUBuffer::Transition(
+	D3D12_RESOURCE_STATES newState,
+	D3D12_RESOURCE_BARRIER& outBarrier)
+{
+	if (m_currentState == newState)
+	{
+		if (newState == D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
+		{
+	
+			outBarrier = CD3DX12_RESOURCE_BARRIER::UAV(gpu.Get());
+			return true;
+		}
+
+		return false;
+	}
+
+	outBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
+		gpu.Get(),
+		m_currentState,
+		newState
+	);
+
+	m_currentState = newState;
+	return true;
 }

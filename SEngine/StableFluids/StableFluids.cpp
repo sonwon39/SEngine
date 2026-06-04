@@ -73,38 +73,47 @@ void StableFluids::InitResources(UINT width, UINT height)
 			m_pressureBuffer[i].Initialize(gridWidth, gridHeight, pressureFormat, flag, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 0, name);
 		}
 
-		m_sourcingHeap.CreateResourceView(m_oldDensityBuffer.GetResource(), DescriptorType::UAV);
-		m_sourcingHeap.CreateResourceView(m_oldVelocityBuffer.GetResource(), DescriptorType::UAV);
+		m_sourcingHeap.CreateResourceView(m_oldDensityBuffer.Get(), DescriptorType::UAV);
+		m_sourcingHeap.CreateResourceView(m_oldVelocityBuffer.Get(), DescriptorType::UAV);
 
-		m_computeCurlHeap.CreateResourceView(m_oldVelocityBuffer.GetResource(), DescriptorType::SRV);
-		m_computeCurlHeap.CreateResourceView(m_curlBuffer.GetResource(), DescriptorType::UAV);
+		m_computeCurlHeap.CreateResourceView(m_oldVelocityBuffer.Get(), DescriptorType::SRV);
+		m_computeCurlHeap.CreateResourceView(m_curlBuffer.Get(), DescriptorType::UAV);
 
-		m_vorticityConfinementHeap.CreateResourceView(m_curlBuffer.GetResource(), DescriptorType::SRV);
-		m_vorticityConfinementHeap.CreateResourceView(m_oldVelocityBuffer.GetResource(), DescriptorType::UAV);
+		m_vorticityConfinementHeap.CreateResourceView(m_curlBuffer.Get(), DescriptorType::SRV);
+		m_vorticityConfinementHeap.CreateResourceView(m_oldVelocityBuffer.Get(), DescriptorType::UAV);
 
-		m_advectionHeap.CreateResourceView(m_oldDensityBuffer.GetResource(), DescriptorType::SRV);
-		m_advectionHeap.CreateResourceView(m_oldVelocityBuffer.GetResource(), DescriptorType::SRV);
-		m_advectionHeap.CreateResourceView(m_newDensityBuffer.GetResource(), DescriptorType::UAV);
-		m_advectionHeap.CreateResourceView(m_newVelocityBuffer.GetResource(), DescriptorType::UAV);
+		m_advectionHeap.CreateResourceView(m_oldDensityBuffer.Get(), DescriptorType::SRV);
+		m_advectionHeap.CreateResourceView(m_oldVelocityBuffer.Get(), DescriptorType::SRV);
+		m_advectionHeap.CreateResourceView(m_newDensityBuffer.Get(), DescriptorType::UAV);
+		m_advectionHeap.CreateResourceView(m_newVelocityBuffer.Get(), DescriptorType::UAV);
 
-		m_computeDivergenceHeap.CreateResourceView(m_oldVelocityBuffer.GetResource(), DescriptorType::SRV);
-		m_computeDivergenceHeap.CreateResourceView(m_divergenceBuffer.GetResource(), DescriptorType::UAV);
-		m_computeDivergenceHeap.CreateResourceView(m_pressureBuffer[0].GetResource(), DescriptorType::UAV);
-		m_computeDivergenceHeap.CreateResourceView(m_pressureBuffer[1].GetResource(), DescriptorType::UAV);
+		m_computeDivergenceHeap.CreateResourceView(m_oldVelocityBuffer.Get(), DescriptorType::SRV);
+		m_computeDivergenceHeap.CreateResourceView(m_divergenceBuffer.Get(), DescriptorType::UAV);
+		m_computeDivergenceHeap.CreateResourceView(m_pressureBuffer[0].Get(), DescriptorType::UAV);
+		m_computeDivergenceHeap.CreateResourceView(m_pressureBuffer[1].Get(), DescriptorType::UAV);
 
-		m_jacobiHeap[0].CreateResourceView(m_divergenceBuffer.GetResource(), DescriptorType::SRV);
-		m_jacobiHeap[0].CreateResourceView(m_pressureBuffer[0].GetResource(), DescriptorType::SRV);
-		m_jacobiHeap[0].CreateResourceView(m_pressureBuffer[1].GetResource(), DescriptorType::UAV);
+		m_jacobiHeap[0].CreateResourceView(m_divergenceBuffer.Get(), DescriptorType::SRV);
+		m_jacobiHeap[0].CreateResourceView(m_pressureBuffer[0].Get(), DescriptorType::SRV);
+		m_jacobiHeap[0].CreateResourceView(m_pressureBuffer[1].Get(), DescriptorType::UAV);
 
-		m_jacobiHeap[1].CreateResourceView(m_divergenceBuffer.GetResource(), DescriptorType::SRV);
-		m_jacobiHeap[1].CreateResourceView(m_pressureBuffer[1].GetResource(), DescriptorType::SRV);
-		m_jacobiHeap[1].CreateResourceView(m_pressureBuffer[0].GetResource(), DescriptorType::UAV);
+		m_jacobiHeap[1].CreateResourceView(m_divergenceBuffer.Get(), DescriptorType::SRV);
+		m_jacobiHeap[1].CreateResourceView(m_pressureBuffer[1].Get(), DescriptorType::SRV);
+		m_jacobiHeap[1].CreateResourceView(m_pressureBuffer[0].Get(), DescriptorType::UAV);
 
 
-		m_computeFinalVelocityHeap.CreateResourceView(m_pressureBuffer[1].GetResource(), DescriptorType::SRV);
-		m_computeFinalVelocityHeap.CreateResourceView(m_oldVelocityBuffer.GetResource(), DescriptorType::UAV);
+		m_computeFinalVelocityHeap.CreateResourceView(m_pressureBuffer[1].Get(), DescriptorType::SRV);
+		m_computeFinalVelocityHeap.CreateResourceView(m_oldVelocityBuffer.Get(), DescriptorType::UAV);
 
-		m_renderDensityHeap.CreateResourceView(m_newDensityBuffer.GetResource(), DescriptorType::SRV);
+		std::shared_ptr<TextureLoader> texLoader;
+		// texture 준비
+		{
+			if (m_world)
+			{
+				texLoader = m_world->GetTextureLoader();
+				texLoader->AddTexture("test", m_newDensityBuffer.Get());
+			}
+		}
+		//m_renderDensityHeap.CreateResourceView(m_newDensityBuffer.Get(), DescriptorType::SRV);
 	}
 
 	SFLocalConstant grid;
@@ -146,8 +155,8 @@ void StableFluids::CopyDensityAndVelocity()
 	if (m_newVelocityBuffer.Transition(D3D12_RESOURCE_STATE_COPY_SOURCE, barrier)) barriers0.push_back(barrier);
 	m_commandList->ResourceBarrier((UINT)barriers0.size(), barriers0.data());
 
-	m_commandList->CopyResource(m_oldDensityBuffer.GetResource(), m_newDensityBuffer.GetResource());
-	m_commandList->CopyResource(m_oldVelocityBuffer.GetResource(), m_newVelocityBuffer.GetResource());
+	m_commandList->CopyResource(m_oldDensityBuffer.Get(), m_newDensityBuffer.Get());
+	m_commandList->CopyResource(m_oldVelocityBuffer.Get(), m_newVelocityBuffer.Get());
 }
 
 void StableFluids::Sourcing()
@@ -324,7 +333,7 @@ void StableFluids::CopyPressure()
 	if (m_pressureBuffer[1].Transition(D3D12_RESOURCE_STATE_COPY_SOURCE, barrier)) barriers.push_back(barrier);
 	m_commandList->ResourceBarrier((UINT)barriers.size(), barriers.data());
 
-	m_commandList->CopyResource(m_pressureBuffer[0].GetResource(), m_pressureBuffer[1].GetResource());
+	m_commandList->CopyResource(m_pressureBuffer[0].Get(), m_pressureBuffer[1].Get());
 }
 
 void StableFluids::Finalize()

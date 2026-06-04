@@ -75,7 +75,6 @@ void TextureLoader::LoadTextures(ID3D12GraphicsCommandList* commandList)
 	srvOffset = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	textures.resize(count);
-	InitHeap(count);
 
 	std::ifstream bin(binPath, std::ios::binary);
 
@@ -100,10 +99,21 @@ void TextureLoader::LoadTextures(ID3D12GraphicsCommandList* commandList)
 		textures[i].Initialize(bin, size, flags, commandList);
 
 		if (isCubeMap)
-			heap.CreateResourceView(textures[i].GetResource(), DescriptorType::SRV, ViewDimensionType::TEXTURECUBE);
+			heap.CreateResourceView(textures[i].Get(), DescriptorType::SRV, ViewDimensionType::TEXTURECUBE);
 		else
-			heap.CreateResourceView(textures[i].GetResource(), DescriptorType::SRV, ViewDimensionType::TEXTURE2D);
+			heap.CreateResourceView(textures[i].Get(), DescriptorType::SRV, ViewDimensionType::TEXTURE2D);
 	}
+}
+
+void TextureLoader::AddTexture(const std::string& textureName, ID3D12Resource* texture)
+{
+	uint32_t i = count;
+	nameMap[i] = textureName;
+	idxMap[textureName] = i;
+	filenames.push_back(textureName);
+	count++;
+
+	heap.CreateResourceView(texture, DescriptorType::SRV, ViewDimensionType::TEXTURE2D);
 }
 
 void TextureLoader::ClearBlobs()
@@ -139,5 +149,17 @@ ID3D12Resource* TextureLoader::GetTexture(const std::string& filename) const
 	{
 		idx = it->second;
 	}
-	return textures[idx].GetResource();
+	return textures[idx].Get();
+}
+
+int TextureLoader::GetTextureIndex(const std::string& filename) const
+{
+	const std::string test;
+	int idx = -1;
+	auto it = idxMap.find(filename);
+	if (it != idxMap.end())
+	{
+		idx = it->second;
+	}
+	return idx;
 }

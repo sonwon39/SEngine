@@ -27,13 +27,15 @@ public:
 	void LoadIdx();
 
 	void LoadTextures(ID3D12GraphicsCommandList* commandList);
+	void AddTexture(const std::string& textureName, ID3D12Resource* texture);
 	void ClearBlobs();
 
 public:
-	DescriptorHeap* GetHeap() { return &heap; }
+	DescriptorHeap* GetDescriptorHeap() { return &heap; }
 	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUHandle(const int& idx) const;
 	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUHandle(const std::string& filename) const;
 	ID3D12Resource* GetTexture(const std::string& filename) const;
+	int GetTextureIndex(const std::string& filename) const;
 	std::vector<std::string> filenames;
 
 private:

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>PrimitiveProxy: SEngine vs Unreal</title>
+<style>
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #1e1e2e;
+    color: #cdd6f4;
+    margin: 0;
+    padding: 24px;
+  }
+  h1 { color: #f5c2e7; margin-bottom: 4px; }
+  h2 { color: #89b4fa; border-bottom: 1px solid #45475a; padding-bottom: 6px; margin-top: 32px; }
+  .sub { color: #a6adc8; font-size: 14px; margin-bottom: 16px; }
+
+  .row { display: flex; gap: 16px; flex-wrap: wrap; }
+  .col { flex: 1; min-width: 340px; }
+
+  .lane {
+    background: #313244;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+    border-left: 4px solid #74c7ec;
+  }
+  .lane.gt { border-left-color: #f9e2af; }
+  .lane.rt { border-left-color: #a6e3a1; }
+  .lane.gpu { border-left-color: #f38ba8; }
+  .lane-title {
+    font-weight: bold;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    color: #f9e2af;
+  }
+  .lane.rt .lane-title { color: #a6e3a1; }
+  .lane.gpu .lane-title { color: #f38ba8; }
+
+  .box {
+    background: #45475a;
+    border: 1px solid #585b70;
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin: 6px 0;
+    font-family: 'Consolas', monospace;
+    font-size: 13px;
+  }
+  .box.code { background: #1e1e2e; color: #94e2d5; }
+  .box.action { background: #585b70; color: #f5e0dc; }
+  .box.cb { background: #6c5172; color: #f5c2e7; }
+  .box.note { background: transparent; border: 1px dashed #6c7086; color: #a6adc8; font-size: 12px; font-family: 'Segoe UI', sans-serif; }
+
+  .arrow {
+    text-align: center;
+    color: #74c7ec;
+    font-size: 18px;
+    margin: 2px 0;
+  }
+  .arrow.thick { color: #f38ba8; font-weight: bold; }
+
+  .label {
+    font-size: 11px;
+    color: #a6adc8;
+    margin-left: 8px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+    font-size: 13px;
+  }
+  th, td {
+    border: 1px solid #45475a;
+    padding: 8px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { background: #313244; color: #f9e2af; }
+  td.engine { background: #2a2a3a; }
+  td.unreal { background: #2a3a2a; }
+
+  .legend {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    font-size: 12px;
+  }
+  .swatch {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-right: 4px;
+    vertical-align: middle;
+    border-radius: 2px;
+  }
+  .pill {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    margin-left: 6px;
+  }
+  .pill.gt { background: #f9e2af; color: #1e1e2e; }
+  .pill.rt { background: #a6e3a1; color: #1e1e2e; }
+  .pill.gpu { background: #f38ba8; color: #1e1e2e; }
+</style>
+</head>
+<body>
+
+<h1>PrimitiveProxy 흐름 비교</h1>
+<p class="sub">현재 SEngine 구현 vs 언리얼 FPrimitiveSceneProxy 아키텍처</p>
+
+<div class="legend">
+  <span><span class="swatch" style="background:#f9e2af"></span>Game Thread</span>
+  <span><span class="swatch" style="background:#a6e3a1"></span>Render Thread</span>
+  <span><span class="swatch" style="background:#f38ba8"></span>GPU</span>
+  <span><span class="swatch" style="background:#6c5172"></span>Per-primitive constant</span>
+</div>
+
+<div class="row">
+
+  <!-- 현재 SEngine -->
+  <div class="col">
+    <h2>1. 현재 SEngine 흐름</h2>
+    <div class="sub">단일 스레드 · Proxy가 draw를 직접 발행</div>
+
+    <div class="lane gt">
+      <div class="lane-title">Main / Game Thread<span class="pill gt">단일</span></div>
+
+      <div class="box code">RenderEngine::Tick(dt)</div>
+      <div class="arrow">↓</div>
+      <div class="box code">RenderEngine::RenderMeshes(pso)</div>
+      <div class="arrow">↓ for each proxy</div>
+      <div class="box action">PrimitiveProxy::Render(cmdList)</div>
+      <div class="arrow">↓</div>
+      <div class="box code">SetDescriptorHeaps(heap)</div>
+      <div class="box code">SetGraphicsRootDescriptorTable(0, handle)</div>
+      <div class="box code">IASetVertexBuffers / IASetIndexBuffer</div>
+      <div class="box code">DrawIndexedInstanced(...)</div>
+      <div class="arrow thick">↓ to GPU</div>
+    </div>
+
+    <div class="lane gpu">
+      <div class="lane-title">GPU</div>
+      <div class="box">VS → PS (per draw call)</div>
+    </div>
+
+    <div class="box note">
+      ⚠ Proxy = "draw를 발행하는 객체"<br>
+      ⚠ CB를 추가해도 여전히 per-draw 바인딩 모델<br>
+      ⚠ View 개념 없음 — 모든 proxy를 무조건 그림
+    </div>
+  </div>
+
+  <!-- 언리얼 -->
+  <div class="col">
+    <h2>2. 언리얼 흐름</h2>
+    <div class="sub">게임/렌더 스레드 분리 · Proxy는 데이터 mirror</div>
+
+    <div class="lane gt">
+      <div class="lane-title">Game Thread<span class="pill gt">게임 로직</span></div>
+      <div class="box code">UPrimitiveComponent</div>
+      <div class="label">위치/머티리얼/visibility 등 상태 보유</div>
+      <div class="arrow">↓ CreateSceneProxy()</div>
+      <div class="box action">ENQUEUE_RENDER_COMMAND</div>
+      <div class="label">FScene::AddPrimitive(proxy)</div>
+    </div>
+
+    <div class="arrow thick">↓ 스레드 경계 ↓</div>
+
+    <div class="lane rt">
+      <div class="lane-title">Render Thread<span class="pill rt">프레임당 1회</span></div>
+
+      <div class="box action">FScene (모든 Proxy 보관)</div>
+      <div class="arrow">↓ per View</div>
+      <div class="box code">FPrimitiveSceneProxy::GetViewRelevance(view)</div>
+      <div class="label">→ opaque? translucent? shadow? velocity?</div>
+      <div class="arrow">↓ 관련 proxy만</div>
+      <div class="box code">GetDynamicMeshElements(...) </div>
+      <div class="label">→ FMeshBatch 채우기 (VB/IB view + materialId + primitiveId)</div>
+      <div class="arrow">↓ MeshBatch 리스트</div>
+      <div class="box action">FMeshPassProcessor</div>
+      <div class="label">정렬 · PSO 선택 · descriptor 바인딩 · Draw 호출</div>
+      <div class="arrow thick">↓ to GPU</div>
+    </div>
+
+    <div class="lane gpu">
+      <div class="lane-title">GPU</div>
+      <div class="box cb">StructuredBuffer&lt;FPrimitiveSceneData&gt;<br>(GPUScene)</div>
+      <div class="label">셰이더가 PrimitiveId로 직접 lookup</div>
+      <div class="arrow">↑ 인덱싱</div>
+      <div class="box">VS → PS</div>
+    </div>
+
+    <div class="box note">
+      ✓ Proxy = "데이터 제공자", draw는 안 함<br>
+      ✓ Per-primitive constant = GPUScene 한 곳에 모여 PrimitiveId로 lookup<br>
+      ✓ View relevance로 패스별 컬링
+    </div>
+  </div>
+</div>
+
+<!-- 차이 표 -->
+<h2>3. 핵심 차이 요약</h2>
+<table>
+  <tr>
+    <th style="width:22%">항목</th>
+    <th style="width:39%">현재 SEngine</th>
+    <th style="width:39%">언리얼</th>
+  </tr>
+  <tr>
+    <td>Proxy의 역할</td>
+    <td class="engine">draw call을 직접 호출</td>
+    <td class="unreal">데이터 mirror, FMeshBatch만 채워서 넘김</td>
+  </tr>
+  <tr>
+    <td>스레드 모델</td>
+    <td class="engine">단일</td>
+    <td class="unreal">게임 ↔ 렌더 스레드 분리 (ENQUEUE_RENDER_COMMAND 경계)</td>
+  </tr>
+  <tr>
+    <td>per-primitive CB</td>
+    <td class="engine">(아직 없음) — root descriptor table 슬롯에 직접 bind 예정</td>
+    <td class="unreal">GPUScene이라는 StructuredBuffer에 모두 모음, 셰이더가 PrimitiveId로 lookup</td>
+  </tr>
+  <tr>
+    <td>View 처리</td>
+    <td class="engine">없음 — 모든 proxy 무조건 그림</td>
+    <td class="unreal">GetViewRelevance로 패스별로 분류</td>
+  </tr>
+  <tr>
+    <td>draw 발행 주체</td>
+    <td class="engine">PrimitiveProxy 자신</td>
+    <td class="unreal">FMeshPassProcessor (Proxy 외부)</td>
+  </tr>
+</table>
+
+<!-- 점진 진화 -->
+<h2>4. 점진적으로 언리얼 방향으로 가는 단계</h2>
+<div class="lane">
+  <div class="box">
+    <b>Step 0 (현재)</b><br>
+    Proxy가 buffer view + heap + handle 들고 직접 draw
+  </div>
+  <div class="arrow">↓ CB 추가만 한다면 — 여기서 멈춤</div>
+  <div class="box cb">
+    <b>Step 1 — MVP</b><br>
+    Proxy에 per-primitive CB 추가, RootDescriptorTable에 b1 슬롯 등록<br>
+    <span class="label">↑ 지금 질문한 방향. "언리얼 비슷"은 아님</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="box">
+    <b>Step 2 — Draw 발행 분리</b><br>
+    Proxy::Render() 제거. 대신 FillMeshBatch(...) 같은 메서드로 구조체만 채움<br>
+    RenderEngine이 MeshBatch 리스트를 모아서 일괄 draw
+  </div>
+  <div class="arrow">↓</div>
+  <div class="box">
+    <b>Step 3 — GPUScene 흉내</b><br>
+    per-draw CB 폐기 → StructuredBuffer&lt;PrimitiveData&gt; 한 개<br>
+    셰이더에서 PrimitiveId로 lookup. RootDescriptorTable 슬롯 수가 줄어듬
+  </div>
+  <div class="arrow">↓</div>
+  <div class="box">
+    <b>Step 4 — View Relevance</b><br>
+    opaque / translucent / depth-only 패스별 필터링
+  </div>
+</div>
+
+<p class="sub" style="margin-top:24px">
+  결론: <b>Step 1만 추가</b>해도 엔진 작동에는 충분하지만, "언리얼과 비슷"하다고 부르려면 적어도 Step 2 (draw 발행 분리)까지는 가야 함.
+</p>
+
+</body>
+</html>

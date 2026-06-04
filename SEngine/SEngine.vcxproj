@@ -163,6 +163,8 @@
     <ClCompile Include="GraphicsCommon.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="DescriptorHeap.cpp" />
+    <ClCompile Include="Material.cpp" />
+    <ClCompile Include="MeshBatch.cpp" />
     <ClCompile Include="SEngineMouse.cpp" />
     <ClCompile Include="PipelineState.cpp" />
     <ClCompile Include="Renderer.cpp" />
@@ -207,9 +209,11 @@
     <ClInclude Include="HLSLCompat.h" />
     <ClInclude Include="IndexBuffer.h" />
     <ClInclude Include="InputHelper.h" />
+    <ClInclude Include="Material.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="DescriptorHeap.h" />
     <ClInclude Include="PBR\PBRHLSLCompat.h" />
+    <ClInclude Include="MeshBatch.h" />
     <ClInclude Include="SEngineMouse.h" />
     <ClInclude Include="PipelineState.h" />
     <ClInclude Include="Renderer.h" />

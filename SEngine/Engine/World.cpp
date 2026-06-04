@@ -5,6 +5,8 @@ World::World()
 	mouse = std::make_shared<SEngineMouse>();
 	m_level = std::make_shared<Level>();
 	m_textureLoader = std::make_shared<TextureLoader>(texBuildPath);
+	m_modelLoader = std::make_shared<ModelLoader<Vertex, uint16_t>>();
+	m_simpleModelLoader = std::make_shared<SimpleModelLoader>();
 }
 
 World::~World()
@@ -18,6 +20,8 @@ void World::Initialize(ID3D12Device5* device, int width, int height)
 {
 	m_device = device;
 
+	m_modelLoader->Initialize();
+	m_simpleModelLoader->Initialize();
 
 	SetWindowSize(width, height);
 
@@ -27,9 +31,7 @@ void World::Initialize(ID3D12Device5* device, int width, int height)
 
 	mouse->Initilize();
 
-	UINT testSize = width * height * sizeof(float) * 4;
-	m_test.Initialize(D3D12_HEAP_TYPE_READBACK, testSize, D3D12_RESOURCE_FLAG_NONE, D3D12_RESOURCE_STATE_COPY_DEST, L"test");
-
+	
 	colors =
 	{
 		Vector3(0.3f, 0.8f, 0.4f), // Light Green
@@ -43,6 +45,7 @@ void World::Initialize(ID3D12Device5* device, int width, int height)
 		Vector3(0.5f, 0.0f, 1.0f), // Purple
 		Vector3(0.8f, 0.8f, 0.8f)  // Light Gray
 	};
+
 }
 
 void World::Tick(float deltaTime)
@@ -53,8 +56,57 @@ void World::Tick(float deltaTime)
 	}
 }
 
+bool World::FindTexture(const std::string& textureName, int & index)
+{
+	if (!m_textureLoader)
+		return false;
+
+	index = m_textureLoader->GetTextureIndex(textureName);
+	if (index == -1)
+		return false;
+
+	return true;
+}
+
+ID3D12DescriptorHeap* World::GetMainHeap() const
+{
+	if (!m_textureLoader)
+		return nullptr;
+
+	return m_textureLoader->GetDescriptorHeap()->GetHeap();
+}
+
+std::shared_ptr<Material> World::GetOrCreateMaterial(const std::string& textureName)
+{
+	auto it = m_materials.find(textureName);
+	if (it != m_materials.end()) return it->second;
+
+	int index;
+	if (!FindTexture(textureName, index)) return nullptr;
+
+	auto mat = std::make_shared<Material>();
+	mat->Initialize(GetMainHeap(), m_textureLoader->GetGPUHandle(index));
+	m_materials[textureName] = mat;
+	return mat;
+}
+
 void World::SetWindowSize(int width, int height)
 {
 	windowWidth = width;
 	windowHeight = height;
+}
+
+void World::AddActor(std::shared_ptr<StaticMesh> mesh, const ActorData &ad)
+{
+	Actor a;
+	a.Initialize(mesh, ad);
+	m_actors.push_back(a);
+}
+
+void World::OnRegister()
+{
+	for (auto& a : m_actors)
+	{
+		a.OnRegister();
+	}
 }

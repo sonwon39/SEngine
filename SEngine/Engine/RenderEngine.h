@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include <array>
-
+#include < memory>
 
 #include "d3d12.h"
 #include "directxtk12/SpriteBatch.h"
@@ -22,6 +22,9 @@
 #include "SPH/SPH.h"
 #include "StableFluids/StableFluids.h"
 #include "ConstantBuffer.h"
+#include "GPUBUffer.h"
+#include "DescriptorHeap.h"
+#include "MeshBatch.h"
 
 class StaticMesh;
 
@@ -44,7 +47,6 @@ public:
 	RenderEngine(ID3D12Device5* device = nullptr);
 	virtual ~RenderEngine();
 
-
 public:
 	bool Initialize(int width, int height, int guiWidth, IDXGIFactory7* factory);
 	bool InitScene();
@@ -58,19 +60,17 @@ protected:
 	void CreateMainDepthBuffer();
 	void CreateDepthBuffers();
 	void CreateDescriptorHeaps();
+
+protected:
 	void UpdateGUI();
-
-
 	void Update(float deltaTime);
+
 	void SPHTick(float deltaTime);
 	void StableFluidsTick(float deltaTime);
 	void RenderMeshes(const std::string& psoName);
-	void RenderSPH(const std::string& psoName, bool clear, bool isFinal);
+	void RenderSPH(const std::string& psoName, bool clear);
 
-	void SPHSimulation();
-
-	//void Render(const std::string& psoName, int idx, RenderType renderType, bool isFinal, bool clear);
-	void RenderGUI(bool isFinal);
+	void RenderGUI();
 
 public:
 	void Tick(float deltaTime);
@@ -85,13 +85,15 @@ protected:
 	D3D12_CPU_DESCRIPTOR_HANDLE GetDSVCpuHandle() const;
 	ID3D12Resource* GetCurrentSwapChainResource() const;
 
+	void InitGraphicsCommand(const std::string& psoName);
+
 private:
 	void FlushCommands();
 	void FlushResourceCommands();
+	void Execute();
 
 	//fence
 private:
-
 	UINT64 m_currentBufferFence = 0;
 	UINT64 m_currentFence = 0;
 	Microsoft::WRL::ComPtr<ID3D12Fence> m_fence;
@@ -132,8 +134,8 @@ private:
 
 private:
 	Microsoft::WRL::ComPtr<IDXGISwapChain3> m_swapChain;
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_swapChainRTVHeap;
-	Microsoft::WRL::ComPtr<ID3D12Resource> m_swapChainResources[m_swapChainBufferCount];
+	DescriptorHeap m_swapChainRTVHeap;
+	GPUBuffer m_swapChainResources[m_swapChainBufferCount];
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_depthStencilBuffer;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_DSVHeap;
@@ -174,4 +176,10 @@ private:
 private:
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_guiFontHeap;
 	bool resetFlag = false;
+
+public:
+	void RegistMeshBatch(std::shared_ptr<MeshBatch> meshBatch);
+
+private:
+	std::vector<std::shared_ptr<MeshBatch>> meshBatchs;
 };

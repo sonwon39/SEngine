@@ -33,14 +33,22 @@ physx::PxTransform PrimitiveComponent::GetPxTransform() const
 
 void PrimitiveComponent::OnRegister()
 {
-    // 비활성화: 현재 World에는 RegisterPrimitive가 없음. PhysX 재도입 시 아래 등록 로직을 복구할 것.
-    /*  SceneComponent::OnRegister();
+	// per-primitive constant buffer는 컴포넌트가 소유한다.
+	// MeshBatch는 이 CB의 GPU 주소만 참조하므로, 라이프타임은 컴포넌트와 동일.
+	m_cb.Initialize(localConstant);
+	m_cbInitialized = true;
+}
 
-    World* world = GetWorld();
-    if (world)
-    {
-        world->RegisterPrimitive(this, m_usePhysX);
-    }*/
+void PrimitiveComponent::SyncCB()
+{
+	if (!m_cbInitialized) return;
+	m_cb.localConstant = localConstant;
+	m_cb.Update();
+}
+
+D3D12_GPU_VIRTUAL_ADDRESS PrimitiveComponent::GetCBGPUAddress()
+{
+	return m_cbInitialized ? m_cb.GetGPUAddress() : 0;
 }
 
 void PrimitiveComponent::SyncFromPhysX(const physx::PxTransform& transform)
@@ -65,7 +73,6 @@ void PrimitiveComponent::SyncFromPhysX(const physx::PxTransform& transform)
 
     SetLocalTransformByLdotW(t);
 }
-
 
 void PrimitiveComponent::SetActorData(const ActorData& ad)
 {

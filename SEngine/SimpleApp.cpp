@@ -3,6 +3,7 @@
 #include "PipelineState.h"
 #include "GeometryGenerator.h"
 #include "Engine/World.h"
+#include "Engine/RenderEngine.h"
 
 #include "Directxtk12/DDSTextureLoader.h"
 #include "directxtk12/ResourceUploadBatch.h"
@@ -111,6 +112,8 @@ bool Core::SimpleApp::InitDirectX()
 	m_renderEngine = std::make_shared<RenderEngine>(m_device.Get());
 	m_renderEngine->Initialize(m_width, m_height, m_guiWidth, m_dxgiFactory.Get());
 
+	m_world->OnRegister();
+
 	return true;
 }
 
@@ -128,7 +131,6 @@ bool Core::SimpleApp::InitGUI()
 void Core::SimpleApp::Update(float deltaTime)
 {
 	m_renderEngine->Tick(deltaTime);
-
 }
 
 void Core::SimpleApp::OnResize()

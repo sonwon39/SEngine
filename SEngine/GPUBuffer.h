@@ -12,18 +12,22 @@ public:
 	virtual ~GPUBuffer();
 
 public:
-	template<typename DataType>
-	void InitializeWithData(const std::vector<DataType>& data, D3D12_RESOURCE_FLAGS flag, ID3D12GraphicsCommandList* commandList, std::wstring name = L"");
-	void Initialize(D3D12_HEAP_TYPE heapType, UINT size, D3D12_RESOURCE_FLAGS flags, D3D12_RESOURCE_STATES state, std::wstring name = L"");
+	bool Transition(D3D12_RESOURCE_STATES newState, D3D12_RESOURCE_BARRIER& outBarrier);
+	// upload 버퍼 clear
+	virtual void Clear();
+	void Reset();
 
 public:
 	UINT bufferSize;
 	UINT dataCount;
 
 public:
-	ID3D12Resource* GetResource() const { return gpu.Get(); }
+	ID3D12Resource* Get() const { return gpu.Get(); }
+	ID3D12Resource** ReleaseAndGetAddressOf() { return gpu.ReleaseAndGetAddressOf(); }
 	D3D12_GPU_VIRTUAL_ADDRESS GetGPUVirtualAddress() const { return gpu->GetGPUVirtualAddress(); }
 
+public:
+	void SetResourceStates(D3D12_RESOURCE_STATES newState) { m_currentState = newState; }
 protected:
 	Microsoft::WRL::ComPtr<ID3D12Resource> gpu;
 	Microsoft::WRL::ComPtr<ID3D12Resource> upload;

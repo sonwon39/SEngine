@@ -65,12 +65,6 @@
     <ClCompile Include="SEngineMouse.cpp">
       <Filter>_cpp</Filter>
     </ClCompile>
-    <ClCompile Include="ConstantBuffer.cpp">
-      <Filter>_cpp</Filter>
-    </ClCompile>
-    <ClCompile Include="DescriptorHeap.cpp">
-      <Filter>_cpp</Filter>
-    </ClCompile>
     <ClCompile Include="BaseApp.cpp">
       <Filter>App</Filter>
     </ClCompile>
@@ -128,6 +122,18 @@
     <ClCompile Include="AssetManager\TextureLoader.cpp">
       <Filter>AssetManager</Filter>
     </ClCompile>
+    <ClCompile Include="DescriptorHeap.cpp">
+      <Filter>Buffer</Filter>
+    </ClCompile>
+    <ClCompile Include="ConstantBuffer.cpp">
+      <Filter>Buffer</Filter>
+    </ClCompile>
+    <ClCompile Include="MeshBatch.cpp">
+      <Filter>_cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="Material.cpp">
+      <Filter>_cpp</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Timer.h">
@@ -173,12 +179,6 @@
       <Filter>_h</Filter>
     </ClInclude>
     <ClInclude Include="SEngineMouse.h">
-      <Filter>_h</Filter>
-    </ClInclude>
-    <ClInclude Include="ConstantBuffer.h">
-      <Filter>_h</Filter>
-    </ClInclude>
-    <ClInclude Include="DescriptorHeap.h">
       <Filter>_h</Filter>
     </ClInclude>
     <ClInclude Include="BaseApp.h">
@@ -277,6 +277,18 @@
     <ClInclude Include="DataType.h">
       <Filter>AssetManager</Filter>
     </ClInclude>
+    <ClInclude Include="DescriptorHeap.h">
+      <Filter>Buffer</Filter>
+    </ClInclude>
+    <ClInclude Include="ConstantBuffer.h">
+      <Filter>Buffer</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshBatch.h">
+      <Filter>_h</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.h">
+      <Filter>_h</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="DefaultVS.hlsl" />
@@ -352,9 +364,6 @@
       <Filter>_h</Filter>
     </None>
     <None Include="DefaultCommon.hlsli" />
-    <None Include="ConstantBuffer.inl">
-      <Filter>_h</Filter>
-    </None>
     <None Include="StableFluids\StableFluidsUtility.hlsli">
       <Filter>StableFluids</Filter>
     </None>
@@ -381,6 +390,9 @@
     </None>
     <None Include="AssetManager\Asset.inl">
       <Filter>AssetManager</Filter>
+    </None>
+    <None Include="ConstantBuffer.inl">
+      <Filter>Buffer</Filter>
     </None>
   </ItemGroup>
 </Project>

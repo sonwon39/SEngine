@@ -29,12 +29,21 @@ public:
 
 	void Render(ID3D12GraphicsCommandList* commandList);
 
+	// vertex index 버퍼들의 upload 버퍼 clear
+	void Clear();
+
+	std::vector<D3D12_VERTEX_BUFFER_VIEW*> & GetVertexBufferView() { return m_vertexBufferViews; }
+	std::vector<D3D12_INDEX_BUFFER_VIEW*>& GetIndexBufferView() { return m_indexBufferViews; }
+	std::vector<UINT64>& GetIndexCounts() { return m_indexCounts; }
 
 protected:
 	std::vector<VertexBuffer> m_vertexBuffers;
 	std::vector<IndexBuffer> m_indexBuffers;
 
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_texturesHeap;
+	std::vector < D3D12_VERTEX_BUFFER_VIEW*> m_vertexBufferViews;
+	std::vector < D3D12_INDEX_BUFFER_VIEW*> m_indexBufferViews;
+	std::vector <UINT64> m_indexCounts;
+
 	UINT meshCount = 0;
 };
 #include "StaticMesh.inl"

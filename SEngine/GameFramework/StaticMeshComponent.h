@@ -13,6 +13,7 @@ public:
 
 public:
 	void SetMesh(std::shared_ptr<StaticMesh> newMesh);
+	void OnRegister() override;
 
 public:
 	StaticMesh* GetMesh() const { return m_mesh.get(); }

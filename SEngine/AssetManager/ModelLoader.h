@@ -29,7 +29,7 @@ public:
 	~ModelLoader() {};
 
 public:
-	void Initialize(ID3D12GraphicsCommandList* commandList);
+	void Initialize();
 
 public:
 	std::string basePath;
@@ -49,7 +49,7 @@ public:
 
 private:
 	std::unordered_map<std::string, Asset<V, I>> assets;
-	std::unordered_map<std::string, std::shared_ptr<StaticMesh>> meshesMap;
+	//std::unordered_map<std::string, std::shared_ptr<StaticMesh>> meshesMap;
 
 public:
 	void Load(std::string filename, DirectX::SimpleMath::Matrix tr = DirectX::SimpleMath::Matrix(), bool loadAnimation = false);
@@ -68,6 +68,8 @@ private:
 	void CreateBoneTree(Asset<V, I>& asset, aiNode* node, uint32_t* count);
 	void GetBonePosition(Asset<V, I>& asset, aiNode* node, const aiMatrix4x4& parentTransform, const aiScene* scene);
 };
+
+using  SimpleModelLoader = ModelLoader<SimpleVertex, uint16_t>;
 
 template<typename V, typename I>
 inline std::vector<Mesh<V, I>> ModelLoader<V, I>::GetAsset(const std::string& assetName) const

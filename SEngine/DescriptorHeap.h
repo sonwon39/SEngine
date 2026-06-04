@@ -16,8 +16,14 @@ public:
 	void CreateResourceView(ID3D12Resource* resource, const DescriptorType& descriptorType, const ViewDimensionType& viewDimesionType = ViewDimensionType::TEXTURE2D);
 
 public:
+	// heapIdx 초기화
+	void Reset();
+
+public:
 	ID3D12DescriptorHeap* GetHeap() const { return m_heap.Get(); }
 	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUHandle(int offset) const;
+	D3D12_CPU_DESCRIPTOR_HANDLE GetCPUHandle(int offset) const;
+
 
 private:
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_heap;

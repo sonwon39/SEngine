@@ -48,7 +48,6 @@ bool RenderEngine::Initialize(int width, int height, int guiWidth, IDXGIFactory7
 	m_width = width;
 	m_height = height;
 
-
 	m_viewport = CD3DX12_VIEWPORT((FLOAT)m_guiWidth, 0.F, (FLOAT)(m_width - m_guiWidth), (FLOAT)m_height);
 	m_scissorRect = CD3DX12_RECT((LONG)0, 0, (LONG)(m_width), (LONG)m_height);
 	m_hdrViewport = CD3DX12_VIEWPORT((FLOAT)0.F, 0.F, (FLOAT)(m_width), (FLOAT)m_height);
@@ -71,13 +70,11 @@ bool RenderEngine::Initialize(int width, int height, int guiWidth, IDXGIFactory7
 	CreateSwapChain(factory);
 
 	// Create SwapChain RTVs
-	CD3DX12_CPU_DESCRIPTOR_HANDLE handle(m_swapChainRTVHeap->GetCPUDescriptorHandleForHeapStart());
 	for (int i = 0; i < m_swapChainBufferCount; i++)
 	{
 		m_swapChain->GetBuffer(i, IID_PPV_ARGS(m_swapChainResources[i].ReleaseAndGetAddressOf()));
-		m_device->CreateRenderTargetView(m_swapChainResources[i].Get(), nullptr, handle);
-
-		handle.Offset(1, m_rtvDescriptorSize);
+		m_swapChainRTVHeap.CreateResourceView(m_swapChainResources[i].Get(), DescriptorType::RTV);
+		m_swapChainResources[i].SetResourceStates(D3D12_RESOURCE_STATE_PRESENT);
 	}
 
 	CreateDepthBuffers();
@@ -92,18 +89,17 @@ bool RenderEngine::Initialize(int width, int height, int guiWidth, IDXGIFactory7
 
 bool RenderEngine::InitScene()
 {
+	m_resourceCommandAllocator->Reset();
+	ThrowIfFailed(m_resourceCommandList->Reset(m_resourceCommandAllocator.Get(), nullptr));
+
 	// 모델 준비
-	{
-		using DirectX::SimpleMath::Vector3;
+	auto simpleModelLoader = m_world->GetSimpleModelLoader();
+	std::shared_ptr<StaticMesh> mesh = std::make_shared<StaticMesh>();
+	mesh->Initialize(m_device, m_resourceCommandList.Get(), simpleModelLoader->GetAsset("plane"));
+	ActorData ad = {};
+	ad.material = "PavingStones145_2K-PNG_Albedo";
+	m_world->AddActor(mesh, ad);
 
-		m_resourceCommandAllocator->Reset();
-		ThrowIfFailed(m_resourceCommandList->Reset(m_resourceCommandAllocator.Get(), nullptr));
-
-		//Mesh<SimpleVertex, uint16_t> rect = GeometryGenerator::MakeSimpleCube(0.5f, 0.5f, 0.5f);
-		Mesh<SimpleVertex, uint16_t> plane = GeometryGenerator::MakeSimpleRect(2.f, 2.f);
-		m_mesh = std::make_unique<StaticMesh>();
-		m_mesh->Initialize(m_device, m_resourceCommandList.Get(), plane);
-	}
 
 	std::shared_ptr<TextureLoader> texLoader;
 	// texture 준비
@@ -112,6 +108,7 @@ bool RenderEngine::InitScene()
 		{
 			texLoader = m_world->GetTextureLoader();
 			texLoader->LoadIdx();
+			texLoader->InitHeap(100);
 			texLoader->LoadTextures(m_resourceCommandList.Get());
 		}
 	}
@@ -132,6 +129,7 @@ bool RenderEngine::InitScene()
 	FlushCommands();
 
 	texLoader->ClearBlobs();
+	mesh->Clear();
 
 	// camera settings
 	localConstant.model = DirectX::SimpleMath::Matrix();
@@ -150,7 +148,6 @@ bool RenderEngine::InitScene()
 	utility->CreateConstantBuffer(sizeof(localConstant), m_localCB, &pLocalCB);
 	memcpy(pLocalCB, &localConstant, sizeof(localConstant));
 
-	//utility->CreateConstantBuffer(sizeof(ParticleLocalConstant), m_particleLocalCB, &pParticleLocalCB);
 	return true;
 }
 
@@ -193,6 +190,8 @@ void RenderEngine::OnResize(int width, int height)
 	m_width = width;
 	m_height = height;
 
+	m_swapChainRTVHeap.Reset();
+
 	// swapchain 버퍼 리셋
 	for (int i = 0; i < m_swapChainBufferCount; i++)
 	{
@@ -207,13 +206,12 @@ void RenderEngine::OnResize(int width, int height)
 		DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH);
 
 	// 버퍼에 대한 RTV 재생성
-	CD3DX12_CPU_DESCRIPTOR_HANDLE handle(m_swapChainRTVHeap->GetCPUDescriptorHandleForHeapStart());
+	m_swapChainRTVHeap.Reset();
 	for (int i = 0; i < m_swapChainBufferCount; i++)
 	{
 		m_swapChain->GetBuffer(i, IID_PPV_ARGS(m_swapChainResources[i].ReleaseAndGetAddressOf()));
-		m_device->CreateRenderTargetView(m_swapChainResources[i].Get(), nullptr, handle);
-
-		handle.Offset(1, m_rtvDescriptorSize);
+		m_swapChainRTVHeap.CreateResourceView(m_swapChainResources[i].Get(), DescriptorType::RTV);
+		m_swapChainResources[i].SetResourceStates(D3D12_RESOURCE_STATE_PRESENT);
 	}
 
 	// DepthBuffer 재생성
@@ -343,7 +341,7 @@ void RenderEngine::CreateDepthBuffers()
 void RenderEngine::CreateDescriptorHeaps()
 {
 	// DescriptorHeap 생성
-	utility->CreateDescriptorHeap(m_swapChainBufferCount, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, m_swapChainRTVHeap);
+	m_swapChainRTVHeap.Initialize(m_swapChainBufferCount, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 0, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
 	utility->CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, m_DSVHeap);
 }
 
@@ -360,6 +358,8 @@ void RenderEngine::Tick(float deltaTime)
 {
 	//SPHTick(deltaTime);
 	StableFluidsTick(deltaTime);
+	RenderGUI();
+	Execute();
 }
 
 void RenderEngine::SPHTick(float deltaTime)
@@ -367,8 +367,8 @@ void RenderEngine::SPHTick(float deltaTime)
 	m_sph->Tick(deltaTime);
 	m_sph->Execute(m_commandQueue.Get());
 
-	RenderSPH("particleRenderPSO", true/*clear RT*/, false /*isFinal*/);
-	RenderGUI(true);
+	RenderSPH("particleRenderPSO", true/*clear RT*/);
+
 }
 
 void RenderEngine::StableFluidsTick(float deltaTime)
@@ -377,104 +377,53 @@ void RenderEngine::StableFluidsTick(float deltaTime)
 	m_stableFluids->Execute(m_commandQueue.Get());
 
 	RenderMeshes("defaultPSO");
-	RenderGUI(true);
 }
 
 void RenderEngine::RenderMeshes(const std::string& psoName)
 {
 	using namespace Renderer;
 
-	GraphicsPSO pso = GetGraphicsPSO(psoName);
+	InitGraphicsCommand(psoName);
 
-	m_commandAllocator->Reset();
-	ThrowIfFailed(m_commandList->Reset(m_commandAllocator.Get(), nullptr));
+	std::vector<D3D12_RESOURCE_BARRIER> barriers;
+	D3D12_RESOURCE_BARRIER barrier;
 
-	m_commandList->SetPipelineState(pso.GetPSO());
-	m_commandList->SetGraphicsRootSignature(pso.GetRootSignature()->GetSignature());
-
-	m_commandList->RSSetScissorRects(1, &m_scissorRect);
-	m_commandList->RSSetViewports(1, &m_viewport);
-
-
-	m_commandList->ResourceBarrier(
-		1,
-		&CD3DX12_RESOURCE_BARRIER::Transition(
-			GetCurrentSwapChainResource(),
-			D3D12_RESOURCE_STATE_PRESENT,
-			D3D12_RESOURCE_STATE_RENDER_TARGET
-		));
+	if (m_swapChainResources[m_currentBackBufferIndex].Transition(D3D12_RESOURCE_STATE_RENDER_TARGET, barrier)) barriers.push_back(barrier);
 
 	if (m_stableFluids)
 	{
-		std::vector<D3D12_RESOURCE_BARRIER> barriers0;
-		D3D12_RESOURCE_BARRIER barrier;
-		if (m_stableFluids->m_newDensityBuffer.Transition(D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, barrier)) barriers0.push_back(barrier);
+		if (m_stableFluids->m_newDensityBuffer.Transition(D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, barrier)) barriers.push_back(barrier);
+		if (!barriers.empty())
+			m_commandList->ResourceBarrier((UINT)barriers.size(), barriers.data());
 
-		m_commandList->ResourceBarrier((UINT)barriers0.size(), barriers0.data());
-
-
-		ID3D12DescriptorHeap* heaps[] = { m_stableFluids->m_renderDensityHeap.GetHeap() };
-		m_commandList->SetDescriptorHeaps(1, heaps);
-		m_commandList->SetGraphicsRootDescriptorTable(0, m_stableFluids->m_renderDensityHeap.GetGPUHandle(0));
 	}
 
 	m_commandList->ClearRenderTargetView(GetCurrentRtvCpuHandle(), rtvClearColor.data(), 0, nullptr);
 	m_commandList->ClearDepthStencilView(GetDSVCpuHandle(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
 	m_commandList->OMSetRenderTargets(1, &GetCurrentRtvCpuHandle(), TRUE, &GetDSVCpuHandle());
 
-
 	if (m_camera)
 	{
 		m_commandList->SetGraphicsRootConstantBufferView(1, m_camera->GetGlboalConstant());
 	}
-
-	m_mesh->Render(m_commandList.Get());
-
-	m_commandList->ResourceBarrier(
-		1,
-		&CD3DX12_RESOURCE_BARRIER::Transition(
-			GetCurrentSwapChainResource(),
-			D3D12_RESOURCE_STATE_RENDER_TARGET,
-			D3D12_RESOURCE_STATE_PRESENT
-		));
-
-	m_commandList->Close();
-	ID3D12CommandList* commands[] = { m_commandList.Get() };
-	m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
+	for (auto& m : meshBatchs)
+	{
+		m->Render(m_commandList.Get());
+	}
 }
 
-void RenderEngine::RenderSPH(const std::string& psoName, bool clear, bool isFinal)
+void RenderEngine::RenderSPH(const std::string& psoName, bool clear)
 {
-	PIXBeginEvent(m_commandQueue.Get(), PIX_COLOR(255, 0, 0), psoName.c_str());
-
 	using namespace Renderer;
 
-	GraphicsPSO pso;
-	if (m_PSOs.find(psoName) != m_PSOs.end())
-	{
-		pso = m_PSOs[psoName];
-	}
-	else
-	{
-		pso = m_PSOs["defaultPSO"];
-	}
-	m_commandAllocator->Reset();
-	ThrowIfFailed(m_commandList->Reset(m_commandAllocator.Get(), nullptr));
+	InitGraphicsCommand(psoName);
 
-	m_commandList->SetPipelineState(pso.GetPSO());
-	m_commandList->SetGraphicsRootSignature(pso.GetRootSignature()->GetSignature());
+	std::vector<D3D12_RESOURCE_BARRIER> barriers;
+	D3D12_RESOURCE_BARRIER barrier;
+	if (m_swapChainResources[m_currentBackBufferIndex].Transition(D3D12_RESOURCE_STATE_RENDER_TARGET, barrier)) barriers.push_back(barrier);
+	if (!barriers.empty())
+		m_commandList->ResourceBarrier((UINT)barriers.size(), barriers.data());
 
-
-	m_commandList->RSSetScissorRects(1, &m_scissorRect);
-	m_commandList->RSSetViewports(1, &m_viewport);
-
-	m_commandList->ResourceBarrier(
-		1,
-		&CD3DX12_RESOURCE_BARRIER::Transition(
-			GetCurrentSwapChainResource(),
-			D3D12_RESOURCE_STATE_PRESENT,
-			D3D12_RESOURCE_STATE_RENDER_TARGET
-		));
 	if (clear)
 	{
 		m_commandList->ClearRenderTargetView(GetCurrentRtvCpuHandle(), rtvClearColor.data(), 0, nullptr);
@@ -488,34 +437,9 @@ void RenderEngine::RenderSPH(const std::string& psoName, bool clear, bool isFina
 	}
 
 	m_sph->Render(m_commandList.Get());
-
-	m_commandList->ResourceBarrier(
-		1,
-		&CD3DX12_RESOURCE_BARRIER::Transition(
-			GetCurrentSwapChainResource(),
-			D3D12_RESOURCE_STATE_RENDER_TARGET,
-			D3D12_RESOURCE_STATE_PRESENT
-		));
-
-	m_commandList->Close();
-
-	ID3D12CommandList* commands[] = { m_commandList.Get() };
-	m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
-
-	if (isFinal)
-	{
-
-		ThrowIfFailed(m_commandQueue->Signal(m_fence.Get(), m_currentFence));
-		// text 업데이트를 위해 graphcics memory 사용 시 commit 해줘야 Graphics 메모리를 재사용한다
-		ThrowIfFailed(m_swapChain->Present(1, 0));
-		m_currentBackBufferIndex = (m_currentBackBufferIndex + 1) % m_swapChainBufferCount;
-
-		FlushResourceCommands();
-	}
-	PIXEndEvent(m_commandQueue.Get());
 }
 
-void RenderEngine::RenderGUI(bool isFinal)
+void RenderEngine::RenderGUI()
 {
 	ImGui_ImplWin32_NewFrame();
 	ImGui_ImplDX12_NewFrame();
@@ -529,57 +453,24 @@ void RenderEngine::RenderGUI(bool isFinal)
 	ImGui::End();
 	ImGui::Render();
 
-	ThrowIfFailed(gui_commandAllocator->Reset());
-	ThrowIfFailed(gui_commandList->Reset(gui_commandAllocator.Get(), nullptr));
+	std::vector<D3D12_RESOURCE_BARRIER> barriers;
+	D3D12_RESOURCE_BARRIER barrier;
+	if (m_swapChainResources[m_currentBackBufferIndex].Transition(D3D12_RESOURCE_STATE_RENDER_TARGET, barrier)) barriers.push_back(barrier);
+	if (!barriers.empty())
+		m_commandList->ResourceBarrier((UINT)barriers.size(), barriers.data());
 
-	gui_commandList->ResourceBarrier(1,
-		&CD3DX12_RESOURCE_BARRIER::Transition(
-			GetCurrentSwapChainResource(),
-			D3D12_RESOURCE_STATE_PRESENT,
-			D3D12_RESOURCE_STATE_RENDER_TARGET
-		));
-
-	gui_commandList->OMSetRenderTargets(1, &GetCurrentRtvCpuHandle(), false, nullptr);
+	m_commandList->OMSetRenderTargets(1, &GetCurrentRtvCpuHandle(), false, nullptr);
 	ID3D12DescriptorHeap* pHeaps[] = { m_guiFontHeap.Get() };
-	gui_commandList->SetDescriptorHeaps(static_cast<UINT>(std::size(pHeaps)), pHeaps);
+	m_commandList->SetDescriptorHeaps(static_cast<UINT>(std::size(pHeaps)), pHeaps);
 
 	ImDrawData* dd = ImGui::GetDrawData();
 	if (dd->Valid)
-		ImGui_ImplDX12_RenderDrawData(dd, gui_commandList.Get());
-
-	gui_commandList->ResourceBarrier(1,
-		&CD3DX12_RESOURCE_BARRIER::Transition(
-			GetCurrentSwapChainResource(),
-			D3D12_RESOURCE_STATE_RENDER_TARGET,
-			D3D12_RESOURCE_STATE_PRESENT
-		));
-
-	gui_commandList->Close();
-	ID3D12CommandList* commands[] = { gui_commandList.Get() };
-	m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
-
-	if (isFinal)
-	{
-		ThrowIfFailed(m_commandQueue->Signal(m_fence.Get(), m_currentFence));
-		// text 업데이트를 위해 graphcics memory 사용 시 commit 해줘야 Graphics 메모리를 재사용한다
-		//m_graphicsMemory->Commit(m_commandQueue.Get());
-		ThrowIfFailed(m_swapChain->Present(1, 0));
-		m_currentBackBufferIndex = m_swapChain->GetCurrentBackBufferIndex();
-		FlushResourceCommands();
-	}
-
-}
-
-void RenderEngine::SPHSimulation()
-{
-	// SPH 가 Tick 안에서 sort + 4 compute 를 자체 m_commandList 한 개에 기록하고,
-	// Execute 로 한 번에 submit. StableFluids 와 동일 패턴.
-	
+		ImGui_ImplDX12_RenderDrawData(dd, m_commandList.Get());
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE RenderEngine::GetCurrentRtvCpuHandle() const
 {
-	return CD3DX12_CPU_DESCRIPTOR_HANDLE(m_swapChainRTVHeap->GetCPUDescriptorHandleForHeapStart(), m_currentBackBufferIndex, m_rtvDescriptorSize);
+	return m_swapChainRTVHeap.GetCPUHandle(m_currentBackBufferIndex);
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE RenderEngine::GetDSVCpuHandle() const
@@ -590,6 +481,19 @@ D3D12_CPU_DESCRIPTOR_HANDLE RenderEngine::GetDSVCpuHandle() const
 ID3D12Resource* RenderEngine::GetCurrentSwapChainResource() const
 {
 	return m_swapChainResources[m_currentBackBufferIndex].Get();
+}
+
+void RenderEngine::InitGraphicsCommand(const std::string& psoName)
+{
+	GraphicsPSO pso = GetGraphicsPSO(psoName);
+
+	m_commandAllocator->Reset();
+	ThrowIfFailed(m_commandList->Reset(m_commandAllocator.Get(), nullptr));
+	m_commandList->SetPipelineState(pso.GetPSO());
+	m_commandList->SetGraphicsRootSignature(pso.GetRootSignature()->GetSignature());
+
+	m_commandList->RSSetScissorRects(1, &m_scissorRect);
+	m_commandList->RSSetViewports(1, &m_viewport);
 }
 
 void RenderEngine::FlushCommands()
@@ -623,7 +527,6 @@ void RenderEngine::FlushResourceCommands()
 	}
 }
 
-
 void RenderEngine::Quit()
 {
 	FlushResourceCommands();
@@ -638,4 +541,27 @@ void RenderEngine::GenerateMips(ID3D12Resource* tex)
 
 	auto finish = upload.End(m_commandQueue.Get());
 	finish.wait();
+}
+
+void RenderEngine::Execute()
+{
+	std::vector<D3D12_RESOURCE_BARRIER> barriers;
+	D3D12_RESOURCE_BARRIER barrier;
+	if (m_swapChainResources[m_currentBackBufferIndex].Transition(D3D12_RESOURCE_STATE_PRESENT, barrier)) barriers.push_back(barrier);
+	m_commandList->ResourceBarrier((UINT)barriers.size(), barriers.data());
+
+	m_commandList->Close();
+	ID3D12CommandList* commands[] = { m_commandList.Get() };
+	m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
+
+	ThrowIfFailed(m_commandQueue->Signal(m_fence.Get(), m_currentFence));
+	ThrowIfFailed(m_swapChain->Present(1, 0));
+	m_currentBackBufferIndex = m_swapChain->GetCurrentBackBufferIndex();
+	FlushResourceCommands();
+}
+
+void RenderEngine::RegistMeshBatch(std::shared_ptr<MeshBatch> meshBatch)
+{
+	meshBatchs.push_back(meshBatch);
+	// Material이 nullptr이면 MeshBatch::Render에서 early-return. fallback은 호출측이 책임진다.
 }

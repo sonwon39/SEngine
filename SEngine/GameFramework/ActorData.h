@@ -26,7 +26,7 @@ struct ActorData
 		lc.metallic = 0.8f;
 		lc.collisionScale = Vector3(0.5, 0.5, 0.5);
 		lc.collisionShape = PhysXShape::PS_cube;
-		collisionLocation = Vector3::Zero;
+		collisionLocation = Vector3(0.f,0.f,0.f);
 	};
 
 	std::string name;

@@ -37,8 +37,20 @@ void DescriptorHeap::CreateResourceView(ID3D12Resource* resource, const Descript
 	m_heapIdx++;
 }
 
+void DescriptorHeap::Reset()
+{
+	m_heap.Reset();
+	m_heapIdx = 0;
+}
+
 D3D12_GPU_DESCRIPTOR_HANDLE DescriptorHeap::GetGPUHandle(int offset) const
 {
 	CD3DX12_GPU_DESCRIPTOR_HANDLE handle(m_heap->GetGPUDescriptorHandleForHeapStart(), offset, descriptorIncrementSize);
+	return handle;
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE DescriptorHeap::GetCPUHandle(int offset) const
+{
+	CD3DX12_CPU_DESCRIPTOR_HANDLE handle(m_heap->GetCPUDescriptorHandleForHeapStart(), offset, descriptorIncrementSize);
 	return handle;
 }
