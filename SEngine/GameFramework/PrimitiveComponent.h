@@ -39,7 +39,8 @@ public:
 	std::string GetPSOName() const { return m_psoName; };
 	PhysXMode GetPhysXMode() const { return m_physXMode; }
 	physx::PxTransform GetPxTransform() const;
-
+	bool GetUpdateConstant() const { return m_updateConstant;}
+	
 public:
 	void OnRegister() override;
 
@@ -53,6 +54,14 @@ public:
 	// 매 프레임 MeshBatch::Render 진입 시 SyncCB()로 localConstant → GPU CB memcpy.
 	void SyncCB();
 	D3D12_GPU_VIRTUAL_ADDRESS GetCBGPUAddress();
+
+public:
+	// localConstant: 머티리얼/렌더 상태. SceneComponent로부터 이전됨.
+	// transform 변경 시 UpdateConstantTransform 오버라이드에서 model/modelInvTranspose가 갱신된다.
+	void SetLocalConstant(const LocalConstant& newConstant);
+	LocalConstant GetLocalConstant() const { return m_cb.localConstant; }
+
+	void UpdateConstantTransform() override;
 
 protected:
 	bool m_visible;

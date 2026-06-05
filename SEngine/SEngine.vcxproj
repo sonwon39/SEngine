@@ -143,6 +143,7 @@
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Actors\AMovingPlatform.cpp" />
     <ClCompile Include="AssetManager\ModelLoader.cpp" />
     <ClCompile Include="AssetManager\TextureLoader.cpp" />
     <ClCompile Include="BaseApp.cpp" />
@@ -178,6 +179,7 @@
     <ClCompile Include="Utility.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Actors\AMovingPlatform.h" />
     <ClInclude Include="AssetManager\Asset.h" />
     <ClInclude Include="AssetManager\BlendData.h" />
     <ClInclude Include="AssetManager\ModelLoader.h" />
@@ -331,6 +333,9 @@
     <None Include="StaticMesh.inl" />
     <None Include="Utility.inl" />
     <None Include="VertexBuffer.inl" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Assets\Textures\DDS\PavingStones145_2K-PNG_Albedo.dds" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

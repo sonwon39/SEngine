@@ -2,20 +2,16 @@
 #define PBRHLSLCOMPAT_H
 
 #ifdef HLSL
-#include "HlslCompat.h"
+#include "../HlslCompat.h"
 #else
 using namespace DirectX::SimpleMath;
 using namespace DirectX;
 #endif
 
 #define NUM_LIGHTS 1
-// BOOKMARK
-struct LocalConstant
-{
-	Matrix model;
-	Matrix modelInvTranspose;
-	Matrix texTransform;
 
+struct MaterialConstant
+{
 	int forceMip0;
 	int cubeMapMipLevel;
 	int useReflect;
@@ -23,10 +19,16 @@ struct LocalConstant
 
 	float roughness;
 	float metallic;
+	XMFLOAT2 dummy;
+};
 
-	XMVECTOR collisionScale;
-	int collisionShape;
+struct LocalConstant
+{
+	Matrix model;
+	Matrix modelInvTranspose;
+	Matrix texTransform;
 
+	MaterialConstant material;
 };
 
 struct SkinnedLocalConstant

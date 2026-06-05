@@ -2,5 +2,5 @@
 
 float4 main(PSInput input) : SV_TARGET
 {
-	return float4(g_hdrTexture.Sample(g_wrapLinearSampler, input.uv).xyz, 1.f);
+	return float4(g_albedo.Sample(g_wrapLinearSampler, input.uv).xyz, 1.f);
 }	

@@ -29,7 +29,8 @@ public:
 	~ModelLoader() {};
 
 public:
-	void Initialize();
+	void InitializeCPU();
+	void InitializeGPU(ID3D12GraphicsCommandList* commandList);;
 
 public:
 	std::string basePath;
@@ -45,7 +46,7 @@ public:
 	DirectX::SimpleMath::Quaternion aiToQuaternion(aiQuaternion quat);
 	DirectX::SimpleMath::Vector4 aiToVector4(aiColor4D vector);
 	aiMatrix4x4 MatrixToAi(const DirectX::SimpleMath::Matrix& mat);
-	DirectX::SimpleMath::Matrix aiToMatrix(const aiMatrix4x4& mat);
+	DirectX::SimpleMath::Matrix aiToMatrix(const aiMatrix4x4& mat); 
 
 private:
 	std::unordered_map<std::string, Asset<V, I>> assets;
@@ -70,6 +71,21 @@ private:
 };
 
 using  SimpleModelLoader = ModelLoader<SimpleVertex, uint16_t>;
+
+template<typename V, typename I>
+inline void ModelLoader<V, I>::InitializeGPU(ID3D12GraphicsCommandList* commandList)
+{
+	if (!m_world) return;
+	ID3D12Device5* device = m_world->GetDevice();
+	if (!device) return;
+
+	for (auto& [name, asset] : assets)
+	{
+		std::shared_ptr<StaticMesh> mesh = std::make_shared<StaticMesh>();
+		mesh->Initialize<V, I>(device, commandList, asset.m_meshes);
+		m_world->AddMesh(name, mesh);
+	}
+}
 
 template<typename V, typename I>
 inline std::vector<Mesh<V, I>> ModelLoader<V, I>::GetAsset(const std::string& assetName) const

@@ -27,7 +27,7 @@ public:
 	void LoadIdx();
 
 	void LoadTextures(ID3D12GraphicsCommandList* commandList);
-	void AddTexture(const std::string& textureName, ID3D12Resource* texture);
+	void AddTexture(const std::string& textureName, Texture2D& texture);
 	void ClearBlobs();
 
 public:

@@ -26,12 +26,12 @@ void CollisionComponent::SetActorData(const ActorData& ad)
 	SetUpdateConstant(ad.updateConstants);
 
 	SetLocation(ad.collisionLocation);
-	SetCollisionScale(ad.lc.collisionScale);
-	SetCollisionShape((PhysXShape)ad.lc.collisionShape);
+	//SetCollisionScale(ad.lc.collisionScale);
+	//SetCollisionShape((PhysXShape)ad.lc.collisionShape);
 }
 
-DirectX::SimpleMath::Vector3 CollisionComponent::GetCollisionScale() const
-{
-	return localConstant.collisionScale;
-}
+//DirectX::SimpleMath::Vector3 CollisionComponent::GetCollisionScale() const
+//{
+//	return localConstant.collisionScale;
+//}
 

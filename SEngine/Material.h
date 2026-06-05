@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "d3d12.h"
 
@@ -9,14 +9,9 @@ class Material
 public:
 	Material() = default;
 
-	void Initialize(ID3D12DescriptorHeap* heap,
-		D3D12_GPU_DESCRIPTOR_HANDLE srvTable);
-
-	void Bind(ID3D12GraphicsCommandList* commandList) const;
-
-	bool IsValid() const { return m_heap != nullptr; }
+	void Initialize(D3D12_GPU_DESCRIPTOR_HANDLE srvTable);
+	void Bind(ID3D12GraphicsCommandList* commandList, UINT parameterIndex = 0) const;
 
 private:
-	ID3D12DescriptorHeap* m_heap = nullptr;
 	D3D12_GPU_DESCRIPTOR_HANDLE m_srvTable = { 0 };
 };

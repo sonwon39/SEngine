@@ -19,19 +19,19 @@ struct ActorData
 		useSimulate = false;
 		mode = PhysXMode::PM_Default;
 		updateConstants = false;
-		lc.useReflect = false;
-		lc.heightScale = 0.f;
-		lc.forceMip0 = false;
-		lc.roughness = 0.2f;
-		lc.metallic = 0.8f;
-		lc.collisionScale = Vector3(0.5, 0.5, 0.5);
-		lc.collisionShape = PhysXShape::PS_cube;
+		lc.material.useReflect = false;
+		lc.material.heightScale = 0.f;
+		lc.material.forceMip0 = false;
+		lc.material.roughness = 0.2f;
+		lc.material.metallic = 0.8f;
+		// lc.material.collisionScale = Vector3(0.5, 0.5, 0.5);
+		// lc.material.collisionShape = PhysXShape::PS_cube;
 		collisionLocation = Vector3(0.f,0.f,0.f);
 	};
 
 	std::string name;
 	std::string mesh;
-	std::string material;
+	std::string textureName;
 	std::string psoName;
 	bool useSimulate;
 	PhysXMode mode = PhysXMode::PM_Default;

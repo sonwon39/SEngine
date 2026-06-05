@@ -22,6 +22,7 @@
 
 #include "StaticMesh.h"
 #include "AssetManager/TextureLoader.h"
+#include "AssetManager/ModelLoader.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace GraphicsUtils;
@@ -94,12 +95,9 @@ bool RenderEngine::InitScene()
 
 	// 모델 준비
 	auto simpleModelLoader = m_world->GetSimpleModelLoader();
-	std::shared_ptr<StaticMesh> mesh = std::make_shared<StaticMesh>();
-	mesh->Initialize(m_device, m_resourceCommandList.Get(), simpleModelLoader->GetAsset("plane"));
-	ActorData ad = {};
-	ad.material = "PavingStones145_2K-PNG_Albedo";
-	m_world->AddActor(mesh, ad);
-
+	simpleModelLoader->InitializeGPU(m_resourceCommandList.Get());
+	auto modelLoader = m_world->GetModelLoader();
+	modelLoader->InitializeGPU(m_resourceCommandList.Get());
 
 	std::shared_ptr<TextureLoader> texLoader;
 	// texture 준비
@@ -128,13 +126,15 @@ bool RenderEngine::InitScene()
 	m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
 	FlushCommands();
 
+	// 텍스쳐, 메쉬 GPU RESOURCE 생성 후 blob 제거
 	texLoader->ClearBlobs();
-	mesh->Clear();
+	m_world->ClearMeshBlobs();
 
 	// camera settings
 	localConstant.model = DirectX::SimpleMath::Matrix();
 	localConstant.view = DirectX::XMMatrixLookToLH(Vector3(0, 0, -3),
 		Vector3(0, 0, 1), Vector3(0, 1, 0));
+
 	float degrees = 70.f;
 	float radians = DirectX::XMConvertToRadians(degrees);
 	float aspectRatio = (float)m_width / m_height;
@@ -190,8 +190,6 @@ void RenderEngine::OnResize(int width, int height)
 	m_width = width;
 	m_height = height;
 
-	m_swapChainRTVHeap.Reset();
-
 	// swapchain 버퍼 리셋
 	for (int i = 0; i < m_swapChainBufferCount; i++)
 	{
@@ -206,7 +204,7 @@ void RenderEngine::OnResize(int width, int height)
 		DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH);
 
 	// 버퍼에 대한 RTV 재생성
-	m_swapChainRTVHeap.Reset();
+	m_swapChainRTVHeap.ResetIndex();
 	for (int i = 0; i < m_swapChainBufferCount; i++)
 	{
 		m_swapChain->GetBuffer(i, IID_PPV_ARGS(m_swapChainResources[i].ReleaseAndGetAddressOf()));
@@ -261,20 +259,6 @@ void RenderEngine::CreateCommandObjects()
 			IID_PPV_ARGS(&m_resourceCommandList)
 		));
 
-	ThrowIfFailed(
-		m_device->CreateCommandAllocator(
-			D3D12_COMMAND_LIST_TYPE_DIRECT,
-			IID_PPV_ARGS(&gui_commandAllocator)
-		));
-
-	ThrowIfFailed(
-		m_device->CreateCommandList(
-			0,
-			D3D12_COMMAND_LIST_TYPE_DIRECT,
-			gui_commandAllocator.Get(),
-			nullptr,
-			IID_PPV_ARGS(&gui_commandList)
-		));
 
 	D3D12_COMMAND_QUEUE_DESC queueDesc;
 	ZeroMemory(&queueDesc, sizeof(queueDesc));
@@ -287,7 +271,6 @@ void RenderEngine::CreateCommandObjects()
 	);
 
 	m_commandList->Close();
-	gui_commandList->Close();
 	m_resourceCommandList->Close();
 }
 
@@ -350,14 +333,20 @@ void RenderEngine::UpdateGUI()
 {
 	//ImGui::SetWindowSize(ImVec2((float)m_guiWidth, (float)m_height));
 	ImGui::SetWindowPos(ImVec2(0.f, 0.f), ImGuiCond_Always);
-
 }
 
 // BOOKMARK
 void RenderEngine::Tick(float deltaTime)
 {
 	//SPHTick(deltaTime);
-	StableFluidsTick(deltaTime);
+	//StableFluidsTick(deltaTime);
+
+	for (auto& m : meshBatchs)
+	{
+		m->SyncCB();
+	}
+
+	RenderMeshes("defaultPSO");
 	RenderGUI();
 	Execute();
 }
@@ -375,8 +364,6 @@ void RenderEngine::StableFluidsTick(float deltaTime)
 {
 	m_stableFluids->Tick(deltaTime);
 	m_stableFluids->Execute(m_commandQueue.Get());
-
-	RenderMeshes("defaultPSO");
 }
 
 void RenderEngine::RenderMeshes(const std::string& psoName)
@@ -389,14 +376,8 @@ void RenderEngine::RenderMeshes(const std::string& psoName)
 	D3D12_RESOURCE_BARRIER barrier;
 
 	if (m_swapChainResources[m_currentBackBufferIndex].Transition(D3D12_RESOURCE_STATE_RENDER_TARGET, barrier)) barriers.push_back(barrier);
-
-	if (m_stableFluids)
-	{
-		if (m_stableFluids->m_newDensityBuffer.Transition(D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, barrier)) barriers.push_back(barrier);
-		if (!barriers.empty())
-			m_commandList->ResourceBarrier((UINT)barriers.size(), barriers.data());
-
-	}
+	if (!barriers.empty())
+		m_commandList->ResourceBarrier((UINT)barriers.size(), barriers.data());
 
 	m_commandList->ClearRenderTargetView(GetCurrentRtvCpuHandle(), rtvClearColor.data(), 0, nullptr);
 	m_commandList->ClearDepthStencilView(GetDSVCpuHandle(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
@@ -406,6 +387,9 @@ void RenderEngine::RenderMeshes(const std::string& psoName)
 	{
 		m_commandList->SetGraphicsRootConstantBufferView(1, m_camera->GetGlboalConstant());
 	}
+
+	BindMainHeap();
+
 	for (auto& m : meshBatchs)
 	{
 		m->Render(m_commandList.Get());
@@ -494,6 +478,12 @@ void RenderEngine::InitGraphicsCommand(const std::string& psoName)
 
 	m_commandList->RSSetScissorRects(1, &m_scissorRect);
 	m_commandList->RSSetViewports(1, &m_viewport);
+}
+
+void RenderEngine::BindMainHeap()
+{
+	ID3D12DescriptorHeap* heaps[] = { m_world->GetMainHeap() };
+	m_commandList->SetDescriptorHeaps(1, heaps);
 }
 
 void RenderEngine::FlushCommands()

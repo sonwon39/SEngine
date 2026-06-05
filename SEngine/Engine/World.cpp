@@ -1,4 +1,5 @@
 ﻿#include "World.h"
+#include "Actors/AMovingPlatform.h"
 
 World::World()
 {
@@ -20,8 +21,8 @@ void World::Initialize(ID3D12Device5* device, int width, int height)
 {
 	m_device = device;
 
-	m_modelLoader->Initialize();
-	m_simpleModelLoader->Initialize();
+	m_modelLoader->InitializeCPU();
+	m_simpleModelLoader->InitializeCPU();
 
 	SetWindowSize(width, height);
 
@@ -54,6 +55,11 @@ void World::Tick(float deltaTime)
 	{
 		mouse->Tick(deltaTime);
 	}
+
+	for (auto& actor : m_actors)
+	{
+		actor->Tick(deltaTime);
+	}
 }
 
 bool World::FindTexture(const std::string& textureName, int & index)
@@ -66,6 +72,21 @@ bool World::FindTexture(const std::string& textureName, int & index)
 		return false;
 
 	return true;
+}
+
+void World::InitLevel()
+{
+	ActorData ad = {};
+	ad.lc.model = DirectX::XMMatrixTranslation(0.f, 0.f, 3.f);
+	ad.lc.model = ad.lc.model.Transpose();
+	ad.textureName = "PavingStones145_2K-PNG_Albedo";
+	GenerateActor("cube", ad);
+
+	auto mp = std::make_shared<AMovingPlatform>();
+	mp->Initialize();
+	AddActor(mp);
+
+	OnRegister();
 }
 
 ID3D12DescriptorHeap* World::GetMainHeap() const
@@ -85,7 +106,7 @@ std::shared_ptr<Material> World::GetOrCreateMaterial(const std::string& textureN
 	if (!FindTexture(textureName, index)) return nullptr;
 
 	auto mat = std::make_shared<Material>();
-	mat->Initialize(GetMainHeap(), m_textureLoader->GetGPUHandle(index));
+	mat->Initialize(m_textureLoader->GetGPUHandle(index));
 	m_materials[textureName] = mat;
 	return mat;
 }
@@ -96,17 +117,48 @@ void World::SetWindowSize(int width, int height)
 	windowHeight = height;
 }
 
-void World::AddActor(std::shared_ptr<StaticMesh> mesh, const ActorData &ad)
+std::shared_ptr<StaticMesh> World::GetMesh(const std::string& meshName)
 {
-	Actor a;
-	a.Initialize(mesh, ad);
-	m_actors.push_back(a);
+	auto it = m_meshes.find(meshName);
+	if (it == m_meshes.end())
+		return nullptr;
+
+	return it->second;
+}
+
+void World::GenerateActor(const std::string& meshName, const ActorData &ad)
+{
+	auto mesh = GetMesh(meshName);
+	if (!mesh)
+		return;
+	
+	std::shared_ptr<Actor> actor = std::make_shared<Actor>();
+	actor->Initialize(mesh, ad);
+	AddActor(actor);
+}
+
+void World::AddActor(std::shared_ptr<Actor> actor)
+{
+	m_actors.push_back(actor);
+}
+
+void World::AddMesh(const std::string& meshName, std::shared_ptr<StaticMesh> mesh)
+{
+	m_meshes[meshName] = mesh;
 }
 
 void World::OnRegister()
 {
 	for (auto& a : m_actors)
 	{
-		a.OnRegister();
+		a->OnRegister();
+	}
+}
+
+void World::ClearMeshBlobs()
+{
+	for (auto& m : m_meshes)
+	{
+		m.second->Clear();
 	}
 }

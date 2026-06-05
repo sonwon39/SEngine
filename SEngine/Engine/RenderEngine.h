@@ -88,6 +88,7 @@ protected:
 	void InitGraphicsCommand(const std::string& psoName);
 
 private:
+	void BindMainHeap();
 	void FlushCommands();
 	void FlushResourceCommands();
 	void Execute();
@@ -105,9 +106,6 @@ private:
 private:
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_commandAllocator;
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_commandList;
-	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> gui_commandAllocator;
-	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> gui_commandList;
-
 	// 버퍼 생성용
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_resourceCommandAllocator;
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_resourceCommandList;
@@ -160,19 +158,16 @@ private:
 	float angle = 0.f;
 	float rotateSpeed = 90.f;
 
-//sph
+// simulation
 private:
 	std::shared_ptr<SPH> m_sph;
-
-//stable fluids
-private:
 	std::shared_ptr<StableFluids> m_stableFluids;
 
-//camera
+// camera
 private:
 	std::shared_ptr<Camera> m_camera;
 
-	//font
+// font
 private:
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_guiFontHeap;
 	bool resetFlag = false;

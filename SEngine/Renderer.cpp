@@ -109,7 +109,7 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 	ComputePSO computeFinalVelocityCPSO(L"computeFinalVelocity CPSO");
 
 	hdrFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+	backBufferFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	//backBufferFormat  = hdrFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	dsBufferFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	dsOnlyFormat = DXGI_FORMAT_R32_TYPELESS;
@@ -167,8 +167,8 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
 	};
 
-	defaultPSO.SetInputLayout(_countof(simpleIL), simpleIL);
-	defaultPSO.SetRootSignature(g_S1_C1_RS);
+	defaultPSO.SetInputLayout(_countof(phongIL), phongIL);
+	defaultPSO.SetRootSignature(g_S1_C2_RS);
 	defaultPSO.SetRasterizerState(rasterizerDefault);
 	defaultPSO.SetBlendState(blendNoColorWrite);
 	defaultPSO.SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);

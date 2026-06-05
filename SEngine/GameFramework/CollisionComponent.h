@@ -18,7 +18,7 @@ public:
 	StaticMesh* GetMesh() const { return m_mesh.get(); }
 	std::shared_ptr<StaticMesh> GetMeshPtr() const { return m_mesh; }
 	void SetActorData(const ActorData& ad) override;
-	DirectX::SimpleMath::Vector3 GetCollisionScale() const override;
+	//DirectX::SimpleMath::Vector3 GetCollisionScale() const override;
 
 private:
 	std::shared_ptr<StaticMesh> m_mesh;

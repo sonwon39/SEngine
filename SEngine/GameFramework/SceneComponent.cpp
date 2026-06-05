@@ -40,20 +40,6 @@ void SceneComponent::UpdateWorldTransform(const Transform& tr)
 	UpdateConstantTransform();
 }
 
-void SceneComponent::SetLocalConstant(const LocalConstant& newConstant)
-{
-	localConstant = newConstant;
-	DirectX::SimpleMath::Matrix model = newConstant.model.Transpose();
-
-	XMVECTOR s, q, t;
-	DirectX::XMMatrixDecompose(&s, &q, &t, model);
-	localTransform.location = t;
-	localTransform.quat = q;
-	localTransform.scale = s;
-
-	UpdateConstantTransform();
-}
-
 void SceneComponent::UpdateRotation(const int& mouseDeltaX, const int& mouseDeltaY, const float& deltaTime)
 {
 	float delX = mouseDeltaX * m_rotateSpeed * deltaTime;
@@ -125,34 +111,6 @@ void SceneComponent::SetLocalTransformByLdotW(const Transform& LoW)
 	localTransform = m;
 	UpdateConstantTransform();
 }
-void SceneComponent::SetCubeMapMipLevel(const int& newCubeMapMipLevel)
-{
-	localConstant.cubeMapMipLevel = newCubeMapMipLevel;
-}
-
-void SceneComponent::SetHeightScale(const float& newHeightScale)
-{
-	localConstant.heightScale = newHeightScale;
-}
-
-void SceneComponent::SetRoughness(const float& newRoughness)
-{
-	localConstant.roughness = newRoughness;
-}
-void SceneComponent::SetMetallic(const float& newMetallic)
-{
-	localConstant.metallic = newMetallic;
-}
-void SceneComponent::SetCollisionScale(const Vector3& newScale)
-{
-	localConstant.collisionScale = newScale;
-}
-
-void SceneComponent::SetCollisionShape(const PhysXShape& newShape)
-{
-	localConstant.collisionShape = newShape;
-}
-
 void SceneComponent::AddLocation(const DirectX::SimpleMath::Vector3& delLocation)
 {
 	localTransform.location += delLocation;
@@ -165,10 +123,14 @@ void SceneComponent::AddRotation(const DirectX::SimpleMath::Quaternion& delQ)
 	UpdateConstantTransform();
 }
 
-// 콜리전 조회: 캐싱된 콜리전 컴포넌트가 있으면 그쪽 값, 없으면 자기 자신 값으로 폴백한다.
+// 콜리전 조회: 캐싱된 콜리전 컴포넌트가 있으면 그쪽 값.
+// SceneComponent 자체는 머티리얼 데이터를 들지 않으므로, 기본은 identity scale.
+// PrimitiveComponent에서 자신의 localConstant.collisionScale 폴백을 override한다.
 DirectX::SimpleMath::Vector3 SceneComponent::GetCollisionScale() const
 {
-	return m_collisionComponent ? m_collisionComponent->GetCollisionScale() : localConstant.collisionScale;
+	if (m_collisionComponent)
+		return m_collisionComponent->GetCollisionScale();
+	return DirectX::SimpleMath::Vector3(1.f, 1.f, 1.f);
 }
 
 DirectX::SimpleMath::Quaternion SceneComponent::GetCollisionRotation() const
@@ -246,50 +208,12 @@ DirectX::SimpleMath::Matrix SceneComponent::GetProjMatrix() const
 void SceneComponent::UpdateConstantTransform()
 {
 	// 로컬 * 부모월드 = 이 컴포넌트의 월드 행렬. 위치/회전 조회의 CPU 원본이다.
+	// localConstant.model / modelInvTranspose 갱신은 PrimitiveComponent::UpdateConstantTransform이 담당.
 	m_worldMatrix = localTransform.ToMatrix() * worldTransform.ToMatrix();
-
-	// HLSL CB는 column-major를 기대하므로 model은 전치해서 보관하고,
-	// modelInvTranspose는 전치 전 행렬의 역행렬(= 노멀 변환용)로 계산한다.
-	localConstant.modelInvTranspose = m_worldMatrix.Invert();
-	localConstant.model = m_worldMatrix.Transpose();
 
 	for (const auto& c : m_children)
 	{
 		Transform t(m_worldMatrix);
 		c->UpdateWorldTransform(t);
 	}
-}
-
-void SceneComponent::UpdateMipState(int newForceMip0)
-{
-	localConstant.forceMip0 = newForceMip0;
-	for (const auto& c : m_children)
-	{
-		c->UpdateMipState(newForceMip0);
-	}
-}
-
-void SceneComponent::UpdateUseReflect(int newUseReflect)
-{
-	localConstant.useReflect = newUseReflect;
-
-	for (const auto& c : m_children)
-	{
-		c->UpdateUseReflect(newUseReflect);
-	}
-}
-
-void SceneComponent::UpdateTexTransform(const DirectX::SimpleMath::Matrix& texTransform)
-{
-	localConstant.texTransform = texTransform;
-	for (const auto& c : m_children)
-	{
-		c->UpdateTexTransform(texTransform);
-	}
-}
-
-void  SceneComponent::UpdateCameraInfo(const int& width, const int& height)
-{
-	if (m_cameraComponent)
-		m_cameraComponent->UpdateCameraInfo(width, height);
 }

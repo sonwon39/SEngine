@@ -110,10 +110,9 @@ void StableFluids::InitResources(UINT width, UINT height)
 			if (m_world)
 			{
 				texLoader = m_world->GetTextureLoader();
-				texLoader->AddTexture("test", m_newDensityBuffer.Get());
+				texLoader->AddTexture("sf_Density", m_newDensityBuffer);
 			}
 		}
-		//m_renderDensityHeap.CreateResourceView(m_newDensityBuffer.Get(), DescriptorType::SRV);
 	}
 
 	SFLocalConstant grid;
@@ -142,6 +141,12 @@ void StableFluids::Tick(float deltaTime)
 	Advection();
 
 	CopyDensityAndVelocity();
+
+	vector<D3D12_RESOURCE_BARRIER> barriers;
+	D3D12_RESOURCE_BARRIER barrier;
+	if (m_newDensityBuffer.Transition(D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, barrier))
+		barriers.push_back(barrier);
+	m_commandList->ResourceBarrier((UINT)barriers.size(), barriers.data());
 }
 
 void StableFluids::CopyDensityAndVelocity()

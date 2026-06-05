@@ -33,6 +33,12 @@
     <Filter Include="AssetManager">
       <UniqueIdentifier>{1237e0ea-d42c-4640-b03a-f0a2366cf3d6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Textures">
+      <UniqueIdentifier>{74860831-f491-4ddd-8452-be7dd391de41}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Actors">
+      <UniqueIdentifier>{d1da5131-7311-4206-82fc-1aa5a1c32bfe}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Timer.cpp">
@@ -133,6 +139,9 @@
     </ClCompile>
     <ClCompile Include="Material.cpp">
       <Filter>_cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="Actors\AMovingPlatform.cpp">
+      <Filter>Actors</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -289,6 +298,9 @@
     <ClInclude Include="Material.h">
       <Filter>_h</Filter>
     </ClInclude>
+    <ClInclude Include="Actors\AMovingPlatform.h">
+      <Filter>Actors</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="DefaultVS.hlsl" />
@@ -394,5 +406,10 @@
     <None Include="ConstantBuffer.inl">
       <Filter>Buffer</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Assets\Textures\DDS\PavingStones145_2K-PNG_Albedo.dds">
+      <Filter>Textures</Filter>
+    </Image>
   </ItemGroup>
 </Project>

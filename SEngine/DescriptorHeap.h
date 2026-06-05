@@ -17,7 +17,7 @@ public:
 
 public:
 	// heapIdx 초기화
-	void Reset();
+	void ResetIndex();
 
 public:
 	ID3D12DescriptorHeap* GetHeap() const { return m_heap.Get(); }

@@ -30,6 +30,9 @@ public:
 	bool FindTexture(const std::string& textureName, int& index);
 
 public:
+	void InitLevel();
+
+public:
 	ID3D12Device5* GetDevice() { return m_device; }
 	std::shared_ptr<TextureLoader> GetTextureLoader() const { return m_textureLoader; }
 	std::shared_ptr<ModelLoader<Vertex, uint16_t>> GetModelLoader() const { return m_modelLoader; }
@@ -41,8 +44,14 @@ public:
 	void SetWindowSize(int width, int height);
 
 public:
-	void AddActor(std::shared_ptr<StaticMesh> mesh, const ActorData& ad);
+	std::shared_ptr<StaticMesh> GetMesh(const std::string& meshName);
+	void GenerateActor(const std::string& meshName, const ActorData& ad);
+	void AddActor(std::shared_ptr<Actor> actor);
+	void AddMesh(const std::string& meshName, std::shared_ptr<StaticMesh> mesh);
 	void OnRegister();
+
+	// mesh 내의 vertex index buffer blob 제거
+	void ClearMeshBlobs();
 
 	// 텍스처 이름으로 Material을 얻는다. 같은 이름이면 같은 Material을 반환(캐시).
 	// 텍스처가 로드돼 있지 않으면 nullptr.
@@ -84,7 +93,7 @@ private:
 	std::shared_ptr <SimpleModelLoader> m_simpleModelLoader;
 
 private:
-	std::vector<Actor> m_actors;
-
+	std::vector<std::shared_ptr<Actor>> m_actors;
+	std::unordered_map<std::string, std::shared_ptr<StaticMesh>> m_meshes;
 	std::unordered_map<std::string, std::shared_ptr<Material>> m_materials;
 };

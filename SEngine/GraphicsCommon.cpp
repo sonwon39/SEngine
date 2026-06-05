@@ -181,10 +181,11 @@ void Graphics::InitializeCommonState(const Microsoft::WRL::ComPtr<ID3D12Device5>
 	g_SC_RS.Finalize(device, L"g_SC_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 
-	g_S1_C2_RS.Reset(3, 0);
+	g_S1_C2_RS.Reset(3, 1);
 	g_S1_C2_RS[0].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0, 1);
 	g_S1_C2_RS[1].InitCBV(0);
 	g_S1_C2_RS[2].InitCBV(1);
+	g_S1_C2_RS.InitStaticSampler(0, wrapLinearSampler);
 	g_S1_C2_RS.Finalize(device, L"g_S1_C2_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	g_SUUC_RS.Reset(4, 0);

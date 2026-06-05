@@ -105,7 +105,7 @@ void TextureLoader::LoadTextures(ID3D12GraphicsCommandList* commandList)
 	}
 }
 
-void TextureLoader::AddTexture(const std::string& textureName, ID3D12Resource* texture)
+void TextureLoader::AddTexture(const std::string& textureName, Texture2D& texture)
 {
 	uint32_t i = count;
 	nameMap[i] = textureName;
@@ -113,7 +113,8 @@ void TextureLoader::AddTexture(const std::string& textureName, ID3D12Resource* t
 	filenames.push_back(textureName);
 	count++;
 
-	heap.CreateResourceView(texture, DescriptorType::SRV, ViewDimensionType::TEXTURE2D);
+	heap.CreateResourceView(texture.Get(), DescriptorType::SRV, ViewDimensionType::TEXTURE2D);
+	textures.push_back(texture);
 }
 
 void TextureLoader::ClearBlobs()

@@ -56,13 +56,10 @@ public:
 	ActorState GetActorState() const { return m_currentState; }
 
 public:
-	void UpdateMipState(int newForceMip0);
-	void UpdateUseReflect(int newUseReflect);
 	void SetUpdateConstant(bool newState);
 	void UpdateAnimation(float deltaTime);
 	void SetLocalConstant(const LocalConstant& newLocalConstant);
 	void SetTextureName(const std::string& newName);
-	void SetHeightScale(const float& heightScale);
 	void SetPSOName(const std::string& newName);
 	void SetActorState(const ActorState newState) { m_currentState = newState; }
 

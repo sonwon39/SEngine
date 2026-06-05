@@ -27,7 +27,6 @@ public:
 	void SetSpeed(const float& newSpeed) { m_speed = newSpeed; }
 	void SetRotateSpeed(const float& newSpeed) { m_rotateSpeed = newSpeed; }
 	void UpdateWorldTransform(const Transform& tr);
-	void SetLocalConstant(const LocalConstant& newConstant);
 	void UpdateRotation(const int& mouseDeltaX, const int& mouseDeltaY, const float& deltaTime);
 
 	void SetLocation(const DirectX::SimpleMath::Vector3& newLocation);
@@ -41,14 +40,6 @@ public:
 	void SetUpDirection(const DirectX::SimpleMath::Vector3& newDir) { m_upDirection = newDir; }
 	void SetRightDirection(const DirectX::SimpleMath::Vector3& newDir) { m_rightDirection = newDir; }
 
-	void SetCubeMapMipLevel(const int& newCubeMapMipLevel);
-	void SetHeightScale(const float& newHeightScale);
-	void SetRoughness(const float& newRoughness);
-	void SetMetallic(const float& newMetalic);
-
-	void SetCollisionScale(const Vector3& newScale);
-	void SetCollisionShape(const PhysXShape& newShape);
-
 	void AddLocation(const DirectX::SimpleMath::Vector3& delLocation);
 	void AddRotation(const DirectX::SimpleMath::Quaternion& delQ);
 
@@ -57,7 +48,6 @@ public:
 	float GetRotateSpeed() const { return m_rotateSpeed; }
 	virtual DirectX::SimpleMath::Vector3 GetCollisionScale() const;
 	DirectX::SimpleMath::Quaternion GetCollisionRotation() const;
-	LocalConstant GetLocalConstant() { return localConstant; }
 
 	DirectX::SimpleMath::Vector3 GetFrontDirection() const { return m_frontDirection; }
 	DirectX::SimpleMath::Vector3 GetBaseFrontDirection() const { return m_baseFrontDirection; }
@@ -86,11 +76,6 @@ public:
 	// world->actor 호출
 	virtual void OnRegister();
 
-	void UpdateMipState(int newForceMip0);
-	void UpdateUseReflect(int newUseReflect);
-	void UpdateTexTransform(const DirectX::SimpleMath::Matrix& texTransform);
-	virtual void UpdateCameraInfo(const int& width, const int& height);
-
 protected:
 	Transform worldTransform; // 부모로부터 전파받은 월드 트랜스폼(= 부모의 월드)
 	Transform localTransform; // 부모 기준 로컬 트랜스폼 (위치/회전의 단일 원본)
@@ -107,7 +92,6 @@ protected:
 protected:
 	float m_speed = 5.f;
 	float m_rotateSpeed = 60.f;
-	LocalConstant localConstant;
 	float xAngle = 0.f;
 	float yAngle = 0.f;
 

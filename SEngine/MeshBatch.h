@@ -12,6 +12,7 @@ class MeshBatch
 {
 public:
 	void Render(ID3D12GraphicsCommandList* commandList);
+	void SyncCB();
 
 public:
 	StaticMesh*   mesh = nullptr;

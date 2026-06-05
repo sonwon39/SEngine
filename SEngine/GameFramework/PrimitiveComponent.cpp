@@ -4,6 +4,11 @@
 //#include "PhysXEngine.h"
 #include "ActorData.h"
 
+using DirectX::SimpleMath::Vector3;
+using DirectX::SimpleMath::Matrix;
+using DirectX::SimpleMath::Quaternion;
+using DirectX::XMVECTOR;
+
 PrimitiveComponent::PrimitiveComponent(Actor* owner)
     : SceneComponent(owner), m_visible(true)
 {
@@ -33,16 +38,10 @@ physx::PxTransform PrimitiveComponent::GetPxTransform() const
 
 void PrimitiveComponent::OnRegister()
 {
-	// per-primitive constant buffer는 컴포넌트가 소유한다.
-	// MeshBatch는 이 CB의 GPU 주소만 참조하므로, 라이프타임은 컴포넌트와 동일.
-	m_cb.Initialize(localConstant);
-	m_cbInitialized = true;
 }
 
 void PrimitiveComponent::SyncCB()
 {
-	if (!m_cbInitialized) return;
-	m_cb.localConstant = localConstant;
 	m_cb.Update();
 }
 
@@ -66,6 +65,7 @@ void PrimitiveComponent::SyncFromPhysX(const physx::PxTransform& transform)
     Matrix ret =
         Matrix::CreateFromQuaternion(rot) *
         Matrix::CreateTranslation(loc);
+
     collMat = collMat.Invert();
     Matrix finalMat = collMat * ret;
     Transform t;
@@ -80,12 +80,43 @@ void PrimitiveComponent::SetActorData(const ActorData& ad)
     SetPhysXMode(ad.mode);
     SetPSOName(ad.psoName);
     SetUpdateConstant(ad.updateConstants);
-    SetTextureName(ad.material);
-    
-    UpdateUseReflect(ad.lc.useReflect);
-    SetHeightScale(ad.lc.heightScale);
-    SetRoughness(ad.lc.roughness);
-    SetMetallic(ad.lc.metallic);
-    SetCollisionScale(ad.lc.collisionScale);
-    SetCollisionShape((PhysXShape)ad.lc.collisionShape);
+    SetTextureName(ad.textureName);
+
+    SetLocalConstant(ad.lc);
 }
+
+// ─────────────────────────────────────────────────────────────
+// SceneComponent에서 이전된 머티리얼/렌더 세터들 + 가상 오버라이드
+// ─────────────────────────────────────────────────────────────
+
+void PrimitiveComponent::SetLocalConstant(const LocalConstant& newConstant)
+{
+	if (m_cbInitialized)
+		m_cb.localConstant = newConstant;
+	else
+	{
+		m_cb.Initialize(newConstant);
+		m_cbInitialized = true;
+	}
+    // 입력 model은 GPU 업로드용 전치본이므로 한 번 더 전치해서 CPU 원본 transform을 복원.
+    Matrix model = newConstant.model.Transpose();
+
+    XMVECTOR s, q, t;
+    DirectX::XMMatrixDecompose(&s, &q, &t, model);
+    localTransform.location = t;
+    localTransform.quat = q;
+    localTransform.scale = s;
+
+    UpdateConstantTransform();
+}
+
+void PrimitiveComponent::UpdateConstantTransform()
+{
+    SceneComponent::UpdateConstantTransform();  // m_worldMatrix + 자식 전파
+
+    // HLSL CB는 column-major를 기대하므로 model은 전치해서 보관하고,
+    // modelInvTranspose는 전치 전 행렬의 역행렬(= 노멀 변환용)로 계산한다.
+    m_cb.localConstant.modelInvTranspose = m_worldMatrix.Invert();
+	m_cb.localConstant.model = m_worldMatrix.Transpose();
+}
+

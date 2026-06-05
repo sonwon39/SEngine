@@ -37,11 +37,6 @@ void Actor::UpdateRotation(const int& mouseDeltaX, const int& mouseDeltaY, const
 	if (m_rootComponent) m_rootComponent->UpdateRotation(mouseDeltaX, mouseDeltaY, deltaTime);
 }
 
-void Actor::UpdateCameraInfo(const int& width, const int& height)
-{
-	if (m_rootComponent) m_rootComponent->UpdateCameraInfo(width, height);
-}
-
 void Actor::SetActorLocation(const DirectX::SimpleMath::Vector3& newLocation)
 {
 	if (m_rootComponent) m_rootComponent->SetLocation(newLocation);
@@ -125,16 +120,6 @@ DirectX::SimpleMath::Matrix Actor::GetCameraViewMatrix() const
 	return m_rootComponent ? m_rootComponent->GetCameraViewMatrix() : DirectX::SimpleMath::Matrix();
 }
 
-void Actor::UpdateMipState(int newForceMip0)
-{
-	if (m_rootComponent) m_rootComponent->UpdateMipState(newForceMip0);
-}
-
-void Actor::UpdateUseReflect(int newUseReflect)
-{
-	if (m_rootComponent) m_rootComponent->UpdateUseReflect(newUseReflect);
-}
-
 void Actor::SetUpdateConstant(bool newState)
 {
 	if (m_rootPrimitive)
@@ -149,7 +134,7 @@ void Actor::UpdateAnimation(float deltaTime)
 
 void Actor::SetLocalConstant(const LocalConstant& newLocalConstant)
 {
-	if (m_rootComponent) m_rootComponent->SetLocalConstant(newLocalConstant);
+	if (m_rootPrimitive) m_rootPrimitive->SetLocalConstant(newLocalConstant);
 }
 
 void Actor::SetTextureName(const std::string& newName)
@@ -161,11 +146,4 @@ void Actor::SetPSOName(const std::string& newName)
 {
 	if (m_rootPrimitive)
 		m_rootPrimitive->SetPSOName(newName);
-}
-
-void Actor::SetHeightScale(const float& heightScale)
-{
-	// SetHeightScale은 SceneComponent에 정의돼 있어 캐스팅 없이 루트로 바로 위임한다.
-	if (m_rootComponent)
-		m_rootComponent->SetHeightScale(heightScale);
 }

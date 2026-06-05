@@ -13,8 +13,8 @@ public:
 public:
 	DirectX::SimpleMath::Matrix	GetProjMatrix() const override { return  m_projMatrix; }
 
-	public:
-	void UpdateCameraInfo(const int& width, const int& height) override;
+public:
+	void UpdateCameraInfo(const int& width, const int& height);
 
 private:
 	float m_fovRadians;

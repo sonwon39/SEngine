@@ -37,9 +37,8 @@ void DescriptorHeap::CreateResourceView(ID3D12Resource* resource, const Descript
 	m_heapIdx++;
 }
 
-void DescriptorHeap::Reset()
+void DescriptorHeap::ResetIndex()
 {
-	m_heap.Reset();
 	m_heapIdx = 0;
 }
 
