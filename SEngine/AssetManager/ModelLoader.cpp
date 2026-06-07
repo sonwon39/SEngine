@@ -29,7 +29,12 @@ void ModelLoader<SimpleVertex, uint16_t>::InitializeCPU()
 	ID3D12Device5* device = m_world->GetDevice();
 	Asset<SimpleVertex, uint16_t> plane;
 	plane.m_meshes.push_back({ GeometryGenerator::MakeSimpleRect(2.f, 2.f) });
+
+	Asset<SimpleVertex, uint16_t> cube;
+	cube.m_meshes.push_back({ GeometryGenerator::MakeSimpleCube(100.f, 100.f, 100.f) });
+
 	assets["simple_plane"] = plane;
+	assets["simple_cube"] = cube;
 }
 
 void ModelLoader<Vertex, uint16_t>::ProcessMesh(Asset<Vertex, uint16_t>& asset, aiMesh* mesh, const aiScene* scene, DirectX::SimpleMath::Matrix tr, bool loadAnimation)

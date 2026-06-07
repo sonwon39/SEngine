@@ -47,6 +47,7 @@ Mesh<SimpleVertex, uint16_t> GeometryGenerator::MakeSimpleCube(float x, float y,
 		{4,0,3,7},  // bottom
 		{1,5,6,2},  // top
 	};
+
 	std::vector<SimpleVertex> vertices;
 	std::vector<uint16_t> indices;
 

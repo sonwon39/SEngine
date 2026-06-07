@@ -2,9 +2,13 @@
 #include "RootSignature.h"
 #include "PipelineState.h"
 
-#include "CompiledShaders/DefaultPS.h"
 #include "CompiledShaders/DefaultVS.h"
+#include "CompiledShaders/DefaultPS.h"
 #include "CompiledShaders/DefaultCS.h"
+
+#include "CompiledShaders/CubeMapVS.h"
+#include "CompiledShaders/CubeMapPS.h"
+
 
 #include "CompiledShaders/ParticleRenderVS.h"
 #include "CompiledShaders/ParticleRenderGS.h"
@@ -81,6 +85,8 @@ ComputePSO Renderer::GetComputePSO(const std::string& psoName)
 void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 {
 	GraphicsPSO defaultPSO(L"default PSO");
+	GraphicsPSO cubeMapPSO(L"cubeMap PSO");
+
 	GraphicsPSO particleRenderPSO(L"particleRender PSO");
 
 	ComputePSO defaultCPSO(L"default CPSO");
@@ -181,6 +187,20 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 	m_PSOs["defaultPSO"] = defaultPSO;
 	psoNames.push_back("defaultPSO");
 
+	cubeMapPSO.SetInputLayout(_countof(phongIL), phongIL);
+	cubeMapPSO.SetRootSignature(g_S1_C1_RS);
+	cubeMapPSO.SetRasterizerState(rasterizerDefault);
+	cubeMapPSO.SetBlendState(blendNoColorWrite);
+	cubeMapPSO.SetDepthStencilState(depthStateDefault);   // DepthEnable=TRUE, Func=LESS
+	cubeMapPSO.SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
+	cubeMapPSO.SetVertexShader(g_pCubeMapVS, sizeof(g_pCubeMapVS));
+	cubeMapPSO.SetPixelShader(g_pCubeMapPS, sizeof(g_pCubeMapPS));
+	cubeMapPSO.SetSampleMask(UINT_MAX);
+	cubeMapPSO.SetRenderTargetFormat(backBufferFormat, dsBufferFormat, 1, 0);
+	cubeMapPSO.Finalize(device);
+	m_PSOs["cubeMapPSO"] = cubeMapPSO;
+	psoNames.push_back("cubeMapPSO");
+
 	particleRenderPSO.SetInputLayout(0, nullptr);
 	particleRenderPSO.SetRootSignature(g_S1_C2_RS);
 	particleRenderPSO.SetRasterizerState(rasterizerDefault);
@@ -200,6 +220,7 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 	defaultCPSO.Finalize(device);
 	m_CPSOs["defaultCPSO"] = defaultCPSO;
 	cpsoNames.push_back("defaultCPSO");
+
 
 	particleSimulationCPSO.SetRootSignature(g_U1_C1_RS);
 	particleSimulationCPSO.SetComputeShader(g_pParticleSimulationCS, sizeof(g_pParticleSimulationCS));

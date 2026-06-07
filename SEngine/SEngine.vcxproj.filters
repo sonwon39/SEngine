@@ -372,6 +372,8 @@
     <FxCompile Include="SPH\SPHSimulationCS.hlsl">
       <Filter>SPH</Filter>
     </FxCompile>
+    <FxCompile Include="CubeMapVS.hlsl" />
+    <FxCompile Include="CubeMapPS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -409,6 +411,7 @@
     <None Include="ConstantBuffer.inl">
       <Filter>Buffer</Filter>
     </None>
+    <None Include="CubeMapCommon.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\Textures\DDS\PavingStones145_2K-PNG_Albedo.dds">
