@@ -28,7 +28,7 @@ public:
 	void SetRotateSpeed(const float& newSpeed) { m_rotateSpeed = newSpeed; }
 	void UpdateWorldTransform(const Transform& tr);
 	void UpdateRotation(const int& mouseDeltaX, const int& mouseDeltaY, const float& deltaTime);
-	void UpdateRotation(const float& deltaAngleX, const int& deltaAngleY);
+	void UpdateRotation(const float& deltaAngleX, const float& deltaAngleY);
 
 	void SetLocation(const DirectX::SimpleMath::Vector3& newLocation);
 	void SetRotation(const DirectX::SimpleMath::Quaternion& newQuat);
@@ -74,6 +74,7 @@ public:
 	virtual void UpdateConstantTransform();
 
 	D3D12_GPU_VIRTUAL_ADDRESS GetGlboalConstant() const;
+	CameraComponent* GetCameraComponent() const { return m_cameraComponent; }
 
 public:
 	// world->actor 호출

@@ -13,10 +13,12 @@ using namespace Renderer;
 
 void MeshBatch::Render(ID3D12GraphicsCommandList* commandList)
 {
-	if (!mesh || !material || !owner) return;
+	if (!mesh || !material || !owner || !currentRS) return;
 
-	commandList->SetGraphicsRootConstantBufferView(2, owner->GetCBGPUAddress());
-	material->Bind(commandList, 0);  // heap + SRV table 바인딩
+	material->Bind(commandList, 0);  // SRV table 바인딩
+	int lcb = currentRS->GetSlot(BindKey::LocalCB);
+	if (lcb >= 0)
+		commandList->SetGraphicsRootConstantBufferView(lcb, owner->GetCBGPUAddress());
 	mesh->Render(commandList);    // VB/IB + DrawIndexed (StaticMesh가 이미 갖고 있음)
 }
 
@@ -29,18 +31,21 @@ void MeshBatch::SyncCB()
 	}
 }
 
-void MeshBatch::InitGraphicsCommand(ID3D12GraphicsCommandList* commandList)
+bool MeshBatch::InitGraphicsCommand(ID3D12GraphicsCommandList* commandList)
 { 
 	if (m_renderEngine->GetCurrPSOName() == psoName)
-		return;
+		return false;
 
 	GraphicsPSO pso;
 	if (!GetGraphicsPSO(psoName, pso))
 	{
 		std::cout << "Failed to find pso\n";
-		return;
+		return false;
 	}
 	m_renderEngine->SetCurrPSOName(psoName);
+	currentRS = pso.GetRootSignature();
 	commandList->SetPipelineState(pso.GetPSO());
-	commandList->SetGraphicsRootSignature(pso.GetRootSignature()->GetSignature());
+	commandList->SetGraphicsRootSignature(currentRS->GetSignature());
+	
+	return true;
 }

@@ -78,8 +78,7 @@ void SceneComponent::UpdateRotation(const int& mouseDeltaX, const int& mouseDelt
 	SetRotation(yRotQ);
 }
 
-
-void SceneComponent::UpdateRotation(const float& deltaAngleX, const int& deltaAngleY)
+void SceneComponent::UpdateRotation(const float& deltaAngleX, const float& deltaAngleY)
 {
 	float delX = deltaAngleX;
 	float delY = deltaAngleY;

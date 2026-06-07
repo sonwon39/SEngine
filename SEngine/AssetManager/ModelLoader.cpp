@@ -37,6 +37,15 @@ void ModelLoader<SimpleVertex, uint16_t>::InitializeCPU()
 	assets["simple_cube"] = cube;
 }
 
+void ModelLoader<PBRVertex, uint16_t>::InitializeCPU()
+{
+	ID3D12Device5* device = m_world->GetDevice();
+	Asset<PBRVertex, uint16_t> sphere;
+	sphere.m_meshes.push_back({ GeometryGenerator::PbrSphere(1.f,50,50) });
+
+	assets["pbr_sphere"] = sphere;
+}
+
 void ModelLoader<Vertex, uint16_t>::ProcessMesh(Asset<Vertex, uint16_t>& asset, aiMesh* mesh, const aiScene* scene, DirectX::SimpleMath::Matrix tr, bool loadAnimation)
 {
 	Mesh<Vertex, uint16_t> meshData;

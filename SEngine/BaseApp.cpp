@@ -195,7 +195,14 @@ LRESULT BaseApp::MainProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	case WM_MBUTTONUP:
 	case WM_MOUSEWHEEL:
 	case WM_XBUTTONDOWN:
+		if (m_world)
+		{
+			bool currState = m_world->GetFPSMode();
+			m_world->SetFPSMode(!currState);
+		}
+		break;
 	case WM_XBUTTONUP:
+
 	case WM_MOUSEACTIVATE:
 		// When you click to activate the window, we want Mouse to ignore that event.
 		return MA_ACTIVATEANDEAT;

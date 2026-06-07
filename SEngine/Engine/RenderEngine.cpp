@@ -93,11 +93,7 @@ bool RenderEngine::InitScene()
 	m_resourceCommandAllocator->Reset();
 	ThrowIfFailed(m_resourceCommandList->Reset(m_resourceCommandAllocator.Get(), nullptr));
 
-	// 모델 준비
-	auto simpleModelLoader = m_world->GetSimpleModelLoader();
-	simpleModelLoader->InitializeGPU(m_resourceCommandList.Get());
-	auto modelLoader = m_world->GetModelLoader();
-	modelLoader->InitializeGPU(m_resourceCommandList.Get());
+	InitMeshBuffer();
 
 	std::shared_ptr<TextureLoader> texLoader;
 	// texture 준비
@@ -130,6 +126,8 @@ bool RenderEngine::InitScene()
 	texLoader->ClearBlobs();
 	m_world->ClearMeshBlobs();
 
+	cubemapMaterial = m_world->GetOrCreateMaterial("SkyBrdf");
+
 	// camera settings
 	localConstant.model = DirectX::SimpleMath::Matrix();
 	localConstant.view = DirectX::XMMatrixLookToLH(Vector3(0, 0, -3),
@@ -149,6 +147,16 @@ bool RenderEngine::InitScene()
 	memcpy(pLocalCB, &localConstant, sizeof(localConstant));
 
 	return true;
+}
+
+void RenderEngine::InitMeshBuffer()
+{
+	auto simpleModelLoader = m_world->GetSimpleModelLoader();
+	simpleModelLoader->InitializeGPU(m_resourceCommandList.Get());
+	auto modelLoader = m_world->GetModelLoader();
+	modelLoader->InitializeGPU(m_resourceCommandList.Get());
+	auto pbrModelLoader = m_world->GetPBRModelLoader();
+	pbrModelLoader->InitializeGPU(m_resourceCommandList.Get());
 }
 
 bool RenderEngine::InitGUI()
@@ -213,6 +221,7 @@ void RenderEngine::OnResize(int width, int height)
 	}
 
 	// DepthBuffer 재생성
+	m_dsvHeap.ResetIndex();
 	CreateMainDepthBuffer();
 
 	m_currentBackBufferIndex = m_swapChain->GetCurrentBackBufferIndex();
@@ -220,6 +229,11 @@ void RenderEngine::OnResize(int width, int height)
 	m_viewport = CD3DX12_VIEWPORT((FLOAT)m_guiWidth, 0.F, (FLOAT)(m_width - m_guiWidth), (FLOAT)m_height);
 	m_hdrViewport = CD3DX12_VIEWPORT((FLOAT)0.F, 0.F, (FLOAT)(m_width), (FLOAT)m_height);
 	m_scissorRect = CD3DX12_RECT((LONG)0, 0, (LONG)(m_width), (LONG)m_height);
+
+	for (auto& camera : m_camera)
+	{
+		camera->UpdateCameraInfo(m_width, m_height);
+	}
 
 }
 
@@ -302,7 +316,7 @@ void RenderEngine::CreateSwapChain(IDXGIFactory7* factory)
 
 void RenderEngine::CreateMainDepthBuffer()
 {
-	m_depthBuffer.Initialize(m_width, m_height,	Renderer::dsBufferFormat, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL,
+	m_depthBuffer.Initialize(m_width, m_height, Renderer::dsBufferFormat, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL,
 		D3D12_RESOURCE_STATE_DEPTH_WRITE, 0, L"mainDepthBuffer");
 
 	m_dsvHeap.CreateResourceView(m_depthBuffer.Get(), DescriptorType::DSV);
@@ -339,7 +353,7 @@ void RenderEngine::Tick(float deltaTime)
 	}
 
 	// OnRegister 단계에서 저장된 CameraComponent들
-	for (auto&  camera : m_camera)
+	for (auto& camera : m_camera)
 	{
 		camera->SyncCB();
 	}
@@ -383,22 +397,26 @@ void RenderEngine::RenderMeshes(const std::string& psoName)
 	m_commandList->ClearRenderTargetView(GetCurrentRtvCpuHandle(), rtvClearColor.data(), 0, nullptr);
 	m_commandList->ClearDepthStencilView(GetDSVCpuHandle(0), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
 	m_commandList->OMSetRenderTargets(1, &GetCurrentRtvCpuHandle(), TRUE, &GetDSVCpuHandle(0));
-	
+
 	bool heapBinded = false;
+
+	auto camera = m_world->GetPlayer()->GetCameraComponent();
+	auto ibl = m_world->GetIBL();
 
 	for (auto& m : meshBatchs)
 	{
-		m->InitGraphicsCommand(m_commandList.Get());
+		bool psoChanged = m->InitGraphicsCommand(m_commandList.Get());
 
 		if (!heapBinded)
 		{
 			heapBinded = true;
 			BindMainHeap();
-			auto player = m_world->GetPlayer();
-			if (player)
-			{
-				m_commandList->SetGraphicsRootConstantBufferView(1, player->GetGlboalConstant());
-			}
+		}
+		if (psoChanged)
+		{
+			auto rs = m->GetCurrentRootSignature();
+			if (camera) camera->Bind(rs, m_commandList.Get());
+			if (ibl) ibl->Bind(rs, m_commandList.Get());
 		}
 
 		m->Render(m_commandList.Get());

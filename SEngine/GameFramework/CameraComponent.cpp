@@ -21,28 +21,43 @@ void CameraComponent::Initialize(const float& fovDegrees,
     m_nearZ = nearZ;
     m_farZ = farZ;
 
+	Matrix view;
+	Matrix projection = DirectX::XMMatrixPerspectiveFovLH(
+		m_fovRadians, m_aspectRatio, m_nearZ, m_farZ);
+
+	if (m_parent)
+		view = XMMatrixLookToLH(GetLocation(), m_parent->GetFrontDirection(), m_parent->GetUpDirection());
+	else
+		view = XMMatrixLookToLH(GetLocation(), m_frontDirection, m_upDirection);
+
+	view = view.Transpose();
+	projection = projection.Transpose();
+
 	if (!m_gcbInitialized) {
 		m_gcbInitialized = true;
 
 		GlobalConstant gc;
-		gc.projection = DirectX::XMMatrixPerspectiveFovLH(
-			m_fovRadians, m_aspectRatio, m_nearZ, m_farZ);
-		gc.view = XMMatrixLookToLH(GetLocation(), m_frontDirection, m_upDirection);
+		gc.projection = projection;
+		gc.view = view;
 
-		gc.projection = gc.projection.Transpose();
-		gc.view = gc.view.Transpose();
 		m_gcb.Initialize(gc);
 	}
 	else
 	{
-		Matrix projection = DirectX::XMMatrixPerspectiveFovLH(
-			m_fovRadians, m_aspectRatio, m_nearZ, m_farZ);
-		Matrix view = XMMatrixLookToLH(GetLocation(), m_frontDirection, m_upDirection);
-
-		m_gcb.localConstant.projection = projection.Transpose();
-		m_gcb.localConstant.view = view.Transpose();
+		m_gcb.localConstant.projection = projection;
+		m_gcb.localConstant.view = view;
 	}
 	m_gcb.Update();
+}
+
+void CameraComponent::Bind(const RootSignature* rs, ID3D12GraphicsCommandList* cl) const
+{
+	if (!rs || !cl)
+		return;
+
+	int gcb = rs->GetSlot(BindKey::GlobalCB);
+	if (gcb >= 0)
+		cl->SetGraphicsRootConstantBufferView(gcb, GetGCBGPUAddress());
 }
 
 void CameraComponent::UpdateCameraInfo(const int& width, const int& height)
@@ -76,8 +91,12 @@ void CameraComponent::UpdateConstantTransform()
 {
 	SceneComponent::UpdateConstantTransform();
 	auto loc = GetLocation();
-	//std::cout << loc.x << ", " << loc.y << ", " << loc.z << "\n";
-	Matrix view = XMMatrixLookToLH(loc, m_frontDirection, m_upDirection);
+	Matrix view;
+	if(m_parent)
+		view = XMMatrixLookToLH(loc, m_parent->GetFrontDirection(), m_parent->GetUpDirection());
+	else
+		view = XMMatrixLookToLH(loc, m_frontDirection, m_upDirection);
+
 	m_gcb.localConstant.view = view.Transpose();
 }
 
@@ -90,5 +109,7 @@ DirectX::SimpleMath::Matrix CameraComponent::GetProjMatrix() const
 
 DirectX::SimpleMath::Matrix CameraComponent::GetViewMatrix() const
 {
-	return XMMatrixLookToLH(GetLocation(), m_frontDirection, m_upDirection);
+	if (!m_gcbInitialized)
+		return DirectX::SimpleMath::Matrix();
+	return m_gcb.localConstant.view;
 }

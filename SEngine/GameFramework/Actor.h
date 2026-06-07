@@ -11,6 +11,7 @@ class World;
 class StaticMesh;
 class PrimitiveComponent;
 class SkinnedMeshComponent;
+class CameraComponent;
 
 // 씬에 배치되는 오브젝트의 기본 단위(언리얼 Actor 모델). 자체 트랜스폼은 갖지 않고
 // 루트 SceneComponent에 위임하며, 대부분의 메서드는 m_rootComponent로의 포워딩이다.
@@ -53,6 +54,7 @@ public:
 	float GetActorSpeed() const;
 	DirectX::SimpleMath::Matrix GetViewMatrix() const;
 	DirectX::SimpleMath::Matrix GetCameraViewMatrix() const;
+	CameraComponent* GetCameraComponent() const;
 	ActorState GetActorState() const { return m_currentState; }
 
 public:

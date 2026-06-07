@@ -4,9 +4,10 @@ PSInput main( VSInput input )
 {
 	PSInput output;
 
-	float3 pos = mul(float4(input.position, 1.f), gGlobalCB.view).xyz;
-	output.svPosition = float4(pos, pos.z);
-	output.uv = input.uv;
+	float4 pos = mul(float4(input.position, 0.f), gGlobalCB.view);
+	pos = mul(float4(pos.xyz, 1.f), gGlobalCB.projection);
+	output.svPosition = pos.xyww;
+	output.worldPos = input.position;
 
 	return output;
 }

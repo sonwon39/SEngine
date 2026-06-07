@@ -9,6 +9,8 @@
 #include "CompiledShaders/CubeMapVS.h"
 #include "CompiledShaders/CubeMapPS.h"
 
+#include "CompiledShaders/PBRVS.h"
+#include "CompiledShaders/PBRPS.h"
 
 #include "CompiledShaders/ParticleRenderVS.h"
 #include "CompiledShaders/ParticleRenderGS.h"
@@ -86,6 +88,7 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 {
 	GraphicsPSO defaultPSO(L"default PSO");
 	GraphicsPSO cubeMapPSO(L"cubeMap PSO");
+	GraphicsPSO pbrPSO(L"pbr PSO");
 
 	GraphicsPSO particleRenderPSO(L"particleRender PSO");
 
@@ -174,7 +177,7 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 	};
 
 	defaultPSO.SetInputLayout(_countof(phongIL), phongIL);
-	defaultPSO.SetRootSignature(g_S1_C2_RS);
+	defaultPSO.SetRootSignature(g_defaultRS);
 	defaultPSO.SetRasterizerState(rasterizerDefault);
 	defaultPSO.SetBlendState(blendNoColorWrite);
 	defaultPSO.SetDepthStencilState(depthStateDefault);   // DepthEnable=TRUE, Func=LESS
@@ -188,10 +191,10 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 	psoNames.push_back("defaultPSO");
 
 	cubeMapPSO.SetInputLayout(_countof(phongIL), phongIL);
-	cubeMapPSO.SetRootSignature(g_S1_C1_RS);
-	cubeMapPSO.SetRasterizerState(rasterizerDefault);
+	cubeMapPSO.SetRootSignature(g_cubeMapRS);
+	cubeMapPSO.SetRasterizerState(noneCullRasterizer);
 	cubeMapPSO.SetBlendState(blendNoColorWrite);
-	cubeMapPSO.SetDepthStencilState(depthStateDefault);   // DepthEnable=TRUE, Func=LESS
+	cubeMapPSO.SetDepthStencilState(depthStateCube);   // DepthEnable=TRUE, Func=LESS_EQUAL
 	cubeMapPSO.SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
 	cubeMapPSO.SetVertexShader(g_pCubeMapVS, sizeof(g_pCubeMapVS));
 	cubeMapPSO.SetPixelShader(g_pCubeMapPS, sizeof(g_pCubeMapPS));
@@ -201,8 +204,22 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 	m_PSOs["cubeMapPSO"] = cubeMapPSO;
 	psoNames.push_back("cubeMapPSO");
 
+	pbrPSO.SetInputLayout(_countof(pbrIL), pbrIL);
+	pbrPSO.SetRootSignature(g_PBR_RS);
+	pbrPSO.SetRasterizerState(rasterizerDefault);
+	pbrPSO.SetBlendState(blendNoColorWrite);
+	pbrPSO.SetDepthStencilState(depthStateDefault);   // DepthEnable=TRUE, Func=LESS_EQUAL
+	pbrPSO.SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
+	pbrPSO.SetVertexShader(g_pPBRVS, sizeof(g_pPBRVS));
+	pbrPSO.SetPixelShader(g_pPBRPS, sizeof(g_pPBRPS));
+	pbrPSO.SetSampleMask(UINT_MAX);
+	pbrPSO.SetRenderTargetFormat(backBufferFormat, dsBufferFormat, 1, 0);
+	pbrPSO.Finalize(device);
+	m_PSOs["pbrPSO"] = pbrPSO;
+	psoNames.push_back("pbrPSO");
+
 	particleRenderPSO.SetInputLayout(0, nullptr);
-	particleRenderPSO.SetRootSignature(g_S1_C2_RS);
+	particleRenderPSO.SetRootSignature(g_defaultRS);
 	particleRenderPSO.SetRasterizerState(rasterizerDefault);
 	particleRenderPSO.SetBlendState(blendColor);
 	particleRenderPSO.SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT);

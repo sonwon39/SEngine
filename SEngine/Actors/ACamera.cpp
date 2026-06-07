@@ -1,4 +1,4 @@
-﻿#include "AMovingPlatform.h"
+﻿#include "ACamera.h"
 #include "GraphicsCommon.h"
 #include "Engine\World.h"
 #include "GameFramework\StaticMeshComponent.h"
@@ -6,24 +6,23 @@
 
 using namespace Graphics;
 
-AMovingPlatform::AMovingPlatform()
+ACamera::ACamera()
 {
 	m_velocity = 10.f;
 }
 
-AMovingPlatform::~AMovingPlatform()
+ACamera::~ACamera()
 {
 }
 
-void AMovingPlatform::Initialize()
+void ACamera::Initialize()
 {
 	if (!m_world) return;
-	auto mesh = m_world->GetMesh("cube");
+	auto mesh = m_world->GetMesh("sphere");
 
 	LocalConstant lc;
-	lc.model = DirectX::XMMatrixTranslation(2.f, 1.f, 3.f);
+	lc.model = DirectX::XMMatrixTranslation(0.f, 2.f, -1.f);
 	lc.model = lc.model.Transpose();
-
 
 	std::shared_ptr<StaticMeshComponent> root = std::make_shared<StaticMeshComponent>(this);
 	root->SetMesh(mesh);
@@ -35,20 +34,21 @@ void AMovingPlatform::Initialize()
 	std::shared_ptr<CameraComponent> camera = std::make_shared<CameraComponent>(this);
 
 	root->Attach(camera);
-
-	camera->SetLocation(Vector3(0.f, 1.f, -2.f));
-	camera->UpdateRotation(0.f, 30.f);
-	camera->Initialize(70.f, m_world->windowWidth, m_world->windowHeight, 0.01f, 200.f);
+	camera->Initialize(70.f, m_world->windowWidth, m_world->windowHeight, 0.01f, 500.f);
 	SetRootComponent(root);
-
 }
 
-void AMovingPlatform::Tick(const float& deltaTime)
+void ACamera::Tick(const float& deltaTime)
 {
-	if (!m_world || ! (m_world->m_inputHelper))
+	if (!m_world || !(m_world->m_inputHelper))
 		return;
 
-	/*Vector3 dir = m_world->m_inputHelper->GetInputDirection();
-	Vector3 dx = dir * m_velocity *deltaTime;
-	Actor::UpdateActorLocation(dx);*/
+	Vector3 dir = m_world->m_inputHelper->GetInputDirection(this);
+	Vector3 dx = dir * m_velocity * deltaTime;
+
+	Vector2 cameraDel = m_world->GetMouseVelocity();
+
+	Actor::UpdateActorLocation(dx);
+	if(m_world->GetFPSMode())
+		Actor::UpdateRotation((int)cameraDel.x, (int)cameraDel.y, deltaTime);
 }

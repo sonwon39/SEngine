@@ -51,6 +51,9 @@ public:
 public:
 	bool Initialize(int width, int height, int guiWidth, IDXGIFactory7* factory);
 	bool InitScene();
+
+	//  mesh buffer 초기화 (vertex, index 버퍼)
+	void InitMeshBuffer();
 	bool InitGUI();
 
 	void OnResize(int width, int height);
@@ -181,6 +184,7 @@ private:
 
 private:
 	std::vector<std::shared_ptr<MeshBatch>> meshBatchs;
+	std::shared_ptr<Material> cubemapMaterial;
 	std::vector<CameraComponent*> m_camera;
 
 private:

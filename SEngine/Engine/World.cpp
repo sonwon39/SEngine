@@ -1,5 +1,6 @@
 ﻿#include "World.h"
 #include "Actors/AMovingPlatform.h"
+#include "Actors/ACamera.h"
 
 World::World()
 {
@@ -10,6 +11,9 @@ World::World()
 	m_textureLoader = std::make_shared<TextureLoader>(texBuildPath);
 	m_modelLoader = std::make_shared<ModelLoader<Vertex, uint16_t>>();
 	m_simpleModelLoader = std::make_shared<SimpleModelLoader>();
+	m_pbrModelLoader = std::make_shared<PBRModelLoader>();
+
+	m_iblEnv = std::make_shared<IBLEnvironment>();
 }
 
 World::~World()
@@ -25,6 +29,8 @@ void World::Initialize(ID3D12Device5* device, int width, int height)
 
 	m_modelLoader->InitializeCPU();
 	m_simpleModelLoader->InitializeCPU();
+	m_pbrModelLoader->InitializeCPU();
+
 	m_inputHelper->Initialize();
 
 	SetWindowSize(width, height);
@@ -76,20 +82,48 @@ bool World::FindTexture(const std::string& textureName, int & index)
 	return true;
 }
 
+bool World::FindTextureHandle(const std::string& textureName, D3D12_GPU_DESCRIPTOR_HANDLE & handle)
+{
+	int index;
+	if (FindTexture(textureName, index))
+	{
+		handle = m_textureLoader->GetGPUHandle(index);
+		return true;
+	}
+	return false;
+}
+
 void World::InitLevel()
 {
+	D3D12_GPU_DESCRIPTOR_HANDLE handle;
+	if (FindTextureHandle(skyTextureName+"Brdf", handle))
+		m_iblEnv->Initialize(handle);
+
 	ActorData ad = {};
-	ad.lc.model = DirectX::XMMatrixTranslation(0.f, 0.f, 3.f);
+	ad.lc.model = DirectX::XMMatrixTranslation(0.f, 1.f, 3.f);
 	ad.lc.model = ad.lc.model.Transpose();
 	ad.textureName = "PavingStones145_2K-PNG_Albedo";
-	ad.psoName = "defaultPSO";
-	GenerateActor("cube", ad);
+	ad.psoName = "pbrPSO";
+	GenerateActor("pbr_sphere", ad);
 
 	auto mp = std::make_shared<AMovingPlatform>();
 	mp->Initialize();
-	AddActor(mp);
+	//AddActor(mp);
 
-	m_player = mp;
+	auto camera = std::make_shared<ACamera>();
+	camera->Initialize();
+	AddActor(camera);
+
+	ad.lc.model = DirectX::XMMatrixTranslation(0.f, 0.f, 0.f);
+	ad.lc.model = ad.lc.model.Transpose();
+	ad.psoName = "defaultPSO";
+	GenerateActor("plane", ad);
+
+	ad.textureName = "SkyEnvHDR_CubeMap";
+	ad.psoName = "cubeMapPSO";
+	GenerateActor("simple_cube", ad);
+
+	m_player = camera;
 
 	OnRegister();
 }
@@ -100,6 +134,16 @@ ID3D12DescriptorHeap* World::GetMainHeap() const
 		return nullptr;
 
 	return m_textureLoader->GetDescriptorHeap()->GetHeap();
+}
+
+Vector2 World::GetMouseVelocity() const
+{
+	Vector2 velocity;
+	if (mouse)
+	{
+		return mouse->velocity;
+	}
+	return velocity;
 }
 
 std::shared_ptr<Material> World::GetOrCreateMaterial(const std::string& textureName)

@@ -5,12 +5,15 @@
 #include "directxtk12\SimpleMath.h"
 #include "GlobalConstant.h"
 #include "ConstantBuffer.h"
+#include "RootSignature.h"
 
 class CameraComponent : public SceneComponent {
 public:
 	CameraComponent(Actor* owner);
 	virtual ~CameraComponent();
 	void Initialize(const float& fovDegrees, const UINT& width, const UINT& height, const float& nearZ, const float& farZ);
+
+	void Bind(const RootSignature* rs, ID3D12GraphicsCommandList* cl) const;
 
 public:
 	DirectX::SimpleMath::Matrix	GetProjMatrix() const override;

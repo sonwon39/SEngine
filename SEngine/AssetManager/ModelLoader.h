@@ -71,6 +71,7 @@ private:
 };
 
 using  SimpleModelLoader = ModelLoader<SimpleVertex, uint16_t>;
+using  PBRModelLoader = ModelLoader<PBRVertex, uint16_t>;
 
 template<typename V, typename I>
 inline void ModelLoader<V, I>::InitializeGPU(ID3D12GraphicsCommandList* commandList)
@@ -95,16 +96,6 @@ inline std::vector<Mesh<V, I>> ModelLoader<V, I>::GetAsset(const std::string& as
 		return std::vector<Mesh<V, I>>();
 
 	return it->second.m_meshes;
-}
-
-template<typename V, typename I>
-inline std::shared_ptr<StaticMesh> ModelLoader<V, I>::GetMeshes(const std::string& assetName) const
-{
-	auto it = meshesMap.find(assetName);
-	if (it == meshesMap.end())
-		return nullptr;
-
-	return it->second;
 }
 
 template<typename V, typename I>
@@ -525,10 +516,10 @@ inline void ModelLoader<V, I>::ProcessPCMesh(std::vector<Mesh<V, I>>& meshes, ai
 			c = mesh->mColors[0][i];
 		Vector3 pos = aiToVector3(v);
 		pos = Vector3::Transform(pos, tr);
-		meshData.m_vertices.push_back({
+		
+		meshData.m_vertices.push_back(Vertex(
 				pos,
-				aiToVector4(c)
-			});
+				aiToVector4(c)));
 
 	}
 	meshes.push_back(meshData);

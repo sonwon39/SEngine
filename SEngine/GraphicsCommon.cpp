@@ -15,9 +15,14 @@ namespace Graphics
 	D3D12_BLEND_DESC blendNoColorWrite;
 	D3D12_BLEND_DESC blendColor;
 
-    D3D12_DEPTH_STENCIL_DESC depthStateDefault;
+	D3D12_DEPTH_STENCIL_DESC depthStateDefault;
+	D3D12_DEPTH_STENCIL_DESC depthStateCube;
 
 	RootSignature g_commonRS;
+	RootSignature g_defaultRS;
+	RootSignature g_cubeMapRS;
+	RootSignature g_PBR_RS;
+
 	RootSignature g_U1_RS;
 	RootSignature g_U1_C1_RS;
 	RootSignature g_U1_C2_RS;
@@ -27,10 +32,11 @@ namespace Graphics
 	RootSignature g_S1_U3_C1_RS;
 	RootSignature g_S2_U1_C1_RS;
 	RootSignature g_S2_U2_C1_RS;
+
 	RootSignature g_S1_RS;
 	RootSignature g_S1_C1_RS;
 	RootSignature g_SC_RS;
-	RootSignature g_S1_C2_RS;
+
 	RootSignature g_SUUC_RS;
 	RootSignature g_USC_RS;
 	RootSignature g_UUUC_RS;
@@ -82,7 +88,8 @@ void Graphics::InitializeCommonState(const Microsoft::WRL::ComPtr<ID3D12Device5>
 	
 	noneCullRasterizer = rasterizerDefault;
 	noneCullRasterizer.CullMode = D3D12_CULL_MODE_NONE;
-	noneCullRasterizer.DepthClipEnable = false;
+	noneCullRasterizer.DepthClipEnable = FALSE;
+	noneCullRasterizer.FrontCounterClockwise = TRUE;
 
 	wireRasterizer = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 	wireRasterizer.FillMode = D3D12_FILL_MODE_WIREFRAME;
@@ -102,6 +109,9 @@ void Graphics::InitializeCommonState(const Microsoft::WRL::ComPtr<ID3D12Device5>
 	blendColor.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ONE;
 
 	depthStateDefault = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+
+	depthStateCube = depthStateDefault;
+	depthStateCube.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 
     g_commonRS.Reset(1,0);
 	//g_commonRS[0].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0, 1);
@@ -164,6 +174,18 @@ void Graphics::InitializeCommonState(const Microsoft::WRL::ComPtr<ID3D12Device5>
 	g_S2_U2_C1_RS.InitStaticSampler(0, wrapLinearSampler);
 	g_S2_U2_C1_RS.Finalize(device, L"g_S2_U2_C1_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
+	g_PBR_RS.Reset(4, 1);
+	g_PBR_RS[0].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0, 6);
+	g_PBR_RS[1].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 6, 4);
+	g_PBR_RS[2].InitCBV(0);
+	g_PBR_RS[3].InitCBV(1);
+	g_PBR_RS.InitStaticSampler(0, wrapLinearSampler);
+	g_PBR_RS.Finalize(device, L"g_PBR_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	g_PBR_RS.SetSlot(BindKey::MaterialTable, 0);
+	g_PBR_RS.SetSlot(BindKey::IBLTable, 1);
+	g_PBR_RS.SetSlot(BindKey::GlobalCB, 2);
+	g_PBR_RS.SetSlot(BindKey::LocalCB, 3);
+
 	g_S1_RS.Reset(1, 0);
 	g_S1_RS[0].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0, 1);
 	g_S1_RS.Finalize(device, L"g_S1_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
@@ -180,13 +202,25 @@ void Graphics::InitializeCommonState(const Microsoft::WRL::ComPtr<ID3D12Device5>
 	g_SC_RS.InitStaticSampler(0, wrapLinearSampler);
 	g_SC_RS.Finalize(device, L"g_SC_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
+	g_defaultRS.Reset(3, 1);
+	g_defaultRS[0].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0, 1);
+	g_defaultRS[1].InitCBV(0);
+	g_defaultRS[2].InitCBV(1);
+	g_defaultRS.InitStaticSampler(0, wrapLinearSampler);
+	g_defaultRS.Finalize(device, L"g_defaultRS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	g_defaultRS.SetSlot(BindKey::MaterialTable, 0);
+	g_defaultRS.SetSlot(BindKey::GlobalCB, 1);
+	g_defaultRS.SetSlot(BindKey::LocalCB, 2);
 
-	g_S1_C2_RS.Reset(3, 1);
-	g_S1_C2_RS[0].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0, 1);
-	g_S1_C2_RS[1].InitCBV(0);
-	g_S1_C2_RS[2].InitCBV(1);
-	g_S1_C2_RS.InitStaticSampler(0, wrapLinearSampler);
-	g_S1_C2_RS.Finalize(device, L"g_S1_C2_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	g_cubeMapRS.Reset(3, 1);
+	g_cubeMapRS[0].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0, 1);
+	g_cubeMapRS[1].InitCBV(0);
+	g_cubeMapRS[2].InitCBV(1);
+	g_cubeMapRS.InitStaticSampler(0, wrapLinearSampler);
+	g_cubeMapRS.Finalize(device, L"g_cubeMapRS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	g_cubeMapRS.SetSlot(BindKey::MaterialTable, 0);
+	g_cubeMapRS.SetSlot(BindKey::GlobalCB, 1);
+	g_cubeMapRS.SetSlot(BindKey::LocalCB, 2);
 
 	g_SUUC_RS.Reset(4, 0);
 	g_SUUC_RS[0].InitSRV(0);

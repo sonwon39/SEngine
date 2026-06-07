@@ -1,8 +1,10 @@
 ﻿#define HLSL
 #include "GlobalConstant.h"
+#include "PBR\PBRHLSLCompat.h"
 
-Texture2D					   g_cubeMap : register(t0);
+TextureCube					   g_cubeMap : register(t0);
 ConstantBuffer<GlobalConstant> gGlobalCB : register(b0);
+ConstantBuffer<LocalConstant>  gLocalCB  : register(b1);
 
 SamplerState g_wrapLinearSampler : register(s0);
 
@@ -15,5 +17,5 @@ struct VSInput
 struct PSInput
 {
 	float4 svPosition : SV_Position;
-	float2 uv : TEXCOORD;
+	float3 worldPos : POSTION;
 };

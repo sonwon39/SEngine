@@ -53,8 +53,10 @@ void SEngineMouse::Tick(float deltaTime)
 	ndcX = std::clamp(ndcX, -1.0f, 1.0f);
 	ndcY = std::clamp(ndcY, -1.0f, 1.0f);
 
-	currPos = Vector2(ndcX, -ndcY);
-	currPos.Clamp(Vector2(-1,-1), Vector2(1, 1));
+	currPos = Vector2(mousePos.x, mousePos.y);
+
+	currNDCPos = Vector2(ndcX, -ndcY);
+	currNDCPos.Clamp(Vector2(-1,-1), Vector2(1, 1));
 
 	mouseCB.localConstant.posX = mousePos.x;
 	mouseCB.localConstant.posY = mousePos.y;
@@ -63,15 +65,17 @@ void SEngineMouse::Tick(float deltaTime)
 	{
 		int index = i % m_world->colors.size();
 		lBFlag = false;
+		prevNDCPos = currNDCPos;
 		prevPos = currPos;
 		mouseCB.localConstant.color = m_world->colors[index];
 		i++;
 	}
 
-	Vector2 velocity = (currPos - prevPos);
-	mouseCB.localConstant.velocity = velocity * 10.f;
+	velocity = (currPos - prevPos);
+	mouseCB.localConstant.velocity = (currNDCPos - prevNDCPos) * 10.f;
 
 	mouseCB.Update();
 
+	prevNDCPos = currNDCPos;
 	prevPos = currPos;
 }

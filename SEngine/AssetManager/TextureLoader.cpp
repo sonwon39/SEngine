@@ -78,7 +78,7 @@ void TextureLoader::LoadTextures(ID3D12GraphicsCommandList* commandList)
 
 	std::ifstream bin(binPath, std::ios::binary);
 
-	for (uint32_t i = 0; i < count; i++)
+	for (int i = 0; i < count; i++)
 	{
 		std::string filename = nameMap[i];
 

@@ -48,3 +48,10 @@ void RootSignature::Finalize(const ComPtr<ID3D12Device5> & device, const std::ws
 
 	m_signature->SetName(name.c_str());
 }
+
+int RootSignature::GetSlot(BindKey k) const
+{
+	if (m_slotOf.size() > (uint32_t)k)
+		return m_slotOf[(int)k];
+	return -1;
+} 

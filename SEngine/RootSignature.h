@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "Utility.h"
+#include <array>
 
 class RootParameter
 {
@@ -74,6 +75,9 @@ protected:
     D3D12_ROOT_PARAMETER m_rootParam;
 };
 
+enum class BindKey : uint32_t {
+	MaterialTable, IBLTable, GlobalCB, LocalCB,
+};
 
 class RootSignature
 {
@@ -136,4 +140,10 @@ protected:
     Microsoft::WRL::ComPtr<ID3D12RootSignature> m_signature;
     UINT m_numParameters;
     UINT m_numSamplers;
+
+protected:
+	std::array<int8_t, 4> m_slotOf{ -1, -1, -1, -1 };
+public:
+	void SetSlot(BindKey k, uint32_t slot) { m_slotOf[(int)k] = (int8_t)slot; }
+	int  GetSlot(BindKey k) const;
 };

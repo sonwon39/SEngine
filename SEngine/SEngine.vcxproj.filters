@@ -146,6 +146,9 @@
     <ClCompile Include="InputHelper.cpp">
       <Filter>_cpp</Filter>
     </ClCompile>
+    <ClCompile Include="Actors\ACamera.cpp">
+      <Filter>Actors</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Timer.h">
@@ -304,6 +307,12 @@
     <ClInclude Include="Actors\AMovingPlatform.h">
       <Filter>Actors</Filter>
     </ClInclude>
+    <ClInclude Include="Actors\ACamera.h">
+      <Filter>Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="IBLEnvironment.h">
+      <Filter>_h</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="DefaultVS.hlsl" />
@@ -374,6 +383,12 @@
     </FxCompile>
     <FxCompile Include="CubeMapVS.hlsl" />
     <FxCompile Include="CubeMapPS.hlsl" />
+    <FxCompile Include="PBR\PBRVS.hlsl">
+      <Filter>PBR</Filter>
+    </FxCompile>
+    <FxCompile Include="PBR\PBRPS.hlsl">
+      <Filter>PBR</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -412,6 +427,9 @@
       <Filter>Buffer</Filter>
     </None>
     <None Include="CubeMapCommon.hlsli" />
+    <None Include="PBR\PBRCommon.hlsli">
+      <Filter>PBR</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\Textures\DDS\PavingStones145_2K-PNG_Albedo.dds">

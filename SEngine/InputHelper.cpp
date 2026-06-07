@@ -1,5 +1,6 @@
 ﻿#include "InputHelper.h"
 #include <iostream>
+#include "GameFramework\Actor.h"
 
 using namespace DirectX::SimpleMath;
 
@@ -32,21 +33,34 @@ bool InputHelper::GetKeyState(uint32_t key)
 	return false;
 }
 
-DirectX::SimpleMath::Vector3 InputHelper::GetInputDirection()
+DirectX::SimpleMath::Vector3 InputHelper::GetInputDirection(Actor* actor)
 {
 	Vector3 dir = Vector3(0.f,0.f,0.f);
 
+	Vector3 front = actor->GetActorFrontDir();
+	Vector3 back = -front;
+	Vector3 right = actor->GetActorRightDir();
+	Vector3 left = -right;
+	Vector3 up = actor->GetActorUpDir();
+	Vector3 down = -up;
+
 	if (m_keyDownState[forwardKey])
-		dir += forwardDir;
+		dir += front;
 
 	if (m_keyDownState[backwardKey])
-		dir += backwardDir;
+		dir += back;
 
 	if (m_keyDownState[rightKey])
-		dir += rightDir;
+		dir += right;
 
 	if (m_keyDownState[leftKey])
-		dir += leftDir;
+		dir += left;
+
+	if (m_keyDownState[upKey])
+		dir += up;
+
+	if (m_keyDownState[downKey])
+		dir += down;
 
 	dir.Normalize();
 	return dir;

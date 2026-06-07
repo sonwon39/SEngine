@@ -26,9 +26,14 @@ namespace Graphics
 	extern D3D12_BLEND_DESC blendNoColorWrite;
 	extern D3D12_BLEND_DESC blendColor;
 
-    extern D3D12_DEPTH_STENCIL_DESC depthStateDefault;
+	extern D3D12_DEPTH_STENCIL_DESC depthStateDefault;
+	extern D3D12_DEPTH_STENCIL_DESC depthStateCube;
 
     extern RootSignature g_commonRS;
+	extern RootSignature g_defaultRS;
+	extern RootSignature g_cubeMapRS;
+	extern RootSignature g_PBR_RS;
+
 	extern RootSignature g_U1_RS;
 	extern RootSignature g_U1_C1_RS;
 	extern RootSignature g_U1_C2_RS;
@@ -38,10 +43,11 @@ namespace Graphics
 	extern RootSignature g_S1_U3_C1_RS;
 	extern RootSignature g_S2_U1_C1_RS;
 	extern RootSignature g_S2_U2_C1_RS;
+
 	extern RootSignature g_S1_RS;
 	extern RootSignature g_S1_C1_RS;
 	extern RootSignature g_SC_RS;
-	extern RootSignature g_S1_C2_RS;
+
 	extern RootSignature g_SUUC_RS;
 	extern RootSignature g_USC_RS;
 	extern RootSignature g_UUUC_RS;
