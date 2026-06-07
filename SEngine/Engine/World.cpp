@@ -4,6 +4,8 @@
 World::World()
 {
 	mouse = std::make_shared<SEngineMouse>();
+	m_inputHelper = std::make_shared<InputHelper>();
+
 	m_level = std::make_shared<Level>();
 	m_textureLoader = std::make_shared<TextureLoader>(texBuildPath);
 	m_modelLoader = std::make_shared<ModelLoader<Vertex, uint16_t>>();
@@ -23,6 +25,7 @@ void World::Initialize(ID3D12Device5* device, int width, int height)
 
 	m_modelLoader->InitializeCPU();
 	m_simpleModelLoader->InitializeCPU();
+	m_inputHelper->Initialize();
 
 	SetWindowSize(width, height);
 
@@ -31,7 +34,6 @@ void World::Initialize(ID3D12Device5* device, int width, int height)
 	m_dsvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
 	mouse->Initilize();
-
 	
 	colors =
 	{
@@ -80,11 +82,14 @@ void World::InitLevel()
 	ad.lc.model = DirectX::XMMatrixTranslation(0.f, 0.f, 3.f);
 	ad.lc.model = ad.lc.model.Transpose();
 	ad.textureName = "PavingStones145_2K-PNG_Albedo";
+	ad.psoName = "defaultPSO";
 	GenerateActor("cube", ad);
 
 	auto mp = std::make_shared<AMovingPlatform>();
 	mp->Initialize();
 	AddActor(mp);
+
+	m_player = mp;
 
 	OnRegister();
 }

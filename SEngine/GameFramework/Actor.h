@@ -56,6 +56,9 @@ public:
 	ActorState GetActorState() const { return m_currentState; }
 
 public:
+	D3D12_GPU_VIRTUAL_ADDRESS GetGlboalConstant() const;
+
+public:
 	void SetUpdateConstant(bool newState);
 	void UpdateAnimation(float deltaTime);
 	void SetLocalConstant(const LocalConstant& newLocalConstant);

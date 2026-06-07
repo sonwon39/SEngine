@@ -51,18 +51,18 @@ namespace Renderer
 
 }
 
-GraphicsPSO Renderer::GetGraphicsPSO(const std::string& psoName)
+bool Renderer::GetGraphicsPSO(const std::string& psoName, GraphicsPSO& pso)
 {
-	GraphicsPSO pso;
 	if (m_PSOs.find(psoName) != m_PSOs.end())
 	{
 		pso = m_PSOs[psoName];
+		return true;
 	}
 	else
 	{
-		pso = m_PSOs["defaultPSO"];
+		return false;
 	}
-	return pso;
+
 }
 ComputePSO Renderer::GetComputePSO(const std::string& psoName)
 {
@@ -171,11 +171,12 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 	defaultPSO.SetRootSignature(g_S1_C2_RS);
 	defaultPSO.SetRasterizerState(rasterizerDefault);
 	defaultPSO.SetBlendState(blendNoColorWrite);
+	defaultPSO.SetDepthStencilState(depthStateDefault);   // DepthEnable=TRUE, Func=LESS
 	defaultPSO.SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
 	defaultPSO.SetVertexShader(g_pDefaultVS, sizeof(g_pDefaultVS));
 	defaultPSO.SetPixelShader(g_pDefaultPS, sizeof(g_pDefaultPS));
 	defaultPSO.SetSampleMask(UINT_MAX);
-	defaultPSO.SetRenderTargetFormat(backBufferFormat, DXGI_FORMAT_UNKNOWN, 1, 0);
+	defaultPSO.SetRenderTargetFormat(backBufferFormat, dsBufferFormat, 1, 0);
 	defaultPSO.Finalize(device);
 	m_PSOs["defaultPSO"] = defaultPSO;
 	psoNames.push_back("defaultPSO");

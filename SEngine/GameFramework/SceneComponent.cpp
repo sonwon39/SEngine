@@ -78,6 +78,45 @@ void SceneComponent::UpdateRotation(const int& mouseDeltaX, const int& mouseDelt
 	SetRotation(yRotQ);
 }
 
+
+void SceneComponent::UpdateRotation(const float& deltaAngleX, const int& deltaAngleY)
+{
+	float delX = deltaAngleX;
+	float delY = deltaAngleY;
+	xAngle += delX;
+	if (xAngle >= 360) {
+		xAngle -= 360;
+	}
+	if (xAngle <= -360) {
+		xAngle += 360;
+	}
+
+	float xRadian = DirectX::XMConvertToRadians(xAngle);
+
+	DirectX::SimpleMath::Matrix m_rotation = DirectX::XMMatrixRotationY(xRadian);
+	DirectX::SimpleMath::Quaternion yRotQ = DirectX::SimpleMath::Quaternion::CreateFromRotationMatrix(m_rotation);
+
+	DirectX::SimpleMath::Vector3 m_frontDir = DirectX::SimpleMath::Vector3::Transform(GetBaseFrontDirection(), m_rotation);
+	DirectX::SimpleMath::Vector3 m_rightDir = GetBaseUpDirection().Cross(m_frontDir);;
+
+	if (yAngle + delY >= maxYAngle)
+		delY = maxYAngle - yAngle;
+	else if (yAngle + delY <= minYAngle)
+		delY = minYAngle - yAngle;
+
+	yAngle += delY;
+	//std::cout << yAngle << '\n';
+	float yRadian = DirectX::XMConvertToRadians(yAngle);
+
+
+	m_rotation = DirectX::XMMatrixRotationAxis(m_rightDir, yRadian);
+	m_frontDir = DirectX::SimpleMath::Vector3::Transform(m_frontDir, m_rotation);
+
+	SetFrontDirection(m_frontDir);
+	SetRightDirection(m_rightDir);
+	SetRotation(yRotQ);
+
+}
 void SceneComponent::SetLocation(const DirectX::SimpleMath::Vector3& newLocation)
 {
 	localTransform.location = newLocation;
@@ -216,4 +255,9 @@ void SceneComponent::UpdateConstantTransform()
 		Transform t(m_worldMatrix);
 		c->UpdateWorldTransform(t);
 	}
+}
+
+D3D12_GPU_VIRTUAL_ADDRESS SceneComponent::GetGlboalConstant() const
+{
+	return m_cameraComponent ? m_cameraComponent->GetGCBGPUAddress() : 0;
 }

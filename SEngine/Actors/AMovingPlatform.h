@@ -16,5 +16,6 @@ public:
 	virtual void Tick(const float& deltaTime);
 
 private:
-	DirectX::SimpleMath::Vector3 m_velocity;
+	//DirectX::SimpleMath::Vector3 m_velocity;
+	float m_velocity;
 };

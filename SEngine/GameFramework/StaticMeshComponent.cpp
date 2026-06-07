@@ -1,4 +1,4 @@
-#include "StaticMeshComponent.h"
+﻿#include "StaticMeshComponent.h"
 #include "Actor.h"
 #include "StaticMesh.h"
 #include "MeshBatch.h"
@@ -32,6 +32,7 @@ void StaticMeshComponent::OnRegister()
 	mb->mesh     = m_mesh.get();
 	mb->material = m_world ? m_world->GetOrCreateMaterial(m_textureName).get() : nullptr;
 	mb->owner    = this;
+	mb->psoName = m_psoName;
 
 	m_renderEngine->RegistMeshBatch(mb);
 }

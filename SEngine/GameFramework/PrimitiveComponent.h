@@ -51,15 +51,16 @@ public:
 
 public:
 	// per-primitive CB 소유: 컴포넌트가 GPU 자원의 생명주기를 책임진다.
-	// 매 프레임 MeshBatch::Render 진입 시 SyncCB()로 localConstant → GPU CB memcpy.
+	// 매 프레임 MeshBatch::Tick 진입 시 SyncCB()로 GPU CB memcpy.
 	void SyncCB();
-	D3D12_GPU_VIRTUAL_ADDRESS GetCBGPUAddress();
+	D3D12_GPU_VIRTUAL_ADDRESS GetCBGPUAddress() const;
 
 public:
-	// localConstant: 머티리얼/렌더 상태. SceneComponent로부터 이전됨.
-	// transform 변경 시 UpdateConstantTransform 오버라이드에서 model/modelInvTranspose가 갱신된다.
 	void SetLocalConstant(const LocalConstant& newConstant);
 	LocalConstant GetLocalConstant() const { return m_cb.localConstant; }
+
+	void SetMaterialConstant(const MaterialConstant& newConstant);
+	MaterialConstant GetMaterialConstant() const { return m_materialCB.localConstant; }
 
 	void UpdateConstantTransform() override;
 
@@ -72,5 +73,7 @@ protected:
 	std::string m_psoName;
 
 	ConstantBuffer<LocalConstant> m_cb;
+	ConstantBuffer<MaterialConstant> m_materialCB;
 	bool m_cbInitialized = false;
+	bool m_mcbInitialized = false;
 };

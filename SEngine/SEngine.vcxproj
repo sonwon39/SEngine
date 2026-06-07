@@ -162,6 +162,7 @@
     <ClCompile Include="GameFramework\StaticMeshComponent.cpp" />
     <ClCompile Include="GeometryGenerator.cpp" />
     <ClCompile Include="GraphicsCommon.cpp" />
+    <ClCompile Include="InputHelper.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="DescriptorHeap.cpp" />
     <ClCompile Include="Material.cpp" />

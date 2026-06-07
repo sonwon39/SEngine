@@ -65,7 +65,7 @@ public:
 
 private:
 
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC m_psoDesc;
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC m_psoDesc{};   // value-init: 설정 안 한 필드를 쓰레기값이 아닌 0으로
     std::shared_ptr<const D3D12_INPUT_ELEMENT_DESC[]> m_inputLayouts;
 };
 
@@ -83,5 +83,5 @@ public:
 
 private:
 
-    D3D12_COMPUTE_PIPELINE_STATE_DESC m_psoDesc;
+    D3D12_COMPUTE_PIPELINE_STATE_DESC m_psoDesc{};
 };

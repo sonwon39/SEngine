@@ -181,12 +181,16 @@ LRESULT BaseApp::MainProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		}
 		break;
 	case WM_KEYDOWN:
-		if ((size_t)wParam == 'C' && m_world)
+		if (m_world && m_world->m_inputHelper)
 		{
-			m_world->m_captureDirty = true;
+			m_world->m_inputHelper->SetKeyState((uint32_t)wParam, true);
 		}
 		break;
 	case WM_KEYUP:
+		if (m_world && m_world->m_inputHelper)
+		{
+			m_world->m_inputHelper->SetKeyState((uint32_t)wParam, false);
+		}
 		break;
 	case WM_MBUTTONUP:
 	case WM_MOUSEWHEEL:

@@ -14,7 +14,7 @@ public:
 	void Update();
 
 public:
-	D3D12_GPU_VIRTUAL_ADDRESS GetGPUAddress() { return m_localCB->GetGPUVirtualAddress(); }
+	D3D12_GPU_VIRTUAL_ADDRESS GetGPUAddress() const { return m_localCB->GetGPUVirtualAddress(); }
 
 public:
 	Constant localConstant;

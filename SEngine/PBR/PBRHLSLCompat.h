@@ -12,23 +12,15 @@ using namespace DirectX;
 
 struct MaterialConstant
 {
-	int forceMip0;
-	int cubeMapMipLevel;
-	int useReflect;
 	float heightScale;
-
 	float roughness;
 	float metallic;
-	XMFLOAT2 dummy;
 };
 
 struct LocalConstant
 {
 	Matrix model;
 	Matrix modelInvTranspose;
-	Matrix texTransform;
-
-	MaterialConstant material;
 };
 
 struct SkinnedLocalConstant

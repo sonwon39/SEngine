@@ -6,7 +6,9 @@
 #include <unordered_map>
 #include "directxtk12\SimpleMath.h"
 
+#include "InputHelper.h"
 #include "SEngineMouse.h"
+
 #include "Texture2D.h"
 #include "DescriptorHeap.h"
 #include "StableFluids/Grid.h"
@@ -24,12 +26,14 @@ public:
 	virtual ~World();
 
 public:
+	// model loader 및 마우스 초기화
 	void Initialize(ID3D12Device5* device, int width, int height);
 	void Tick(float deltaTime);
 
 	bool FindTexture(const std::string& textureName, int& index);
 
 public:
+	// gpu 버퍼 생성 후 (vertex, index) level 초기화
 	void InitLevel();
 
 public:
@@ -56,7 +60,7 @@ public:
 	// 텍스처 이름으로 Material을 얻는다. 같은 이름이면 같은 Material을 반환(캐시).
 	// 텍스처가 로드돼 있지 않으면 nullptr.
 	std::shared_ptr<Material> GetOrCreateMaterial(const std::string& textureName);
-
+	std::shared_ptr<Actor> GetPlayer() const { return m_player; }
 public:
 	UINT m_cbvSrvDescriptorSize = 0;
 	UINT m_rtvDescriptorSize = 0;
@@ -65,6 +69,7 @@ public:
 public:
 	HWND m_mainWnd;
 	std::shared_ptr<SEngineMouse> mouse;
+	std::shared_ptr<InputHelper> m_inputHelper;
 	UINT windowWidth;
 	UINT windowHeight;
 
@@ -94,6 +99,8 @@ private:
 
 private:
 	std::vector<std::shared_ptr<Actor>> m_actors;
+	std::shared_ptr<Actor> m_player;
+
 	std::unordered_map<std::string, std::shared_ptr<StaticMesh>> m_meshes;
 	std::unordered_map<std::string, std::shared_ptr<Material>> m_materials;
 };

@@ -2,7 +2,7 @@
 
 #include <vector>
 #include <memory>
-
+#include "d3d12.h"
 #include "ActorComponent.h"
 #include "directxtk12/SimpleMath.h"
 #include "Transform.h"
@@ -28,6 +28,7 @@ public:
 	void SetRotateSpeed(const float& newSpeed) { m_rotateSpeed = newSpeed; }
 	void UpdateWorldTransform(const Transform& tr);
 	void UpdateRotation(const int& mouseDeltaX, const int& mouseDeltaY, const float& deltaTime);
+	void UpdateRotation(const float& deltaAngleX, const int& deltaAngleY);
 
 	void SetLocation(const DirectX::SimpleMath::Vector3& newLocation);
 	void SetRotation(const DirectX::SimpleMath::Quaternion& newQuat);
@@ -63,7 +64,7 @@ public:
 	DirectX::SimpleMath::Vector3 GetCollisionOffsetLocation() const;
 	DirectX::SimpleMath::Quaternion GetCollisionOffsetRotation() const;
 	DirectX::SimpleMath::Quaternion GetRotation() const;
-	DirectX::SimpleMath::Matrix GetViewMatrix() const;
+	virtual DirectX::SimpleMath::Matrix GetViewMatrix() const;
 	DirectX::SimpleMath::Matrix GetCameraViewMatrix() const;
 	void GetChildrenComponents(std::vector<std::shared_ptr<SceneComponent>>& children) const;
 
@@ -71,6 +72,8 @@ public:
 	virtual	DirectX::SimpleMath::Matrix GetProjMatrix() const;
 
 	virtual void UpdateConstantTransform();
+
+	D3D12_GPU_VIRTUAL_ADDRESS GetGlboalConstant() const;
 
 public:
 	// world->actor 호출

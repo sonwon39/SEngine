@@ -143,6 +143,9 @@
     <ClCompile Include="Actors\AMovingPlatform.cpp">
       <Filter>Actors</Filter>
     </ClCompile>
+    <ClCompile Include="InputHelper.cpp">
+      <Filter>_cpp</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Timer.h">

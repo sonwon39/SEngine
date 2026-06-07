@@ -27,6 +27,7 @@
 #include "MeshBatch.h"
 
 class StaticMesh;
+class CameraComponent;
 
 enum RenderType {
 	RT_TEXT,
@@ -82,16 +83,24 @@ private:
 
 protected:
 	D3D12_CPU_DESCRIPTOR_HANDLE GetCurrentRtvCpuHandle() const;
-	D3D12_CPU_DESCRIPTOR_HANDLE GetDSVCpuHandle() const;
+	D3D12_CPU_DESCRIPTOR_HANDLE GetDSVCpuHandle(int idx) const;
 	ID3D12Resource* GetCurrentSwapChainResource() const;
 
-	void InitGraphicsCommand(const std::string& psoName);
+	void ResetCommand();
 
 private:
 	void BindMainHeap();
 	void FlushCommands();
 	void FlushResourceCommands();
 	void Execute();
+
+public:
+	void RegistMeshBatch(std::shared_ptr<MeshBatch> meshBatch);
+	void RegistCamera(CameraComponent* camera);
+
+public:
+	std::string GetCurrPSOName() const { return m_currPSOName; }
+	void SetCurrPSOName(std::string newPSOName)  { m_currPSOName = newPSOName; }
 
 	//fence
 private:
@@ -135,8 +144,9 @@ private:
 	DescriptorHeap m_swapChainRTVHeap;
 	GPUBuffer m_swapChainResources[m_swapChainBufferCount];
 
+	Texture2D m_depthBuffer;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_depthStencilBuffer;
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_DSVHeap;
+	DescriptorHeap m_dsvHeap;
 
 private:
 	POINT currMousPt = { 0,0 };
@@ -158,23 +168,21 @@ private:
 	float angle = 0.f;
 	float rotateSpeed = 90.f;
 
-// simulation
+	// simulation
 private:
 	std::shared_ptr<SPH> m_sph;
 	std::shared_ptr<StableFluids> m_stableFluids;
 
-// camera
-private:
-	std::shared_ptr<Camera> m_camera;
-
-// font
+	// font
 private:
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_guiFontHeap;
 	bool resetFlag = false;
 
-public:
-	void RegistMeshBatch(std::shared_ptr<MeshBatch> meshBatch);
 
 private:
 	std::vector<std::shared_ptr<MeshBatch>> meshBatchs;
+	std::vector<CameraComponent*> m_camera;
+
+private:
+	std::string m_currPSOName = "";
 };

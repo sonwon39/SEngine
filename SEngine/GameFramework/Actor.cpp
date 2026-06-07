@@ -120,6 +120,11 @@ DirectX::SimpleMath::Matrix Actor::GetCameraViewMatrix() const
 	return m_rootComponent ? m_rootComponent->GetCameraViewMatrix() : DirectX::SimpleMath::Matrix();
 }
 
+D3D12_GPU_VIRTUAL_ADDRESS Actor::GetGlboalConstant() const
+{
+	return m_rootComponent ? m_rootComponent->GetGlboalConstant() : 0;
+}
+
 void Actor::SetUpdateConstant(bool newState)
 {
 	if (m_rootPrimitive)

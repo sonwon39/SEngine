@@ -38,14 +38,18 @@ physx::PxTransform PrimitiveComponent::GetPxTransform() const
 
 void PrimitiveComponent::OnRegister()
 {
+	SceneComponent::OnRegister();
 }
 
 void PrimitiveComponent::SyncCB()
 {
-	m_cb.Update();
+	if (m_cbInitialized)
+		m_cb.Update();
+	if(m_mcbInitialized)
+		m_materialCB.Update();
 }
 
-D3D12_GPU_VIRTUAL_ADDRESS PrimitiveComponent::GetCBGPUAddress()
+D3D12_GPU_VIRTUAL_ADDRESS PrimitiveComponent::GetCBGPUAddress() const
 {
 	return m_cbInitialized ? m_cb.GetGPUAddress() : 0;
 }
@@ -82,12 +86,9 @@ void PrimitiveComponent::SetActorData(const ActorData& ad)
     SetUpdateConstant(ad.updateConstants);
     SetTextureName(ad.textureName);
 
-    SetLocalConstant(ad.lc);
+	SetLocalConstant(ad.lc);
+	SetMaterialConstant(ad.mc);
 }
-
-// ─────────────────────────────────────────────────────────────
-// SceneComponent에서 이전된 머티리얼/렌더 세터들 + 가상 오버라이드
-// ─────────────────────────────────────────────────────────────
 
 void PrimitiveComponent::SetLocalConstant(const LocalConstant& newConstant)
 {
@@ -108,6 +109,18 @@ void PrimitiveComponent::SetLocalConstant(const LocalConstant& newConstant)
     localTransform.scale = s;
 
     UpdateConstantTransform();
+}
+
+void PrimitiveComponent::SetMaterialConstant(const MaterialConstant& newConstant)
+{
+	if (m_mcbInitialized)
+		m_materialCB.localConstant = newConstant;
+	else
+	{
+		m_materialCB.Initialize(newConstant);
+		m_cbInitialized = true;
+	}
+	m_materialCB.Update();
 }
 
 void PrimitiveComponent::UpdateConstantTransform()

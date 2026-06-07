@@ -28,6 +28,7 @@ public:
 
 public:
 	void SetResourceStates(D3D12_RESOURCE_STATES newState) { m_currentState = newState; }
+
 protected:
 	Microsoft::WRL::ComPtr<ID3D12Resource> gpu;
 	Microsoft::WRL::ComPtr<ID3D12Resource> upload;

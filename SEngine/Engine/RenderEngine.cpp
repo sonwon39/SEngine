@@ -24,6 +24,9 @@
 #include "AssetManager/TextureLoader.h"
 #include "AssetManager/ModelLoader.h"
 
+#include "GameFramework/CameraComponent.h"
+
+
 using Microsoft::WRL::ComPtr;
 using namespace GraphicsUtils;
 using namespace Graphics;
@@ -81,9 +84,6 @@ bool RenderEngine::Initialize(int width, int height, int guiWidth, IDXGIFactory7
 	CreateDepthBuffers();
 
 	InitScene();
-
-	m_camera = std::make_shared<Camera>(width, height);
-	m_camera->Initialize();
 
 	return true;
 }
@@ -221,10 +221,6 @@ void RenderEngine::OnResize(int width, int height)
 	m_hdrViewport = CD3DX12_VIEWPORT((FLOAT)0.F, 0.F, (FLOAT)(m_width), (FLOAT)m_height);
 	m_scissorRect = CD3DX12_RECT((LONG)0, 0, (LONG)(m_width), (LONG)m_height);
 
-	if (m_camera)
-	{
-		m_camera->OnResize(m_width, m_height);
-	}
 }
 
 void RenderEngine::CreateCommandObjects()
@@ -306,14 +302,10 @@ void RenderEngine::CreateSwapChain(IDXGIFactory7* factory)
 
 void RenderEngine::CreateMainDepthBuffer()
 {
-	utility->CreateTextureBuffer(m_depthStencilBuffer, m_width, m_height,
-		Renderer::dsBufferFormat, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL,
+	m_depthBuffer.Initialize(m_width, m_height,	Renderer::dsBufferFormat, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL,
 		D3D12_RESOURCE_STATE_DEPTH_WRITE, 0, L"mainDepthBuffer");
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE handle(m_DSVHeap->GetCPUDescriptorHandleForHeapStart());
-
-	utility->CreateResourceView(m_depthStencilBuffer.Get(), Renderer::dsBufferFormat, false, handle, DescriptorType::DSV);
-
+	m_dsvHeap.CreateResourceView(m_depthBuffer.Get(), DescriptorType::DSV);
 }
 
 void RenderEngine::CreateDepthBuffers()
@@ -325,7 +317,7 @@ void RenderEngine::CreateDescriptorHeaps()
 {
 	// DescriptorHeap 생성
 	m_swapChainRTVHeap.Initialize(m_swapChainBufferCount, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 0, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
-	utility->CreateDescriptorHeap(1, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, m_DSVHeap);
+	m_dsvHeap.Initialize(1, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 0, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
 }
 
 // BOOKMARK
@@ -346,8 +338,14 @@ void RenderEngine::Tick(float deltaTime)
 		m->SyncCB();
 	}
 
+	// OnRegister 단계에서 저장된 CameraComponent들
+	for (auto&  camera : m_camera)
+	{
+		camera->SyncCB();
+	}
+
 	RenderMeshes("defaultPSO");
-	RenderGUI();
+	//RenderGUI();
 	Execute();
 }
 
@@ -370,7 +368,10 @@ void RenderEngine::RenderMeshes(const std::string& psoName)
 {
 	using namespace Renderer;
 
-	InitGraphicsCommand(psoName);
+	ResetCommand();
+
+	m_commandList->RSSetScissorRects(1, &m_scissorRect);
+	m_commandList->RSSetViewports(1, &m_viewport);
 
 	std::vector<D3D12_RESOURCE_BARRIER> barriers;
 	D3D12_RESOURCE_BARRIER barrier;
@@ -380,27 +381,35 @@ void RenderEngine::RenderMeshes(const std::string& psoName)
 		m_commandList->ResourceBarrier((UINT)barriers.size(), barriers.data());
 
 	m_commandList->ClearRenderTargetView(GetCurrentRtvCpuHandle(), rtvClearColor.data(), 0, nullptr);
-	m_commandList->ClearDepthStencilView(GetDSVCpuHandle(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
-	m_commandList->OMSetRenderTargets(1, &GetCurrentRtvCpuHandle(), TRUE, &GetDSVCpuHandle());
-
-	if (m_camera)
-	{
-		m_commandList->SetGraphicsRootConstantBufferView(1, m_camera->GetGlboalConstant());
-	}
-
-	BindMainHeap();
+	m_commandList->ClearDepthStencilView(GetDSVCpuHandle(0), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
+	m_commandList->OMSetRenderTargets(1, &GetCurrentRtvCpuHandle(), TRUE, &GetDSVCpuHandle(0));
+	
+	bool heapBinded = false;
 
 	for (auto& m : meshBatchs)
 	{
+		m->InitGraphicsCommand(m_commandList.Get());
+
+		if (!heapBinded)
+		{
+			heapBinded = true;
+			BindMainHeap();
+			auto player = m_world->GetPlayer();
+			if (player)
+			{
+				m_commandList->SetGraphicsRootConstantBufferView(1, player->GetGlboalConstant());
+			}
+		}
+
 		m->Render(m_commandList.Get());
 	}
+	// 렌더링 후 pso name 초기화
+	SetCurrPSOName("");
 }
 
 void RenderEngine::RenderSPH(const std::string& psoName, bool clear)
 {
 	using namespace Renderer;
-
-	InitGraphicsCommand(psoName);
 
 	std::vector<D3D12_RESOURCE_BARRIER> barriers;
 	D3D12_RESOURCE_BARRIER barrier;
@@ -411,14 +420,9 @@ void RenderEngine::RenderSPH(const std::string& psoName, bool clear)
 	if (clear)
 	{
 		m_commandList->ClearRenderTargetView(GetCurrentRtvCpuHandle(), rtvClearColor.data(), 0, nullptr);
-		m_commandList->ClearDepthStencilView(GetDSVCpuHandle(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
+		m_commandList->ClearDepthStencilView(GetDSVCpuHandle(0), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
 	}
-	m_commandList->OMSetRenderTargets(1, &GetCurrentRtvCpuHandle(), TRUE, &GetDSVCpuHandle());
-
-	if (m_camera)
-	{
-		m_commandList->SetGraphicsRootConstantBufferView(1, m_camera->GetGlboalConstant());
-	}
+	m_commandList->OMSetRenderTargets(1, &GetCurrentRtvCpuHandle(), TRUE, &GetDSVCpuHandle(0));
 
 	m_sph->Render(m_commandList.Get());
 }
@@ -443,7 +447,7 @@ void RenderEngine::RenderGUI()
 	if (!barriers.empty())
 		m_commandList->ResourceBarrier((UINT)barriers.size(), barriers.data());
 
-	m_commandList->OMSetRenderTargets(1, &GetCurrentRtvCpuHandle(), false, nullptr);
+	m_commandList->OMSetRenderTargets(1, &GetCurrentRtvCpuHandle(), TRUE, &GetDSVCpuHandle(0));
 	ID3D12DescriptorHeap* pHeaps[] = { m_guiFontHeap.Get() };
 	m_commandList->SetDescriptorHeaps(static_cast<UINT>(std::size(pHeaps)), pHeaps);
 
@@ -457,9 +461,9 @@ D3D12_CPU_DESCRIPTOR_HANDLE RenderEngine::GetCurrentRtvCpuHandle() const
 	return m_swapChainRTVHeap.GetCPUHandle(m_currentBackBufferIndex);
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE RenderEngine::GetDSVCpuHandle() const
+D3D12_CPU_DESCRIPTOR_HANDLE RenderEngine::GetDSVCpuHandle(int idx) const
 {
-	return m_DSVHeap->GetCPUDescriptorHandleForHeapStart();
+	return m_dsvHeap.GetCPUHandle(idx);
 }
 
 ID3D12Resource* RenderEngine::GetCurrentSwapChainResource() const
@@ -467,17 +471,10 @@ ID3D12Resource* RenderEngine::GetCurrentSwapChainResource() const
 	return m_swapChainResources[m_currentBackBufferIndex].Get();
 }
 
-void RenderEngine::InitGraphicsCommand(const std::string& psoName)
+void RenderEngine::ResetCommand()
 {
-	GraphicsPSO pso = GetGraphicsPSO(psoName);
-
 	m_commandAllocator->Reset();
 	ThrowIfFailed(m_commandList->Reset(m_commandAllocator.Get(), nullptr));
-	m_commandList->SetPipelineState(pso.GetPSO());
-	m_commandList->SetGraphicsRootSignature(pso.GetRootSignature()->GetSignature());
-
-	m_commandList->RSSetScissorRects(1, &m_scissorRect);
-	m_commandList->RSSetViewports(1, &m_viewport);
 }
 
 void RenderEngine::BindMainHeap()
@@ -554,4 +551,9 @@ void RenderEngine::RegistMeshBatch(std::shared_ptr<MeshBatch> meshBatch)
 {
 	meshBatchs.push_back(meshBatch);
 	// Material이 nullptr이면 MeshBatch::Render에서 early-return. fallback은 호출측이 책임진다.
+}
+
+void RenderEngine::RegistCamera(CameraComponent* camera)
+{
+	m_camera.push_back(camera);
 }
