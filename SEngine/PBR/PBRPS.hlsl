@@ -17,13 +17,16 @@ float4 main(PSInput input) : SV_TARGET
 	
 	float3 color = 0.f;
 	float metalic = gMetallic.Sample(gWrapLinearSampler, input.uv).r;
+	float roughness = gRoughness.Sample(gWrapLinearSampler, input.uv).r;
+
 	float3 L = normalize(lightTemp - input.worldPos);
 	surface.V = normalize(gGlobalCB.cameraPos - input.worldPos);
 	surface.N = normalize(mul(normalMap, nMat));
+	float3 R = reflect(-surface.V, surface.N);
+	
 	surface.c_diff = gAlbedo.Sample(gWrapLinearSampler, input.uv).rgb;
-	surface.c_spec = gRadianceIBL.SampleLevel(gWrapLinearSampler, surface.N, 3.f * metalic).rgb;
-	//surface.c_spec = gRadianceIBL.SampleLevel(gWrapLinearSampler, input.normalW, 3.f).rgb;
-	surface.roughness = gRoughness.Sample(gWrapLinearSampler, input.uv).r;
+	surface.c_spec = gRadianceIBL.SampleLevel(gWrapLinearSampler, R, 3.f * roughness).rgb;
+	surface.roughness = roughness;
 	surface.NoV = dot(surface.N, surface.V);
 	
 	//color += DiffuseIBL(surface);
