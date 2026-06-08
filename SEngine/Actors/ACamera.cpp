@@ -22,7 +22,7 @@ void ACamera::Initialize()
     auto mesh = m_world->GetMesh("sphere");
 
     LocalConstant lc;
-    lc.model = DirectX::XMMatrixTranslation(0.f, 2.f, -1.f);
+    lc.model = DirectX::XMMatrixTranslation(0.f, 2.f, -2.f);
     lc.model = lc.model.Transpose();
 
     std::shared_ptr<StaticMeshComponent> root = std::make_shared<StaticMeshComponent>(this);

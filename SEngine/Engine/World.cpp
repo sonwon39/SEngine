@@ -99,14 +99,14 @@ void World::InitLevel()
 
     ActorData ad = {};
 
-    ad.lc.model = DirectX::XMMatrixTranslation(0.f, 1.f, 3.f);
+    ad.lc.model = DirectX::XMMatrixTranslation(0.f, 1.f, 0.f);
     ad.lc.model = ad.lc.model.Transpose();
     ad.psoName = "pbrPSO";
-    ad.textureName = "worn-painted-metal_albedo";
+    ad.textureName = "Metal052C_4K-PNG_albedo";
     ad.useMaterial = true;
     ad.mc.texTransform = DirectX::XMMatrixScaling(2.5f, 2.5f, 1.f);
     ad.mc.texTransform = ad.mc.texTransform.Transpose();
-    ad.mc.heightScale = 0.05f;
+    ad.mc.heightScale = 0.f;
     GenerateActor("pbr_sphere", ad);
 
     ad.lc.model = DirectX::XMMatrixTranslation(0.f, 0.f, 0.f);
@@ -116,9 +116,9 @@ void World::InitLevel()
     ad.useMaterial = false;
     GenerateActor("plane", ad);
 
-    auto mp = std::make_shared<AMovingPlatform>();
+  /*  auto mp = std::make_shared<AMovingPlatform>();
     mp->Initialize();
-    AddActor(mp);
+    AddActor(mp);*/
 
     auto camera = std::make_shared<ACamera>();
     camera->Initialize();
