@@ -24,7 +24,7 @@ struct ActorData
         mc.heightScale = 0.f;
         mc.roughness = 0.2f;
         mc.metallic = 0.8f;
-
+        useMaterial = false;
         collisionLocation = Vector3(0.f, 0.f, 0.f);
     };
 
@@ -41,7 +41,8 @@ struct ActorData
     Vector3 collisionLocation;
 
     LocalConstant lc;
-    MaterialConstant mc;
+    bool useMaterial;
+    MaterialConstant mc{};
 };
 
 struct LightData

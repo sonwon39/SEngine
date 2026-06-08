@@ -52,7 +52,7 @@ void SEngineMouse::Tick(float deltaTime)
     ndcX = std::clamp(ndcX, -1.0f, 1.0f);
     ndcY = std::clamp(ndcY, -1.0f, 1.0f);
 
-    currPos = Vector2(mousePos.x, mousePos.y);
+    currPos = Vector2((float)mousePos.x, (float)mousePos.y);
 
     currNDCPos = Vector2(ndcX, -ndcY);
     currNDCPos.Clamp(Vector2(-1, -1), Vector2(1, 1));

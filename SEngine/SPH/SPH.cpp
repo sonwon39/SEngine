@@ -1,4 +1,4 @@
-#include "SPH.h"
+﻿#include "SPH.h"
 #include <random>
 #include <iostream>
 
@@ -44,7 +44,7 @@ void SPH::Initialize(ID3D12Device5* device, ID3D12CommandAllocator* cmdAlloc, ID
     m_sphParticleConstant.gCellSize = cellSize;
 
     Vector3 gridLen = m_sphParticleConstant.gGridMax - m_sphParticleConstant.gGridMin;
-    gridDim = Vector3(int(gridLen.x / (cellSize)), int(gridLen.y / (cellSize)), int(gridLen.z / (cellSize)));
+    gridDim = Vector3(gridLen.x / (cellSize), gridLen.y / (cellSize), gridLen.z / (cellSize));
     cellCount = int(gridDim.x * gridDim.y * gridDim.z);
 
     m_sphParticleConstant.gGridDim = gridDim;

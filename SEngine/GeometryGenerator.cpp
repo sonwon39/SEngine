@@ -455,7 +455,7 @@ Mesh<PBRVertex, uint16_t> GeometryGenerator::PBRCube(float halfX, float halfY, f
             i += offset;
             indices.push_back(i);
         }
-        offset += m.m_vertices.size();
+        offset += (uint16_t)m.m_vertices.size();
     }
 
     Mesh<PBRVertex, uint16_t> mesh;

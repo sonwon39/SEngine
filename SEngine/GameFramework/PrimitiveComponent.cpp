@@ -48,6 +48,11 @@ D3D12_GPU_VIRTUAL_ADDRESS PrimitiveComponent::GetCBGPUAddress() const
     return m_cbInitialized ? m_cb.GetGPUAddress() : 0;
 }
 
+D3D12_GPU_VIRTUAL_ADDRESS PrimitiveComponent::GetMCBGPUAddress() const
+{
+    return m_mcbInitialized ? m_materialCB.GetGPUAddress() : 0;
+}
+
 void PrimitiveComponent::SyncFromPhysX(const physx::PxTransform& transform)
 {
     DirectX::SimpleMath::Vector3 loc(transform.p.x, transform.p.y, transform.p.z);
@@ -77,7 +82,9 @@ void PrimitiveComponent::SetActorData(const ActorData& ad)
     SetTextureName(ad.textureName);
 
     SetLocalConstant(ad.lc);
-    SetMaterialConstant(ad.mc);
+
+    if (ad.useMaterial)
+        SetMaterialConstant(ad.mc);
 }
 
 void PrimitiveComponent::SetLocalConstant(const LocalConstant& newConstant)
@@ -108,7 +115,7 @@ void PrimitiveComponent::SetMaterialConstant(const MaterialConstant& newConstant
     else
     {
         m_materialCB.Initialize(newConstant);
-        m_cbInitialized = true;
+        m_mcbInitialized = true;
     }
     m_materialCB.Update();
 }

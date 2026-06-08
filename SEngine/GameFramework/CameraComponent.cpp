@@ -22,10 +22,11 @@ void CameraComponent::Initialize(const float& fovDegrees, const UINT& width, con
     Matrix view;
     Matrix projection = DirectX::XMMatrixPerspectiveFovLH(m_fovRadians, m_aspectRatio, m_nearZ, m_farZ);
 
+    auto loc = GetLocation();
     if (m_parent)
-        view = XMMatrixLookToLH(GetLocation(), m_parent->GetFrontDirection(), m_parent->GetUpDirection());
+        view = XMMatrixLookToLH(loc, m_parent->GetFrontDirection(), m_parent->GetUpDirection());
     else
-        view = XMMatrixLookToLH(GetLocation(), m_frontDirection, m_upDirection);
+        view = XMMatrixLookToLH(loc, m_frontDirection, m_upDirection);
 
     view = view.Transpose();
     projection = projection.Transpose();
@@ -45,6 +46,7 @@ void CameraComponent::Initialize(const float& fovDegrees, const UINT& width, con
         m_gcb.localConstant.projection = projection;
         m_gcb.localConstant.view = view;
     }
+    m_gcb.localConstant.cameraPos = loc;
     m_gcb.Update();
 }
 
@@ -94,6 +96,7 @@ void CameraComponent::UpdateConstantTransform()
     else
         view = XMMatrixLookToLH(loc, m_frontDirection, m_upDirection);
 
+    m_gcb.localConstant.cameraPos = loc;
     m_gcb.localConstant.view = view.Transpose();
 }
 

@@ -17,9 +17,15 @@ void MeshBatch::Render(ID3D12GraphicsCommandList* commandList)
         return;
 
     material->Bind(commandList, 0); // SRV table 바인딩
+
     int lcb = currentRS->GetSlot(BindKey::LocalCB);
     if (lcb >= 0)
         commandList->SetGraphicsRootConstantBufferView(lcb, owner->GetCBGPUAddress());
+
+    int mcb = currentRS->GetSlot(BindKey::MaterialCB);
+    if (mcb >= 0)
+        commandList->SetGraphicsRootConstantBufferView(mcb, owner->GetMCBGPUAddress());
+
     mesh->Render(commandList); // VB/IB + DrawIndexed (StaticMesh가 이미 갖고 있음)
 }
 
@@ -35,17 +41,18 @@ void MeshBatch::SyncCB()
 
 bool MeshBatch::InitGraphicsCommand(ID3D12GraphicsCommandList* commandList)
 {
-    if (m_renderEngine->GetCurrPSOName() == psoName)
-        return false;
-
     GraphicsPSO pso;
     if (!GetGraphicsPSO(psoName, pso))
     {
         std::cout << "Failed to find pso\n";
         return false;
     }
-    m_renderEngine->SetCurrPSOName(psoName);
     currentRS = pso.GetRootSignature();
+
+    if (m_renderEngine->GetCurrPSOName() == psoName)
+        return false;
+
+    m_renderEngine->SetCurrPSOName(psoName);
     commandList->SetPipelineState(pso.GetPSO());
     commandList->SetGraphicsRootSignature(currentRS->GetSignature());
 

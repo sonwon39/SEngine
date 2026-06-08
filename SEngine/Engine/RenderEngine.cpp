@@ -321,7 +321,7 @@ void RenderEngine::Tick(float deltaTime)
         camera->SyncCB();
     }
 
-    RenderMeshes("defaultPSO");
+    RenderMeshes();
     // RenderGUI();
     Execute();
 }
@@ -340,7 +340,7 @@ void RenderEngine::StableFluidsTick(float deltaTime)
     m_stableFluids->Execute(m_commandQueue.Get());
 }
 
-void RenderEngine::RenderMeshes(const std::string& psoName)
+void RenderEngine::RenderMeshes()
 {
     using namespace Renderer;
 

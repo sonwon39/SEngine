@@ -121,7 +121,7 @@ void StableFluids::InitResources(UINT width, UINT height)
     }
 
     SFLocalConstant grid;
-    grid.gGridDim = Vector3(gridWidth, gridHeight, 1);
+    grid.gGridDim = Vector3((float)gridWidth, (float)gridHeight, 1.f);
     grid.h = 1.f;
     gridCB.Initialize(grid);
 }

@@ -172,17 +172,19 @@ void Graphics::InitializeCommonState(const Microsoft::WRL::ComPtr<ID3D12Device5>
     g_S2_U2_C1_RS.InitStaticSampler(0, wrapLinearSampler);
     g_S2_U2_C1_RS.Finalize(device, L"g_S2_U2_C1_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
-    g_PBR_RS.Reset(4, 1);
+    g_PBR_RS.Reset(5, 1);
     g_PBR_RS[0].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0, 6);
     g_PBR_RS[1].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 6, 4);
     g_PBR_RS[2].InitCBV(0);
     g_PBR_RS[3].InitCBV(1);
+    g_PBR_RS[4].InitCBV(2);
     g_PBR_RS.InitStaticSampler(0, wrapLinearSampler);
     g_PBR_RS.Finalize(device, L"g_PBR_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
     g_PBR_RS.SetSlot(BindKey::MaterialTable, 0);
     g_PBR_RS.SetSlot(BindKey::IBLTable, 1);
     g_PBR_RS.SetSlot(BindKey::GlobalCB, 2);
     g_PBR_RS.SetSlot(BindKey::LocalCB, 3);
+    g_PBR_RS.SetSlot(BindKey::MaterialCB, 4);
 
     g_S1_RS.Reset(1, 0);
     g_S1_RS[0].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0, 1);

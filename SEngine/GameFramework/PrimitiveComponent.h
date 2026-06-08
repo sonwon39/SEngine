@@ -94,6 +94,7 @@ class PrimitiveComponent : public SceneComponent
     // 매 프레임 MeshBatch::Tick 진입 시 SyncCB()로 GPU CB memcpy.
     void SyncCB();
     D3D12_GPU_VIRTUAL_ADDRESS GetCBGPUAddress() const;
+    D3D12_GPU_VIRTUAL_ADDRESS GetMCBGPUAddress() const;
 
   public:
     void SetLocalConstant(const LocalConstant& newConstant);

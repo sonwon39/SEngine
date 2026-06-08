@@ -41,7 +41,7 @@ void ModelLoader<PBRVertex, uint16_t>::InitializeCPU()
 {
     ID3D12Device5* device = m_world->GetDevice();
     Asset<PBRVertex, uint16_t> sphere;
-    sphere.m_meshes.push_back({GeometryGenerator::PbrSphere(1.f, 50, 50)});
+    sphere.m_meshes.push_back({GeometryGenerator::PbrSphere(1.f, 100, 100)});
 
     assets["pbr_sphere"] = sphere;
 }

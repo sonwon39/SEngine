@@ -19,7 +19,7 @@ class GPUBuffer
     void Reset();
 
   public:
-    UINT bufferSize;
+    uint64_t bufferSize;
     UINT dataCount;
 
   public:

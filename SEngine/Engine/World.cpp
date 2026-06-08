@@ -98,24 +98,31 @@ void World::InitLevel()
         m_iblEnv->Initialize(handle);
 
     ActorData ad = {};
+
     ad.lc.model = DirectX::XMMatrixTranslation(0.f, 1.f, 3.f);
     ad.lc.model = ad.lc.model.Transpose();
-    ad.textureName = "PavingStones145_2K-PNG_Albedo";
     ad.psoName = "pbrPSO";
+    ad.textureName = "worn-painted-metal_albedo";
+    ad.useMaterial = true;
+    ad.mc.texTransform = DirectX::XMMatrixScaling(2.5f, 2.5f, 1.f);
+    ad.mc.texTransform = ad.mc.texTransform.Transpose();
+    ad.mc.heightScale = 0.05f;
     GenerateActor("pbr_sphere", ad);
+
+    ad.lc.model = DirectX::XMMatrixTranslation(0.f, 0.f, 0.f);
+    ad.lc.model = ad.lc.model.Transpose();
+    ad.textureName = "PavingStones145_2K-PNG_Albedo";
+    ad.psoName = "defaultPSO";
+    ad.useMaterial = false;
+    GenerateActor("plane", ad);
 
     auto mp = std::make_shared<AMovingPlatform>();
     mp->Initialize();
-    // AddActor(mp);
+    AddActor(mp);
 
     auto camera = std::make_shared<ACamera>();
     camera->Initialize();
     AddActor(camera);
-
-    ad.lc.model = DirectX::XMMatrixTranslation(0.f, 0.f, 0.f);
-    ad.lc.model = ad.lc.model.Transpose();
-    ad.psoName = "defaultPSO";
-    GenerateActor("plane", ad);
 
     ad.textureName = "SkyEnvHDR_CubeMap";
     ad.psoName = "cubeMapPSO";

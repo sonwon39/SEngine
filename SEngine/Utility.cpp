@@ -207,7 +207,7 @@ void Utility::CreateResourceView(ID3D12Resource* resource, DXGI_FORMAT format, b
 
 void Utility::CreateStructuredResourceView(Microsoft::WRL::ComPtr<ID3D12Resource>& buffer, DXGI_FORMAT format,
                                            D3D12_CPU_DESCRIPTOR_HANDLE& handle, const DescriptorType& type, UINT count,
-                                           UINT64 dataSize)
+                                           UINT dataSize)
 {
     if (type == DescriptorType::UAV)
     {

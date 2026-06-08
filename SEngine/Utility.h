@@ -232,7 +232,7 @@ class Utility
 
     void CreateStructuredResourceView(Microsoft::WRL::ComPtr<ID3D12Resource>& buffer, DXGI_FORMAT forma,
                                       D3D12_CPU_DESCRIPTOR_HANDLE& handle, const DescriptorType& type, UINT count,
-                                      UINT64 dataSize);
+                                      UINT dataSize);
 
     template <typename DataType>
     void CreateBuffer(const std::vector<DataType>& data, Microsoft::WRL::ComPtr<ID3D12Resource>& gpu,

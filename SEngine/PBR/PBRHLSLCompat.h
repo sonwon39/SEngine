@@ -12,9 +12,12 @@ using namespace DirectX;
 
 struct MaterialConstant
 {
+    Matrix texTransform;
+
     float heightScale;
     float roughness;
     float metallic;
+    float dummy;
 };
 
 struct LocalConstant

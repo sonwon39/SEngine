@@ -12,6 +12,8 @@ struct GlobalConstant
 {
     Matrix view;
     Matrix projection;
+
+    XMFLOAT3 cameraPos;
 };
 
 struct MouseConstant

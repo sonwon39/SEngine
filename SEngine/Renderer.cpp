@@ -195,7 +195,7 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
     m_PSOs["defaultPSO"] = defaultPSO;
     psoNames.push_back("defaultPSO");
 
-    cubeMapPSO.SetInputLayout(_countof(phongIL), phongIL);
+    cubeMapPSO.SetInputLayout(_countof(simpleIL), simpleIL);
     cubeMapPSO.SetRootSignature(g_cubeMapRS);
     cubeMapPSO.SetRasterizerState(noneCullRasterizer);
     cubeMapPSO.SetBlendState(blendNoColorWrite);
