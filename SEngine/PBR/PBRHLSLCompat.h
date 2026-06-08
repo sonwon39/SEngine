@@ -12,45 +12,44 @@ using namespace DirectX;
 
 struct MaterialConstant
 {
-	float heightScale;
-	float roughness;
-	float metallic;
+    float heightScale;
+    float roughness;
+    float metallic;
 };
 
 struct LocalConstant
 {
-	Matrix model;
-	Matrix modelInvTranspose;
+    Matrix model;
+    Matrix modelInvTranspose;
 };
 
 struct SkinnedLocalConstant
 {
-	Matrix boneTransform[300];
+    Matrix boneTransform[300];
 };
 
 struct PBRLightInfo
 {
-	XMFLOAT4 brightness;
-	XMVECTOR location;
-	XMVECTOR direction;
-	XMVECTOR color;
+    XMFLOAT4 brightness;
+    XMVECTOR location;
+    XMVECTOR direction;
+    XMVECTOR color;
 
-	Matrix view;
-	Matrix proj;
+    Matrix view;
+    Matrix proj;
 
-	float intensity;
+    float intensity;
 };
 
 struct PBRGlobalConstant
 {
-	Matrix view;
-	Matrix proj;
+    Matrix view;
+    Matrix proj;
 
-	XMVECTOR cameraPos;
-	XMVECTOR cameraDir;
+    XMVECTOR cameraPos;
+    XMVECTOR cameraDir;
 
-	PBRLightInfo lights[NUM_LIGHTS];
+    PBRLightInfo lights[NUM_LIGHTS];
 };
-
 
 #endif

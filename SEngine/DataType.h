@@ -6,14 +6,14 @@
  */
 enum DescriptorType
 {
-	RTV,	// Render Target View
-	UAV,	// Unordered Access View
-	SRV,	// Shader Resource View
-	DSV		// Depth Stencil View
+    RTV, // Render Target View
+    UAV, // Unordered Access View
+    SRV, // Shader Resource View
+    DSV  // Depth Stencil View
 };
 
 enum class ViewDimensionType
 {
-	TEXTURE2D,
-	TEXTURECUBE
+    TEXTURE2D,
+    TEXTURECUBE
 };

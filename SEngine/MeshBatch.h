@@ -12,18 +12,21 @@ class RootSignature;
 // 자원은 모두 외부 소유 (mesh = StaticMesh 자산, material = World 캐시, owner = 컴포넌트).
 class MeshBatch
 {
-public:
-	void Render(ID3D12GraphicsCommandList* commandList);
-	void SyncCB();
+  public:
+    void Render(ID3D12GraphicsCommandList* commandList);
+    void SyncCB();
 
-	// pso 변경 and 성공 여부 확인 return
-	bool InitGraphicsCommand(ID3D12GraphicsCommandList* commandList);
-	const RootSignature* GetCurrentRootSignature() { return currentRS; }
+    // pso 변경 and 성공 여부 확인 return
+    bool InitGraphicsCommand(ID3D12GraphicsCommandList* commandList);
+    const RootSignature* GetCurrentRootSignature()
+    {
+        return currentRS;
+    }
 
-public:
-	StaticMesh*   mesh = nullptr;
-	const Material*     material = nullptr;
-	PrimitiveComponent* owner = nullptr;  // per-primitive CB sync용
-	std::string psoName;
-	const RootSignature* currentRS;
+  public:
+    StaticMesh* mesh = nullptr;
+    const Material* material = nullptr;
+    PrimitiveComponent* owner = nullptr; // per-primitive CB sync용
+    std::string psoName;
+    const RootSignature* currentRS;
 };

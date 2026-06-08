@@ -10,18 +10,18 @@ using namespace DirectX;
 
 struct GlobalConstant
 {
-	Matrix view;
-	Matrix projection;
+    Matrix view;
+    Matrix projection;
 };
 
 struct MouseConstant
 {
-	UINT posX;
-	UINT posY;
-	XMFLOAT2 velocity;
+    UINT posX;
+    UINT posY;
+    XMFLOAT2 velocity;
 
-	bool  lButtonDown;
-	XMFLOAT3 color;
+    bool lButtonDown;
+    XMFLOAT3 color;
 };
 
 #endif

@@ -7,34 +7,36 @@
 #include "ConstantBuffer.h"
 #include "RootSignature.h"
 
-class CameraComponent : public SceneComponent {
-public:
-	CameraComponent(Actor* owner);
-	virtual ~CameraComponent();
-	void Initialize(const float& fovDegrees, const UINT& width, const UINT& height, const float& nearZ, const float& farZ);
+class CameraComponent : public SceneComponent
+{
+  public:
+    CameraComponent(Actor* owner);
+    virtual ~CameraComponent();
+    void Initialize(const float& fovDegrees, const UINT& width, const UINT& height, const float& nearZ,
+                    const float& farZ);
 
-	void Bind(const RootSignature* rs, ID3D12GraphicsCommandList* cl) const;
+    void Bind(const RootSignature* rs, ID3D12GraphicsCommandList* cl) const;
 
-public:
-	DirectX::SimpleMath::Matrix	GetProjMatrix() const override;
-	DirectX::SimpleMath::Matrix GetViewMatrix() const override;
+  public:
+    DirectX::SimpleMath::Matrix GetProjMatrix() const override;
+    DirectX::SimpleMath::Matrix GetViewMatrix() const override;
 
-public:
-	ConstantBuffer<GlobalConstant> m_gcb;
-	bool m_gcbInitialized = false;
+  public:
+    ConstantBuffer<GlobalConstant> m_gcb;
+    bool m_gcbInitialized = false;
 
-public:
-	void SyncCB();
-	void OnRegister() override;
-	D3D12_GPU_VIRTUAL_ADDRESS GetGCBGPUAddress() const;
+  public:
+    void SyncCB();
+    void OnRegister() override;
+    D3D12_GPU_VIRTUAL_ADDRESS GetGCBGPUAddress() const;
 
-public:
-	void UpdateCameraInfo(const int& width, const int& height);
-	void UpdateConstantTransform() override;
+  public:
+    void UpdateCameraInfo(const int& width, const int& height);
+    void UpdateConstantTransform() override;
 
-private:
-	float m_fovRadians;
-	float m_nearZ;
-	float m_farZ;
-	float m_aspectRatio;
+  private:
+    float m_fovRadians;
+    float m_nearZ;
+    float m_farZ;
+    float m_aspectRatio;
 };

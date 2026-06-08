@@ -13,24 +13,23 @@
 #define HLSL
 #include "Particle.h"
 
-#define MAX_WAVES_PER_GROUP (GROUP_SIZE / 32)   // wave32 hardware 기준 상한
+#define MAX_WAVES_PER_GROUP (GROUP_SIZE / 32) // wave32 hardware 기준 상한
 
-StructuredBuffer<uint>   gInput     : register(t0);
-RWStructuredBuffer<uint> gOutput    : register(u0);   // 이 level의 block-내부 exclusive scan
-RWStructuredBuffer<uint> gBlockSums : register(u1);   // 각 block의 inclusive 총합
+StructuredBuffer<uint> gInput : register(t0);
+RWStructuredBuffer<uint> gOutput : register(u0);    // 이 level의 block-내부 exclusive scan
+RWStructuredBuffer<uint> gBlockSums : register(u1); // 각 block의 inclusive 총합
 
 ConstantBuffer<SPHParticleLocalConstant> gCB : register(b0);
 
 groupshared uint sWaveSums[MAX_WAVES_PER_GROUP];
 
 [numthreads(GROUP_SIZE, 1, 1)]
-void main(uint3 DTid : SV_DispatchThreadID,
-          uint3 Gid  : SV_GroupID,
-          uint  GTid : SV_GroupIndex)
+void main(uint3 DTid : SV_DispatchThreadID, uint3 Gid : SV_GroupID,
+                                         uint GTid : SV_GroupIndex)
 {
     const uint laneCount = WaveGetLaneCount();
-    const uint laneIdx   = WaveGetLaneIndex();
-    const uint waveIdx   = GTid / laneCount;
+    const uint laneIdx = WaveGetLaneIndex();
+    const uint waveIdx = GTid / laneCount;
     const uint waveCount = GROUP_SIZE / laneCount;
 
     const uint scanCount = gCB.gScanCount;
@@ -40,9 +39,10 @@ void main(uint3 DTid : SV_DispatchThreadID,
 
     // 1) wave 안 exclusive scan + wave 합계 (각 1 instruction)
     uint wavePrefix = WavePrefixSum(val);
-    uint waveTotal  = WaveActiveSum(val);
+    uint waveTotal = WaveActiveSum(val);
 
-    if (laneIdx == 0) sWaveSums[waveIdx] = waveTotal;
+    if (laneIdx == 0)
+        sWaveSums[waveIdx] = waveTotal;
     GroupMemoryBarrierWithGroupSync();
 
     // 2) wave 0 이 wave 합계들을 scan (waveCount <= laneCount 가정)
@@ -50,14 +50,16 @@ void main(uint3 DTid : SV_DispatchThreadID,
     {
         uint x = (laneIdx < waveCount) ? sWaveSums[laneIdx] : 0u;
         uint scanned = WavePrefixSum(x);
-        if (laneIdx < waveCount) sWaveSums[laneIdx] = scanned;
+        if (laneIdx < waveCount)
+            sWaveSums[laneIdx] = scanned;
     }
     GroupMemoryBarrierWithGroupSync();
 
     // 3) 합산: 내 thread의 block-내부 exclusive prefix = wave offset + wave 내부 prefix
     uint blockExclusive = sWaveSums[waveIdx] + wavePrefix;
 
-    if (DTid.x < scanCount) gOutput[DTid.x] = blockExclusive;
+    if (DTid.x < scanCount)
+        gOutput[DTid.x] = blockExclusive;
 
     // 4) block의 마지막 active lane이 block 총합 (inclusive)을 기록.
     //    Full block: GTid == GROUP_SIZE-1.

@@ -11,5 +11,4 @@ Level::~Level()
 
 void Level::Initialize()
 {
-	
 }

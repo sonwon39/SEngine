@@ -21,99 +21,127 @@
 #include "GameFramework/Actor.h"
 #include "IBLEnvironment.h"
 
-class World {
-public:
-	World();
-	virtual ~World();
+class World
+{
+  public:
+    World();
+    virtual ~World();
 
-public:
-	// model loader 및 마우스 초기화
-	void Initialize(ID3D12Device5* device, int width, int height);
-	void Tick(float deltaTime);
+  public:
+    // model loader 및 마우스 초기화
+    void Initialize(ID3D12Device5* device, int width, int height);
+    void Tick(float deltaTime);
 
-	bool FindTexture(const std::string& textureName, int& index);
-	bool FindTextureHandle(const std::string& textureName, D3D12_GPU_DESCRIPTOR_HANDLE& handle);
+    bool FindTexture(const std::string& textureName, int& index);
+    bool FindTextureHandle(const std::string& textureName, D3D12_GPU_DESCRIPTOR_HANDLE& handle);
 
-public:
-	// gpu 버퍼 생성 후 (vertex, index) level 초기화
-	void InitLevel();
+  public:
+    // gpu 버퍼 생성 후 (vertex, index) level 초기화
+    void InitLevel();
 
-public:
-	ID3D12Device5* GetDevice() { return m_device; }
-	std::shared_ptr<TextureLoader> GetTextureLoader() const { return m_textureLoader; }
-	std::shared_ptr<ModelLoader<Vertex, uint16_t>> GetModelLoader() const { return m_modelLoader; }
-	std::shared_ptr<PBRModelLoader> GetPBRModelLoader() const { return m_pbrModelLoader; }
-	std::shared_ptr<SimpleModelLoader> GetSimpleModelLoader() const { return m_simpleModelLoader; }
-	ID3D12DescriptorHeap* GetMainHeap() const;
-	Vector2 GetMouseVelocity() const;
+  public:
+    ID3D12Device5* GetDevice()
+    {
+        return m_device;
+    }
+    std::shared_ptr<TextureLoader> GetTextureLoader() const
+    {
+        return m_textureLoader;
+    }
+    std::shared_ptr<ModelLoader<Vertex, uint16_t>> GetModelLoader() const
+    {
+        return m_modelLoader;
+    }
+    std::shared_ptr<PBRModelLoader> GetPBRModelLoader() const
+    {
+        return m_pbrModelLoader;
+    }
+    std::shared_ptr<SimpleModelLoader> GetSimpleModelLoader() const
+    {
+        return m_simpleModelLoader;
+    }
+    ID3D12DescriptorHeap* GetMainHeap() const;
+    Vector2 GetMouseVelocity() const;
 
-public:
-	void SetWindowSize(int width, int height);
+  public:
+    void SetWindowSize(int width, int height);
 
-public:
-	void SetFPSMode(bool newState) { m_fpsMode = newState;}
-	bool GetFPSMode() const { return m_fpsMode; }
+  public:
+    void SetFPSMode(bool newState)
+    {
+        m_fpsMode = newState;
+    }
+    bool GetFPSMode() const
+    {
+        return m_fpsMode;
+    }
 
-public:
-	std::shared_ptr<StaticMesh> GetMesh(const std::string& meshName);
-	void GenerateActor(const std::string& meshName, const ActorData& ad);
-	void AddActor(std::shared_ptr<Actor> actor);
-	void AddMesh(const std::string& meshName, std::shared_ptr<StaticMesh> mesh);
-	void OnRegister();
+  public:
+    std::shared_ptr<StaticMesh> GetMesh(const std::string& meshName);
+    void GenerateActor(const std::string& meshName, const ActorData& ad);
+    void AddActor(std::shared_ptr<Actor> actor);
+    void AddMesh(const std::string& meshName, std::shared_ptr<StaticMesh> mesh);
+    void OnRegister();
 
-	// mesh 내의 vertex index buffer blob 제거
-	void ClearMeshBlobs();
+    // mesh 내의 vertex index buffer blob 제거
+    void ClearMeshBlobs();
 
-	// 텍스처 이름으로 Material을 얻는다. 같은 이름이면 같은 Material을 반환(캐시).
-	// 텍스처가 로드돼 있지 않으면 nullptr.
-	std::shared_ptr<Material> GetOrCreateMaterial(const std::string& textureName);
-	std::shared_ptr<Actor> GetPlayer() const { return m_player; }
-	std::shared_ptr<IBLEnvironment> GetIBL() const { return m_iblEnv; }
+    // 텍스처 이름으로 Material을 얻는다. 같은 이름이면 같은 Material을 반환(캐시).
+    // 텍스처가 로드돼 있지 않으면 nullptr.
+    std::shared_ptr<Material> GetOrCreateMaterial(const std::string& textureName);
+    std::shared_ptr<Actor> GetPlayer() const
+    {
+        return m_player;
+    }
+    std::shared_ptr<IBLEnvironment> GetIBL() const
+    {
+        return m_iblEnv;
+    }
 
-public:
-	UINT m_cbvSrvDescriptorSize = 0;
-	UINT m_rtvDescriptorSize = 0;
-	UINT m_dsvDescriptorSize = 0;
+  public:
+    UINT m_cbvSrvDescriptorSize = 0;
+    UINT m_rtvDescriptorSize = 0;
+    UINT m_dsvDescriptorSize = 0;
 
-public:
-	HWND m_mainWnd;
-	std::shared_ptr<SEngineMouse> mouse;
-	std::shared_ptr<InputHelper> m_inputHelper;
-	UINT windowWidth;
-	UINT windowHeight;
+  public:
+    HWND m_mainWnd;
+    std::shared_ptr<SEngineMouse> mouse;
+    std::shared_ptr<InputHelper> m_inputHelper;
+    UINT windowWidth;
+    UINT windowHeight;
 
-private:
-	ID3D12Device5* m_device;
+  private:
+    ID3D12Device5* m_device;
 
-public:
-	std::vector<DirectX::SimpleMath::Vector3> colors;
+  public:
+    std::vector<DirectX::SimpleMath::Vector3> colors;
 
-public:
-	//GPUBuffer m_test;
-	DXGI_FORMAT testFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
+  public:
+    // GPUBuffer m_test;
+    DXGI_FORMAT testFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
 
-public:
-	bool m_captureDirty = false;
-	bool m_fpsMode = false;
+  public:
+    bool m_captureDirty = false;
+    bool m_fpsMode = false;
 
-private:
-	std::shared_ptr<Level> m_level;
+  private:
+    std::shared_ptr<Level> m_level;
 
-private:
-	std::string texBuildPath = "Assets/Build/";
-	std::shared_ptr<TextureLoader> m_textureLoader;
-	std::string skyTextureName = "Sky";
+  private:
+    std::string texBuildPath = "Assets/Build/";
+    std::shared_ptr<TextureLoader> m_textureLoader;
+    std::string skyTextureName = "Sky";
 
-private:
-	std::shared_ptr <ModelLoader<Vertex, uint16_t>> m_modelLoader;
-	std::shared_ptr <SimpleModelLoader> m_simpleModelLoader;
-	std::shared_ptr <PBRModelLoader> m_pbrModelLoader;
+  private:
+    std::shared_ptr<ModelLoader<Vertex, uint16_t>> m_modelLoader;
+    std::shared_ptr<SimpleModelLoader> m_simpleModelLoader;
+    std::shared_ptr<PBRModelLoader> m_pbrModelLoader;
 
-private:
-	std::vector<std::shared_ptr<Actor>> m_actors;
-	std::shared_ptr<Actor> m_player;
-	std::shared_ptr<IBLEnvironment> m_iblEnv;
+  private:
+    std::vector<std::shared_ptr<Actor>> m_actors;
+    std::shared_ptr<Actor> m_player;
+    std::shared_ptr<IBLEnvironment> m_iblEnv;
 
-	std::unordered_map<std::string, std::shared_ptr<StaticMesh>> m_meshes;
-	std::unordered_map<std::string, std::shared_ptr<Material>> m_materials;
+    std::unordered_map<std::string, std::shared_ptr<StaticMesh>> m_meshes;
+    std::unordered_map<std::string, std::shared_ptr<Material>> m_materials;
 };

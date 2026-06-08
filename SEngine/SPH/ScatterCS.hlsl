@@ -15,20 +15,21 @@
 #define HLSL
 #include "Particle.h"
 
-RWStructuredBuffer<SPHParticle> gParticles       : register(u0);
-RWStructuredBuffer<uint>        gScatterCounter  : register(u1);
+RWStructuredBuffer<SPHParticle> gParticles : register(u0);
+RWStructuredBuffer<uint> gScatterCounter : register(u1);
 RWStructuredBuffer<SPHParticle> gSortedParticles : register(u2);
-RWStructuredBuffer<uint>        gSortedIndices   : register(u3); 
+RWStructuredBuffer<uint> gSortedIndices : register(u3);
 
-StructuredBuffer<uint>          gParticleCellId  : register(t0);
-StructuredBuffer<uint>          gCellStart       : register(t1);
+StructuredBuffer<uint> gParticleCellId : register(t0);
+StructuredBuffer<uint> gCellStart : register(t1);
 
 ConstantBuffer<SPHParticleLocalConstant> gCB : register(b0);
 
 [numthreads(GROUP_SIZE, 1, 1)]
 void main(uint3 DTid : SV_DispatchThreadID)
 {
-    if (DTid.x >= gCB.particleCount) return;
+    if (DTid.x >= gCB.particleCount)
+        return;
 
     uint cellId = gParticleCellId[DTid.x];
 

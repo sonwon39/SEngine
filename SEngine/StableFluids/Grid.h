@@ -11,13 +11,13 @@ using namespace DirectX;
 #define SF_GROUP_SIZE_X 32
 #define SF_GROUP_SIZE_Y 32
 
-//Stable fluids local constant
+// Stable fluids local constant
 struct SFLocalConstant
 {
-	XMFLOAT3  gGridDim;
-	float     deltaTime;
+    XMFLOAT3 gGridDim;
+    float deltaTime;
 
-	float	  h;
+    float h;
 };
 
 #endif

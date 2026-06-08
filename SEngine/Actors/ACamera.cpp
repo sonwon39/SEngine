@@ -8,7 +8,7 @@ using namespace Graphics;
 
 ACamera::ACamera()
 {
-	m_velocity = 10.f;
+    m_velocity = 10.f;
 }
 
 ACamera::~ACamera()
@@ -17,38 +17,39 @@ ACamera::~ACamera()
 
 void ACamera::Initialize()
 {
-	if (!m_world) return;
-	auto mesh = m_world->GetMesh("sphere");
+    if (!m_world)
+        return;
+    auto mesh = m_world->GetMesh("sphere");
 
-	LocalConstant lc;
-	lc.model = DirectX::XMMatrixTranslation(0.f, 2.f, -1.f);
-	lc.model = lc.model.Transpose();
+    LocalConstant lc;
+    lc.model = DirectX::XMMatrixTranslation(0.f, 2.f, -1.f);
+    lc.model = lc.model.Transpose();
 
-	std::shared_ptr<StaticMeshComponent> root = std::make_shared<StaticMeshComponent>(this);
-	root->SetMesh(mesh);
-	root->SetUpdateConstant(true);
-	root->SetLocalConstant(lc);
-	root->SetTextureName("PavingStones145_2K-PNG_Albedo");
-	root->SetPSOName("defaultPSO");
+    std::shared_ptr<StaticMeshComponent> root = std::make_shared<StaticMeshComponent>(this);
+    root->SetMesh(mesh);
+    root->SetUpdateConstant(true);
+    root->SetLocalConstant(lc);
+    root->SetTextureName("PavingStones145_2K-PNG_Albedo");
+    root->SetPSOName("defaultPSO");
 
-	std::shared_ptr<CameraComponent> camera = std::make_shared<CameraComponent>(this);
+    std::shared_ptr<CameraComponent> camera = std::make_shared<CameraComponent>(this);
 
-	root->Attach(camera);
-	camera->Initialize(70.f, m_world->windowWidth, m_world->windowHeight, 0.01f, 500.f);
-	SetRootComponent(root);
+    root->Attach(camera);
+    camera->Initialize(70.f, m_world->windowWidth, m_world->windowHeight, 0.01f, 500.f);
+    SetRootComponent(root);
 }
 
 void ACamera::Tick(const float& deltaTime)
 {
-	if (!m_world || !(m_world->m_inputHelper))
-		return;
+    if (!m_world || !(m_world->m_inputHelper))
+        return;
 
-	Vector3 dir = m_world->m_inputHelper->GetInputDirection(this);
-	Vector3 dx = dir * m_velocity * deltaTime;
+    Vector3 dir = m_world->m_inputHelper->GetInputDirection(this);
+    Vector3 dx = dir * m_velocity * deltaTime;
 
-	Vector2 cameraDel = m_world->GetMouseVelocity();
+    Vector2 cameraDel = m_world->GetMouseVelocity();
 
-	Actor::UpdateActorLocation(dx);
-	if(m_world->GetFPSMode())
-		Actor::UpdateRotation((int)cameraDel.x, (int)cameraDel.y, deltaTime);
+    Actor::UpdateActorLocation(dx);
+    if (m_world->GetFPSMode())
+        Actor::UpdateRotation((int)cameraDel.x, (int)cameraDel.y, deltaTime);
 }

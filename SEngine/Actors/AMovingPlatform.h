@@ -5,17 +5,17 @@
 
 class AMovingPlatform : public Actor
 {
-public:
-	AMovingPlatform();
-	virtual ~AMovingPlatform();
+  public:
+    AMovingPlatform();
+    virtual ~AMovingPlatform();
 
-public:
-	virtual void Initialize();
+  public:
+    virtual void Initialize();
 
-public:
-	virtual void Tick(const float& deltaTime);
+  public:
+    virtual void Tick(const float& deltaTime);
 
-private:
-	//DirectX::SimpleMath::Vector3 m_velocity;
-	float m_velocity;
+  private:
+    // DirectX::SimpleMath::Vector3 m_velocity;
+    float m_velocity;
 };

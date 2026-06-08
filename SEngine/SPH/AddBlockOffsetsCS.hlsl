@@ -10,15 +10,15 @@
 #define HLSL
 #include "Particle.h"
 
-RWStructuredBuffer<uint> gPartial          : register(u0);
-StructuredBuffer<uint>   gScannedBlockSums : register(t0);
+RWStructuredBuffer<uint> gPartial : register(u0);
+StructuredBuffer<uint> gScannedBlockSums : register(t0);
 
 ConstantBuffer<SPHParticleLocalConstant> gCB : register(b0);
 
 [numthreads(GROUP_SIZE, 1, 1)]
-void main(uint3 DTid : SV_DispatchThreadID,
-          uint3 Gid  : SV_GroupID)
+void main(uint3 DTid : SV_DispatchThreadID, uint3 Gid : SV_GroupID)
 {
-    if (DTid.x >= gCB.gScanCount) return;
+    if (DTid.x >= gCB.gScanCount)
+        return;
     gPartial[DTid.x] += gScannedBlockSums[Gid.x];
 }

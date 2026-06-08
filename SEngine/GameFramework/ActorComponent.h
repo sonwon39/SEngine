@@ -6,19 +6,22 @@ class Actor;
 // (트랜스폼/계층 기능은 파생 클래스 SceneComponent에서 추가됨)
 class ActorComponent
 {
-public:
-	ActorComponent(Actor* owner);
-	virtual ~ActorComponent();
+  public:
+    ActorComponent(Actor* owner);
+    virtual ~ActorComponent();
 
-protected:
-	virtual void Initialize() {};
+  protected:
+    virtual void Initialize() {};
 
-public:
-	Actor* GetOwner() { return m_owner; }
+  public:
+    Actor* GetOwner()
+    {
+        return m_owner;
+    }
 
-public:
-	virtual void Tick(const float& deltaTime);
+  public:
+    virtual void Tick(const float& deltaTime);
 
-protected:
-	Actor* m_owner;
+  protected:
+    Actor* m_owner;
 };

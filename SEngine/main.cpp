@@ -2,10 +2,9 @@
 
 int main()
 {
-	Core::SimpleApp app(1024, 1024, 0);
-	if (app.Initialize())
-	{
-		return app.Run();
-	}
-
+    Core::SimpleApp app(1024, 1024, 0);
+    if (app.Initialize())
+    {
+        return app.Run();
+    }
 }

@@ -5,16 +5,16 @@
 
 class ACamera : public Actor
 {
-public:
-	ACamera();
-	virtual ~ACamera();
+  public:
+    ACamera();
+    virtual ~ACamera();
 
-public:
-	virtual void Initialize();
+  public:
+    virtual void Initialize();
 
-public:
-	virtual void Tick(const float& deltaTime);
+  public:
+    virtual void Tick(const float& deltaTime);
 
-private:
-	float m_velocity;
+  private:
+    float m_velocity;
 };

@@ -6,9 +6,9 @@ RWStructuredBuffer<uint> gScatterCounter : register(u1);
 [numthreads(GROUP_SIZE, 1, 1)]
 void main(uint3 DTid : SV_DispatchThreadID)
 {
-	if (gParticleLocalCB.gCellCount <= DTid.x)
-		return;
+    if (gParticleLocalCB.gCellCount <= DTid.x)
+        return;
 
-	gCellCounter[DTid.x] = 0u;
-	gScatterCounter[DTid.x] = 0u;
+    gCellCounter[DTid.x] = 0u;
+    gScatterCounter[DTid.x] = 0u;
 }

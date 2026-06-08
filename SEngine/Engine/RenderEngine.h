@@ -29,164 +29,171 @@
 class StaticMesh;
 class CameraComponent;
 
-enum RenderType {
-	RT_TEXT,
-	RT_Default,
-	RT_PointCloud,
-	RT_CubeMap,
-	RT_Dot /*렌더타겟에 점하나 넣고 texture 그리기 용도*/
+enum RenderType
+{
+    RT_TEXT,
+    RT_Default,
+    RT_PointCloud,
+    RT_CubeMap,
+    RT_Dot /*렌더타겟에 점하나 넣고 texture 그리기 용도*/
 };
 
-enum RenderPassType {
-	RPT_Default,
-	RPT_CubeMapPass,
-	RPT_DepthOnlyPass
+enum RenderPassType
+{
+    RPT_Default,
+    RPT_CubeMapPass,
+    RPT_DepthOnlyPass
 };
 
-class RenderEngine {
-public:
-	RenderEngine(ID3D12Device5* device = nullptr);
-	virtual ~RenderEngine();
+class RenderEngine
+{
+  public:
+    RenderEngine(ID3D12Device5* device = nullptr);
+    virtual ~RenderEngine();
 
-public:
-	bool Initialize(int width, int height, int guiWidth, IDXGIFactory7* factory);
-	bool InitScene();
+  public:
+    bool Initialize(int width, int height, int guiWidth, IDXGIFactory7* factory);
+    bool InitScene();
 
-	//  mesh buffer 초기화 (vertex, index 버퍼)
-	void InitMeshBuffer();
-	bool InitGUI();
+    //  mesh buffer 초기화 (vertex, index 버퍼)
+    void InitMeshBuffer();
+    bool InitGUI();
 
-	void OnResize(int width, int height);
+    void OnResize(int width, int height);
 
-protected:
-	void CreateCommandObjects();
-	void CreateSwapChain(IDXGIFactory7* factory);
-	void CreateMainDepthBuffer();
-	void CreateDepthBuffers();
-	void CreateDescriptorHeaps();
+  protected:
+    void CreateCommandObjects();
+    void CreateSwapChain(IDXGIFactory7* factory);
+    void CreateMainDepthBuffer();
+    void CreateDepthBuffers();
+    void CreateDescriptorHeaps();
 
-protected:
-	void UpdateGUI();
-	void Update(float deltaTime);
+  protected:
+    void UpdateGUI();
+    void Update(float deltaTime);
 
-	void SPHTick(float deltaTime);
-	void StableFluidsTick(float deltaTime);
-	void RenderMeshes(const std::string& psoName);
-	void RenderSPH(const std::string& psoName, bool clear);
+    void SPHTick(float deltaTime);
+    void StableFluidsTick(float deltaTime);
+    void RenderMeshes(const std::string& psoName);
+    void RenderSPH(const std::string& psoName, bool clear);
 
-	void RenderGUI();
+    void RenderGUI();
 
-public:
-	void Tick(float deltaTime);
-	void Quit();
+  public:
+    void Tick(float deltaTime);
+    void Quit();
 
+  private:
+    void GenerateMips(ID3D12Resource* tex);
 
-private:
-	void GenerateMips(ID3D12Resource* tex);
+  protected:
+    D3D12_CPU_DESCRIPTOR_HANDLE GetCurrentRtvCpuHandle() const;
+    D3D12_CPU_DESCRIPTOR_HANDLE GetDSVCpuHandle(int idx) const;
+    ID3D12Resource* GetCurrentSwapChainResource() const;
 
-protected:
-	D3D12_CPU_DESCRIPTOR_HANDLE GetCurrentRtvCpuHandle() const;
-	D3D12_CPU_DESCRIPTOR_HANDLE GetDSVCpuHandle(int idx) const;
-	ID3D12Resource* GetCurrentSwapChainResource() const;
+    void ResetCommand();
 
-	void ResetCommand();
+  private:
+    void BindMainHeap();
+    void FlushCommands();
+    void FlushResourceCommands();
+    void Execute();
 
-private:
-	void BindMainHeap();
-	void FlushCommands();
-	void FlushResourceCommands();
-	void Execute();
+  public:
+    void RegistMeshBatch(std::shared_ptr<MeshBatch> meshBatch);
+    void RegistCamera(CameraComponent* camera);
 
-public:
-	void RegistMeshBatch(std::shared_ptr<MeshBatch> meshBatch);
-	void RegistCamera(CameraComponent* camera);
+  public:
+    std::string GetCurrPSOName() const
+    {
+        return m_currPSOName;
+    }
+    void SetCurrPSOName(std::string newPSOName)
+    {
+        m_currPSOName = newPSOName;
+    }
 
-public:
-	std::string GetCurrPSOName() const { return m_currPSOName; }
-	void SetCurrPSOName(std::string newPSOName)  { m_currPSOName = newPSOName; }
+    // fence
+  private:
+    UINT64 m_currentBufferFence = 0;
+    UINT64 m_currentFence = 0;
+    Microsoft::WRL::ComPtr<ID3D12Fence> m_fence;
+    Microsoft::WRL::ComPtr<ID3D12Fence> m_createBufferfence;
 
-	//fence
-private:
-	UINT64 m_currentBufferFence = 0;
-	UINT64 m_currentFence = 0;
-	Microsoft::WRL::ComPtr<ID3D12Fence> m_fence;
-	Microsoft::WRL::ComPtr<ID3D12Fence> m_createBufferfence;
+  private:
+    ID3D12Device5* m_device;
 
-private:
-	ID3D12Device5* m_device;
+  private:
+    Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_commandAllocator;
+    Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_commandList;
+    // 버퍼 생성용
+    Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_resourceCommandAllocator;
+    Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_resourceCommandList;
 
-private:
-	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_commandAllocator;
-	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_commandList;
-	// 버퍼 생성용
-	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_resourceCommandAllocator;
-	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_resourceCommandList;
+    Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_commandQueue;
 
-	Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_commandQueue;
+  private:
+    D3D12_VIEWPORT m_viewport;
+    D3D12_VIEWPORT m_hdrViewport;
+    D3D12_RECT m_scissorRect;
+    int m_width;
+    int m_height;
+    int m_guiWidth;
 
-private:
-	D3D12_VIEWPORT m_viewport;
-	D3D12_VIEWPORT m_hdrViewport;
-	D3D12_RECT m_scissorRect;
-	int m_width;
-	int m_height;
-	int m_guiWidth;
+  private:
+    int m_currentBackBufferIndex = 0;
+    static const UINT m_swapChainBufferCount = 2;
+    static const UINT m_dsBufferCount = 2;
+    UINT m_cbvSrvDescriptorSize = 0;
+    UINT m_rtvDescriptorSize = 0;
+    UINT m_dsvDescriptorSize = 0;
+    std::array<float, 4> rtvClearColor;
+    std::array<float, 4> blackClearColor;
 
-private:
-	int m_currentBackBufferIndex = 0;
-	static const UINT m_swapChainBufferCount = 2;
-	static const UINT m_dsBufferCount = 2;
-	UINT m_cbvSrvDescriptorSize = 0;
-	UINT m_rtvDescriptorSize = 0;
-	UINT m_dsvDescriptorSize = 0;
-	std::array<float, 4> rtvClearColor;
-	std::array<float, 4> blackClearColor;
+  private:
+    Microsoft::WRL::ComPtr<IDXGISwapChain3> m_swapChain;
+    DescriptorHeap m_swapChainRTVHeap;
+    GPUBuffer m_swapChainResources[m_swapChainBufferCount];
 
-private:
-	Microsoft::WRL::ComPtr<IDXGISwapChain3> m_swapChain;
-	DescriptorHeap m_swapChainRTVHeap;
-	GPUBuffer m_swapChainResources[m_swapChainBufferCount];
+    Texture2D m_depthBuffer;
+    Microsoft::WRL::ComPtr<ID3D12Resource> m_depthStencilBuffer;
+    DescriptorHeap m_dsvHeap;
 
-	Texture2D m_depthBuffer;
-	Microsoft::WRL::ComPtr<ID3D12Resource> m_depthStencilBuffer;
-	DescriptorHeap m_dsvHeap;
+  private:
+    POINT currMousPt = {0, 0};
+    POINT prevMousePt = {0, 0};
 
-private:
-	POINT currMousPt = { 0,0 };
-	POINT prevMousePt = { 0,0 };
+    std::unordered_map<uint32_t, std::string> r_idToName;
+    std::unordered_map<std::string, uint32_t> r_nameToId;
+    uint32_t r_idMax = 0;
+    int r_selecteId = 0;
 
-	std::unordered_map<uint32_t, std::string> r_idToName;
-	std::unordered_map<std::string, uint32_t> r_nameToId;
-	uint32_t r_idMax = 0;
-	int r_selecteId = 0;
+    // 임시 scene
+  private:
+    std::unique_ptr<StaticMesh> m_mesh;
+    DefaultLocalConstant localConstant;
 
-	// 임시 scene
-private:
-	std::unique_ptr<StaticMesh> m_mesh;
-	DefaultLocalConstant localConstant;
+    Microsoft::WRL::ComPtr<ID3D12Resource> m_localCB;
+    void* pLocalCB;
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> m_localCB;
-	void* pLocalCB;
+    float angle = 0.f;
+    float rotateSpeed = 90.f;
 
-	float angle = 0.f;
-	float rotateSpeed = 90.f;
+    // simulation
+  private:
+    std::shared_ptr<SPH> m_sph;
+    std::shared_ptr<StableFluids> m_stableFluids;
 
-	// simulation
-private:
-	std::shared_ptr<SPH> m_sph;
-	std::shared_ptr<StableFluids> m_stableFluids;
+    // font
+  private:
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_guiFontHeap;
+    bool resetFlag = false;
 
-	// font
-private:
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_guiFontHeap;
-	bool resetFlag = false;
+  private:
+    std::vector<std::shared_ptr<MeshBatch>> meshBatchs;
+    std::shared_ptr<Material> cubemapMaterial;
+    std::vector<CameraComponent*> m_camera;
 
-
-private:
-	std::vector<std::shared_ptr<MeshBatch>> meshBatchs;
-	std::shared_ptr<Material> cubemapMaterial;
-	std::vector<CameraComponent*> m_camera;
-
-private:
-	std::string m_currPSOName = "";
+  private:
+    std::string m_currPSOName = "";
 };

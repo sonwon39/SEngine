@@ -3,14 +3,15 @@
 #include "GameFramework\Actor.h"
 #include <vector>
 
-class Level {
-public:
-	Level();
-	virtual ~Level();
+class Level
+{
+  public:
+    Level();
+    virtual ~Level();
 
-public:
-	void Initialize();
+  public:
+    void Initialize();
 
-private:
-	std::vector<Actor> m_actors;
+  private:
+    std::vector<Actor> m_actors;
 };
