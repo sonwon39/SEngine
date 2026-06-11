@@ -169,6 +169,25 @@ Mesh<Vertex, uint16_t> GeometryGenerator::MakePlane(float x, float z, int c)
     return mesh;
 }
 
+Mesh<Vertex, uint16_t> GeometryGenerator::MakeRect(float x, float y)
+{
+    float halfX = x / 2.f;
+    float halfY = y / 2.f;
+    Vector3 n = Vector3(0.f, 0.f, -1.f);
+    std::vector<Vertex> vertices{{Vector3(-halfX, -halfY, 1), n, Vector2(0, 1)},
+                                 {Vector3(-halfX, halfY, 1), n, Vector2(0, 0)},
+                                 {Vector3(halfX, halfY, 1), n, Vector2(1, 0)},
+                                 {Vector3(halfX, -halfY, 1), n, Vector2(1, 1)}};
+    std::vector<uint16_t> indices{0, 1, 2, 0, 2, 3};
+
+    Mesh<Vertex, uint16_t> mesh;
+
+    mesh.m_vertices = vertices;
+    mesh.m_indices = indices;
+
+    return mesh;
+}
+
 Mesh<Vertex, uint16_t> GeometryGenerator::MakeSphere(int c, float r)
 {
     float pi = (float)std::acos(-1);

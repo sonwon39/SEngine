@@ -26,7 +26,8 @@ class Actor
 
   public:
     virtual void Tick(const float& deltaTime);
-
+    void TickComponents(const float& deltaTime);
+    
   public:
     void UpdateRotation(const int& mouseDeltaX, const int& mouseDeltaY, const float& deltaTime);
     void UpdateCameraInfo(const int& width, const int& height);
@@ -36,6 +37,7 @@ class Actor
     void UpdateActorRotation(const DirectX::SimpleMath::Quaternion& delQuat);
     void SetActorSpeed(const float& newSpeed);
     void SetRootComponent(std::shared_ptr<SceneComponent> newRootComponent);
+    void AddActorComponent(std::shared_ptr<ActorComponent> component);
 
   public:
     void OnRegister();
@@ -89,6 +91,9 @@ class Actor
     PrimitiveComponent* m_rootPrimitive = nullptr;
     SkinnedMeshComponent* m_rootSkinned = nullptr;
     std::string m_name;
+
+  protected:
+    std::vector<std::shared_ptr<ActorComponent>> m_ownedComponents;
 
   private:
     ActorState m_currentState;

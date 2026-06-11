@@ -8,6 +8,6 @@ ActorComponent::~ActorComponent()
 {
 }
 
-void ActorComponent::Tick(const float& deltaTime)
+void ActorComponent::TickComponent(const float& deltaTime)
 {
 }

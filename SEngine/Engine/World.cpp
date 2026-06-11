@@ -68,6 +68,7 @@ void World::Tick(float deltaTime)
     for (auto& actor : m_actors)
     {
         actor->Tick(deltaTime);
+        actor->TickComponents(deltaTime);
     }
 
     m_lightManager->Update();
@@ -119,7 +120,7 @@ void World::InitLevel()
     ad.mc.useMetallicMap = true;
     ad.mc.useRoughnessMap = true;
 
-	m_pbr = GenerateActor("pbr_sphere", ad);
+    m_pbr = GenerateActor("pbr_sphere", ad);
 
     ad.lc.model = DirectX::XMMatrixTranslation(0.f, 0.f, 0.f);
     ad.lc.model = ad.lc.model.Transpose();
@@ -128,15 +129,15 @@ void World::InitLevel()
     ad.useMaterial = false;
     GenerateActor("plane", ad);
 
-  /*  auto mp = std::make_shared<AMovingPlatform>();
+    auto mp = std::make_shared<AMovingPlatform>();
     mp->Initialize();
-    AddActor(mp);*/
+    AddActor(mp);
 
     auto camera = std::make_shared<ACamera>();
-    camera->Initialize();
+    camera->Initialize(Vector3(0.f,2.f,-2.f), true);
     AddActor(camera);
 
-    auto light = std::make_shared<ALight>();
+	auto light = std::make_shared<ALight>();
     light->Initialize();
     AddActor(light);
 
@@ -145,6 +146,21 @@ void World::InitLevel()
     GenerateActor("simple_cube", ad);
 
     m_player = camera;
+
+	// stableFluids 렌더용
+	/*ActorData ad = {};
+	ad.lc.model = DirectX::XMMatrixTranslation(0.f, 0.f, 0.f);
+    ad.lc.model = ad.lc.model.Transpose();
+    ad.textureName = "sf_density";
+    ad.psoName = "defaultPSO";
+    ad.useMaterial = false;
+    GenerateActor("rect", ad);
+
+    auto orthogonalCamera = std::make_shared<ACamera>();
+    orthogonalCamera->Initialize(Vector3(0.f, 0.f, 0.f), false);
+    AddActor(orthogonalCamera);
+
+	m_player = orthogonalCamera;*/
 
     OnRegister();
 }
@@ -198,7 +214,7 @@ std::shared_ptr<StaticMesh> World::GetMesh(const std::string& meshName)
     return it->second;
 }
 
- std::shared_ptr<Actor> World::GenerateActor(const std::string& meshName, const ActorData& ad)
+std::shared_ptr<Actor> World::GenerateActor(const std::string& meshName, const ActorData& ad)
 {
     auto mesh = GetMesh(meshName);
     if (!mesh)
@@ -234,4 +250,32 @@ void World::ClearMeshBlobs()
     {
         m.second->Clear();
     }
+}
+
+void World::ClearTextureBlobs()
+{
+    m_textureLoader->ClearBlobs();
+}
+
+void World::MoveMouseToWindowCenter()
+{
+    POINT center = GetCenterPoint();
+
+    // 클라이언트 좌표 → 화면 좌표
+    ClientToScreen(m_mainWnd, &center);
+
+    // 마우스 이동
+    SetCursorPos(center.x, center.y);
+}
+
+POINT World::GetCenterPoint()
+{
+    RECT rect;
+    GetClientRect(m_mainWnd, &rect);
+
+    // 클라이언트 영역 중앙 좌표
+    POINT center;
+    center.x = (rect.left + rect.right) / 2;
+    center.y = (rect.top + rect.bottom) / 2;
+    return center;
 }

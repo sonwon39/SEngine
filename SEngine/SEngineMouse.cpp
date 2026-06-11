@@ -35,27 +35,45 @@ void SEngineMouse::UpdateLButtonDownState(bool newState)
 
 void SEngineMouse::Tick(float deltaTime)
 {
-    static int i = 0;
-
-    POINT mousePos;
+    static int j = 0;
     GetCursorPos(&mousePos);
     ScreenToClient(m_world->m_mainWnd, &mousePos);
+
+	StableFluidsMouseTick(deltaTime);
+
+	if (m_world->GetFPSMode())
+	{
+        currPos = Vector2((float)mousePos.x, (float)mousePos.y);
+		if (j == 0)
+		{
+            prevPos = currPos;
+		}
+        j++;
+        velocity = (currPos - prevPos);
+        auto center = m_world->GetCenterPoint();
+        prevPos = Vector2((float)center.x, (float)center.y);
+        m_world->MoveMouseToWindowCenter();
+	}
+	else
+	{
+        j = 0;
+	}
+}
+
+void SEngineMouse::StableFluidsMouseTick(float deltaTime)
+{
+    static int i = 0;
 
     int width = m_world->windowWidth;
     int height = m_world->windowHeight;
 
-    float x = (mousePos.x + 0.5f) / width;
-    float y = (mousePos.y + 0.5f) / height;
     float ndcX = (mousePos.x * 2.f) / width - 1.f;
     float ndcY = (-mousePos.y * 2.f) / height + 1.f;
 
     ndcX = std::clamp(ndcX, -1.0f, 1.0f);
     ndcY = std::clamp(ndcY, -1.0f, 1.0f);
 
-    currPos = Vector2((float)mousePos.x, (float)mousePos.y);
-
     currNDCPos = Vector2(ndcX, -ndcY);
-    currNDCPos.Clamp(Vector2(-1, -1), Vector2(1, 1));
 
     mouseCB.localConstant.posX = mousePos.x;
     mouseCB.localConstant.posY = mousePos.y;
@@ -65,16 +83,13 @@ void SEngineMouse::Tick(float deltaTime)
         int index = i % m_world->colors.size();
         lBFlag = false;
         prevNDCPos = currNDCPos;
-        prevPos = currPos;
         mouseCB.localConstant.color = m_world->colors[index];
         i++;
     }
 
-    velocity = (currPos - prevPos);
     mouseCB.localConstant.velocity = (currNDCPos - prevNDCPos) * 10.f;
 
     mouseCB.Update();
 
     prevNDCPos = currNDCPos;
-    prevPos = currPos;
 }

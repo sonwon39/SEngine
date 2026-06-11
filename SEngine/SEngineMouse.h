@@ -17,11 +17,14 @@ class SEngineMouse
     // constantbuffer 업데이트
     void Tick(float deltaTime);
 
+    void StableFluidsMouseTick(float deltaTime);
+
   public:
     void UpdateLButtonDownState(bool newState);
 
   public:
     ConstantBuffer<MouseConstant> mouseCB;
+    POINT mousePos;
 
   public:
     bool lButtonDown = false;

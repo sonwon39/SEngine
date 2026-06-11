@@ -115,7 +115,7 @@ void StableFluids::InitResources(UINT width, UINT height)
             if (m_world)
             {
                 texLoader = m_world->GetTextureLoader();
-                texLoader->AddTexture("sf_Density", m_newDensityBuffer);
+                texLoader->AddTexture("sf_density", m_newDensityBuffer);
             }
         }
     }

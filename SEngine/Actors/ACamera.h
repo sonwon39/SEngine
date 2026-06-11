@@ -10,7 +10,7 @@ class ACamera : public Actor
     virtual ~ACamera();
 
   public:
-    virtual void Initialize();
+    virtual void Initialize(DirectX::SimpleMath::Vector3& location, bool isPerspective);
 
   public:
     virtual void Tick(const float& deltaTime);

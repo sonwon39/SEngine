@@ -3,6 +3,8 @@
 #include "Engine\World.h"
 #include "GameFramework\StaticMeshComponent.h"
 #include "GameFramework\CameraComponent.h"
+#include "ActorComponents\Mover.h"
+
 
 using namespace Graphics;
 
@@ -32,20 +34,19 @@ void AMovingPlatform::Initialize()
     root->SetTextureName("PavingStones145_2K-PNG_Albedo");
     root->SetPSOName("defaultPSO");
 
-    std::shared_ptr<CameraComponent> camera = std::make_shared<CameraComponent>(this);
-
-    root->Attach(camera);
-
-    camera->SetLocation(Vector3(0.f, 1.f, -2.f));
-    camera->UpdateRotation(0.f, 30.f);
-    camera->Initialize(70.f, m_world->windowWidth, m_world->windowHeight, 0.01f, 200.f);
     SetRootComponent(root);
+
+	std::shared_ptr<Mover> mover = std::make_shared<Mover>(this);
+    mover->Initialize();
+
+	AddActorComponent(mover);
+	
 }
 
 void AMovingPlatform::Tick(const float& deltaTime)
 {
-    if (!m_world || !(m_world->m_inputHelper))
-        return;
+  /*  if (!m_world || !(m_world->m_inputHelper))
+        return;*/
 
     /*Vector3 dir = m_world->m_inputHelper->GetInputDirection();
     Vector3 dx = dir * m_velocity *deltaTime;

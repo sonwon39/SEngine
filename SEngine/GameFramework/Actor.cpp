@@ -5,6 +5,7 @@
 #include "CollisionComponent.h"
 #include "SkinnedMeshComponent.h"
 #include "GraphicsCommon.h"
+#include "ActorComponent.h"
 
 using namespace Graphics;
 using DirectX::SimpleMath::Vector3;
@@ -28,6 +29,15 @@ void Actor::Initialize(std::shared_ptr<StaticMesh> mesh, const ActorData& ad)
 
 void Actor::Tick(const float& deltaTime)
 {
+}
+
+void Actor::TickComponents(const float& deltaTime)
+{
+	for (auto& ac : m_ownedComponents)
+	{
+        if (ac->GetComponentTickEnabled())
+			ac->TickComponent(deltaTime);
+	}
 }
 
 void Actor::UpdateRotation(const int& mouseDeltaX, const int& mouseDeltaY, const float& deltaTime)
@@ -72,6 +82,11 @@ void Actor::SetRootComponent(std::shared_ptr<SceneComponent> newRootComponent)
     // 루트의 구체 타입을 한 번만 확인해 캐싱한다(이후 Setter들은 dynamic_cast 없이 포인터 사용).
     m_rootPrimitive = dynamic_cast<PrimitiveComponent*>(m_rootComponent.get());
     m_rootSkinned = dynamic_cast<SkinnedMeshComponent*>(m_rootComponent.get());
+}
+
+void Actor::AddActorComponent(std::shared_ptr<ActorComponent> component)
+{
+    m_ownedComponents.push_back(component);
 }
 
 void Actor::OnRegister()

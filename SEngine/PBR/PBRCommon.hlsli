@@ -49,7 +49,6 @@ struct SurfaceProperties
 	float metallic;
     float NoV;
 	float3 F0;
-	float3 F;
 };
 
 struct BRDFContext
@@ -63,8 +62,9 @@ struct BRDFContext
 
 
 float GGX(float k, float NoV);
-float Normal_Distribution(float a2, float NoH);
+float D_GGX(float a2, float NoH);
 float SchlickGGX(BRDFContext c, float k);
+float Vis_SmithJointApprox(float a, float NoV, float NoL);
 
 float Pow5(float x)
 {
@@ -106,26 +106,46 @@ float3 Diffuse_Lambert(float3 diffuseColor)
 	return diffuseColor * (1 / PI);
 }
 
-float3 Specular_BRDF(SurfaceProperties surface, BRDFContext c)
+float3 Schlick_Specular_BRDF(SurfaceProperties surface, BRDFContext c)
 {
 	float3 specular_brdf;
 	float a = Pow2(surface.roughness);
 	float a2 = Pow2(a);
 	float k = Pow2(surface.roughness+1) / 8;
 
-	float D = Normal_Distribution(a2, c.NoH);
+	float D = D_GGX(a2, c.NoH);
 	float G = SchlickGGX(c, k);
-	float3 F = surface.F;
+	float3 F = Fresnel_Schlick(surface.F0, 1.f, c.VoH);
 
-	return (D * F * G) / max(1e-4, (4 * c.NoL * c.NoV));
+	return (D * F * G) / max(1e-5, (4 * c.NoL * c.NoV));
 }
 
-float Normal_Distribution(float a2, float NoH)
+float3 Specular_BRDF(SurfaceProperties surface, BRDFContext c)
+{
+	float3 specular_brdf;
+	float a = Pow2(surface.roughness);
+	float a2 = Pow2(a);
+	
+	float D = D_GGX(a2, c.NoH);
+	float Vis = Vis_SmithJointApprox(a, c.NoV, c.NoL);
+	float3 F = Fresnel_Schlick(surface.F0, 1.f, c.VoH);
+
+	return (D * Vis) * F ;
+}
+
+float D_GGX(float a2, float NoH)
 {
 	const float PI = 3.141592f;
 	float NoH2 = NoH * NoH;
 	float b = (NoH2* (a2-1)+1);
 	return a2 / (PI * b*b);
+}
+
+float Vis_SmithJointApprox(float a, float NoV, float NoL )
+{            
+    float Vis_SmithV = NoL * ( NoV * ( 1 - a ) + a );
+    float Vis_SmithL = NoV * ( NoL * ( 1 - a ) + a );
+    return 0.5 * rcp( Vis_SmithV + Vis_SmithL );
 }
 
 float SchlickGGX(BRDFContext c, float k)

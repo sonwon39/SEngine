@@ -144,6 +144,7 @@
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ActorComponents\Mover.cpp" />
     <ClCompile Include="Actors\ACamera.cpp" />
     <ClCompile Include="Actors\ALight.cpp" />
     <ClCompile Include="Actors\AMovingPlatform.cpp" />
@@ -151,7 +152,6 @@
     <ClCompile Include="AssetManager\ModelLoader.cpp" />
     <ClCompile Include="AssetManager\TextureLoader.cpp" />
     <ClCompile Include="BaseApp.cpp" />
-    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="ConstantBuffer.cpp" />
     <ClCompile Include="Engine\Level.cpp" />
     <ClCompile Include="Engine\RenderEngine.cpp" />
@@ -185,6 +185,7 @@
     <ClCompile Include="Utility.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ActorComponents\Mover.h" />
     <ClInclude Include="Actors\ACamera.h" />
     <ClInclude Include="Actors\ALight.h" />
     <ClInclude Include="Actors\AMovingPlatform.h" />
@@ -194,7 +195,6 @@
     <ClInclude Include="AssetManager\ModelLoader.h" />
     <ClInclude Include="AssetManager\TextureLoader.h" />
     <ClInclude Include="BaseApp.h" />
-    <ClInclude Include="Camera.h" />
     <ClInclude Include="ConstantBuffer.h" />
     <ClInclude Include="DataType.h" />
     <ClInclude Include="DefaultHLSLCompat.h" />

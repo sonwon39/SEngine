@@ -79,6 +79,10 @@ class World
     void SetFPSMode(bool newState)
     {
         m_fpsMode = newState;
+		if (m_fpsMode)
+		{
+            MoveMouseToWindowCenter();
+		}
     }
     bool GetFPSMode() const
     {
@@ -94,6 +98,12 @@ class World
 
     // mesh 내의 vertex index buffer blob 제거
     void ClearMeshBlobs();
+
+    void ClearTextureBlobs();
+
+    void MoveMouseToWindowCenter();
+
+    POINT GetCenterPoint();
 
     // 텍스처 이름으로 Material을 얻는다. 같은 이름이면 같은 Material을 반환(캐시).
     // 텍스처가 로드돼 있지 않으면 nullptr.

@@ -12,15 +12,18 @@ CameraComponent::~CameraComponent()
 }
 
 void CameraComponent::Initialize(const float& fovDegrees, const UINT& width, const UINT& height, const float& nearZ,
-                                 const float& farZ)
+                                 const float& farZ, bool isPerspective)
 {
+    m_perspectiveMode = isPerspective;
+    m_width = width;
+    m_height = height;
     m_fovRadians = DirectX::XMConvertToRadians(fovDegrees);
     m_aspectRatio = (float)width / height;
     m_nearZ = nearZ;
     m_farZ = farZ;
 
     Matrix view;
-    Matrix projection = DirectX::XMMatrixPerspectiveFovLH(m_fovRadians, m_aspectRatio, m_nearZ, m_farZ);
+    Matrix projection = CreateProjMatrix();
 
     auto loc = GetLocation();
     if (m_parent)
@@ -64,8 +67,11 @@ void CameraComponent::UpdateCameraInfo(const int& width, const int& height)
 {
     if (!m_gcbInitialized)
         return;
+    m_width = width;
+    m_height = height;
     m_aspectRatio = float(width) / height;
-    Matrix projection = DirectX::XMMatrixPerspectiveFovLH(m_fovRadians, m_aspectRatio, m_nearZ, m_farZ);
+
+    Matrix projection = CreateProjMatrix();
 
     m_gcb.localConstant.projection = projection.Transpose();
 }
@@ -112,4 +118,16 @@ DirectX::SimpleMath::Matrix CameraComponent::GetViewMatrix() const
     if (!m_gcbInitialized)
         return DirectX::SimpleMath::Matrix();
     return m_gcb.localConstant.view;
+}
+
+Matrix CameraComponent::CreateProjMatrix() const
+{
+	if (m_perspectiveMode)
+	{
+        return DirectX::XMMatrixPerspectiveFovLH(m_fovRadians, m_aspectRatio, m_nearZ, m_farZ);
+	}
+	else
+	{
+        return DirectX::XMMatrixOrthographicLH(2.f, 2.f, m_nearZ, m_farZ);
+	}
 }

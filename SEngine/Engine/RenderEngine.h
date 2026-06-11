@@ -18,7 +18,6 @@
 #include "directxtk12/SimpleMath.h"
 #include "DefaultHLSLCompat.h"
 
-#include "Camera.h"
 #include "SPH/SPH.h"
 #include "StableFluids/StableFluids.h"
 #include "ConstantBuffer.h"
@@ -59,6 +58,7 @@ class RenderEngine
 
     //  mesh buffer 초기화 (vertex, index 버퍼)
     void InitMeshBuffer();
+    void InitShaderResources();
     bool InitGUI();
 
     void OnResize(int width, int height);

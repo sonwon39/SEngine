@@ -19,9 +19,16 @@ void ALight::Initialize()
         return;
     auto mesh = m_world->GetMesh("sphere");
     Light l;
-    l.position = Vector3(-10.f, 10.f, 0.f);
-	l.intensity = 100.f;
-    l.color = Vector3(1.f, 1.f, 1.f);
+    l.position = Vector3(70.f, -70.f, 0.f);
+    origin = l.position;
+    dir = -origin;
+    dir.Normalize();
+    originDir = dir;
+
+    m_velocity = 10.f;
+
+	l.fallOffEnd = 100.f;
+    l.radiance = Vector3(1.f, 1.f, 1.f);
     l.enabled = 1;
 
     LocalConstant lc;
@@ -44,5 +51,20 @@ void ALight::Initialize()
 
 void ALight::Tick(const float& deltaTime)
 {
-
+    Vector3 currPos = GetActorLocation();
+    Vector3 del = dir * deltaTime * m_velocity;
+    Vector3 nextPos = currPos + del;
+	// 0 보다 더 진행한 경우
+	if ((nextPos - origin).Length() > origin.Length())
+	{
+        SetActorLocation(Vector3(0, 0, 0));
+        dir = -dir;
+	}
+	else if ((nextPos).Length() > origin.Length())
+	{
+        SetActorLocation(origin);
+        dir = -dir;
+	}
+    else
+		UpdateActorLocation(del);
 }

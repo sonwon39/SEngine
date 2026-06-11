@@ -22,10 +22,6 @@ struct Light
     XMFLOAT3 radiance;
     float dummy2;
 
-    Matrix view;
-    Matrix proj;
-
-    float intensity;
 #ifndef HLSL
     Light() : enabled(0), position(0.f, 0.0f, 0.0f), radiance(1.f,1.f,1.f)
     {

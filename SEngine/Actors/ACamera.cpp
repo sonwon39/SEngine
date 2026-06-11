@@ -15,14 +15,14 @@ ACamera::~ACamera()
 {
 }
 
-void ACamera::Initialize()
+void ACamera::Initialize(DirectX::SimpleMath::Vector3& location, bool isPerspective)
 {
     if (!m_world)
         return;
     auto mesh = m_world->GetMesh("sphere");
 
     LocalConstant lc;
-    lc.model = DirectX::XMMatrixTranslation(0.f, 2.f, -2.f);
+    lc.model = DirectX::XMMatrixTranslation(location.x, location.y, location.z);
     lc.model = lc.model.Transpose();
 
     std::shared_ptr<StaticMeshComponent> root = std::make_shared<StaticMeshComponent>(this);
@@ -33,9 +33,9 @@ void ACamera::Initialize()
     root->SetPSOName("defaultPSO");
 
     std::shared_ptr<CameraComponent> camera = std::make_shared<CameraComponent>(this);
-
     root->Attach(camera);
-    camera->Initialize(70.f, m_world->windowWidth, m_world->windowHeight, 0.01f, 500.f);
+    camera->Initialize(70.f, m_world->windowWidth, m_world->windowHeight, 0.01f, 500.f, isPerspective);
+
     SetRootComponent(root);
 }
 

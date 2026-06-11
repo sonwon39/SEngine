@@ -16,7 +16,7 @@ float4 main(PSInput input) : SV_TARGET
 		float3 B = normalize(cross(N, T));
 		float3x3 nMat = float3x3(T, B, N);
 
-		float3 normalMap = gNormal.SampleLevel(gWrapLinearSampler, input.uv, 0.f).xyz;
+		float3 normalMap = gNormal.Sample(gWrapLinearSampler, input.uv).xyz;
 		normalMap = normalMap * 2.f - 1.f;
 		surface.N = normalize(mul(normalMap, nMat));
 	}
@@ -39,9 +39,8 @@ float4 main(PSInput input) : SV_TARGET
 	surface.c_spec = gRadianceIBL.SampleLevel(gWrapLinearSampler, R, 5.f * roughness).rgb;
 	surface.roughness = roughness;
 	surface.metallic = metallic;
-	surface.NoV = saturate(dot(N, V));
+	surface.NoV = saturate(dot(N, V) + 1e-5);
 	surface.F0 = lerp(Fdielectric, surface.c_diff, surface.metallic);
-	surface.F = Fresnel_Schlick(surface.F0, 1.f, surface.NoV);
 
 	brdfContext.NoV = surface.NoV;
 	
@@ -58,8 +57,10 @@ float4 main(PSInput input) : SV_TARGET
 		
 		if(l.enabled != 1)
 			continue;
-		
-		float3 L = normalize(l.position - worldPos);
+
+		float3 lPos = l.position;
+		float3 radiance = l.radiance;
+		float3 L = normalize(lPos - worldPos);
 		float3 H = normalize(L + V);
 
 		brdfContext.NoL = saturate(dot(N, L));
@@ -69,12 +70,15 @@ float4 main(PSInput input) : SV_TARGET
 
 		float3 specular_brdf = Specular_BRDF(surface, brdfContext);
 		
-		float x = l.fallOffEnd;
-		float d = distance(l.position, worldPos);
-		float intensity = saturate( 1- (d/x))
-		float3 radiance = l.radiance * brdfContext.NoL;
+		float r = l.fallOffEnd;
+		float d = distance(lPos, worldPos);
+
+		float window = Pow2(saturate(1 - Pow2(Pow2(d / r)))); // (1-(d/r)⁴)²
+		float intensity = window / (d * d + 1);
+		
+		radiance = radiance * brdfContext.NoL * intensity;
 		
 		light += (diffuse + specular_brdf) * radiance;
 	}
-	return float4(light, 1.f);
+	return float4(light + IBL, 1.f);
 }

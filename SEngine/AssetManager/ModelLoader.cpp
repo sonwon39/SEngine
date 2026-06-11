@@ -22,6 +22,11 @@ void ModelLoader<Vertex, uint16_t>::InitializeCPU()
     Asset<Vertex, uint16_t> plane;
     plane.m_meshes.push_back({GeometryGenerator::MakePlane((float)planeSize, (float)planeSize, 50)});
     assets["plane"] = plane;
+
+	Asset<Vertex, uint16_t> rect;
+    rect.m_meshes.push_back({GeometryGenerator::MakeRect(2.f, 2.f)});
+
+    assets["rect"] = rect;
 }
 
 void ModelLoader<SimpleVertex, uint16_t>::InitializeCPU()

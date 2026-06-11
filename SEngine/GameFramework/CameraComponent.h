@@ -12,14 +12,17 @@ class CameraComponent : public SceneComponent
   public:
     CameraComponent(Actor* owner);
     virtual ~CameraComponent();
+
     void Initialize(const float& fovDegrees, const UINT& width, const UINT& height, const float& nearZ,
-                    const float& farZ);
+                    const float& farZ, bool isPerspective = true);
 
     void Bind(const RootSignature* rs, ID3D12GraphicsCommandList* cl) const;
 
   public:
     DirectX::SimpleMath::Matrix GetProjMatrix() const override;
     DirectX::SimpleMath::Matrix GetViewMatrix() const override;
+
+    Matrix CreateProjMatrix() const;
 
   public:
     ConstantBuffer<GlobalConstant> m_gcb;
@@ -39,4 +42,7 @@ class CameraComponent : public SceneComponent
     float m_nearZ;
     float m_farZ;
     float m_aspectRatio;
+    UINT m_width;
+    UINT m_height;
+    bool m_perspectiveMode = true;
 };

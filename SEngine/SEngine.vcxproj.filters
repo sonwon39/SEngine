@@ -39,6 +39,9 @@
     <Filter Include="Actors">
       <UniqueIdentifier>{d1da5131-7311-4206-82fc-1aa5a1c32bfe}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ActorComponents">
+      <UniqueIdentifier>{a39ea56d-dc33-47dc-a902-793f86b1affb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Timer.cpp">
@@ -63,9 +66,6 @@
       <Filter>_cpp</Filter>
     </ClCompile>
     <ClCompile Include="GeometryGenerator.cpp">
-      <Filter>_cpp</Filter>
-    </ClCompile>
-    <ClCompile Include="Camera.cpp">
       <Filter>_cpp</Filter>
     </ClCompile>
     <ClCompile Include="SEngineMouse.cpp">
@@ -158,6 +158,9 @@
     <ClCompile Include="Actors\ALight.cpp">
       <Filter>Actors</Filter>
     </ClCompile>
+    <ClCompile Include="ActorComponents\Mover.cpp">
+      <Filter>ActorComponents</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Timer.h">
@@ -197,9 +200,6 @@
       <Filter>_h</Filter>
     </ClInclude>
     <ClInclude Include="GlobalConstant.h">
-      <Filter>_h</Filter>
-    </ClInclude>
-    <ClInclude Include="Camera.h">
       <Filter>_h</Filter>
     </ClInclude>
     <ClInclude Include="SEngineMouse.h">
@@ -333,6 +333,9 @@
     </ClInclude>
     <ClInclude Include="Actors\ALight.h">
       <Filter>Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="ActorComponents\Mover.h">
+      <Filter>ActorComponents</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

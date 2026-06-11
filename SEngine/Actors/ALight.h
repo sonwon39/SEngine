@@ -17,4 +17,7 @@ class ALight : public Actor
 
   private:
     float m_velocity;
+    DirectX::SimpleMath::Vector3 origin;
+    DirectX::SimpleMath::Vector3 dir;
+    DirectX::SimpleMath::Vector3 originDir;
 };

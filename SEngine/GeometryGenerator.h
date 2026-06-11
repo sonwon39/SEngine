@@ -12,6 +12,8 @@ struct GeometryGenerator
 
     static Mesh<Vertex, uint16_t> MakePlane(float x, float z, int c);
 
+    static Mesh<Vertex, uint16_t> MakeRect(float x, float y);
+
     static Mesh<Vertex, uint16_t> MakeSphere(int c, float r);
 
     static Mesh<PBRVertex, uint16_t> PBRPlane(float halfX, float halfZ, int cX, int cY);

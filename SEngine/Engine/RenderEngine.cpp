@@ -92,18 +92,7 @@ bool RenderEngine::InitScene()
     ThrowIfFailed(m_resourceCommandList->Reset(m_resourceCommandAllocator.Get(), nullptr));
 
     InitMeshBuffer();
-
-    std::shared_ptr<TextureLoader> texLoader;
-    // texture 준비
-    {
-        if (m_world)
-        {
-            texLoader = m_world->GetTextureLoader();
-            texLoader->LoadIdx();
-            texLoader->InitHeap(100);
-            texLoader->LoadTextures(m_resourceCommandList.Get());
-        }
-    }
+    InitShaderResources();
 
     // sph 초기화
     {
@@ -126,7 +115,7 @@ bool RenderEngine::InitScene()
     FlushCommands();
 
     // 텍스쳐, 메쉬 GPU RESOURCE 생성 후 blob 제거
-    texLoader->ClearBlobs();
+    m_world->ClearTextureBlobs();
     m_world->ClearMeshBlobs();
 
     cubemapMaterial = m_world->GetOrCreateMaterial("SkyBrdf");
@@ -160,6 +149,20 @@ void RenderEngine::InitMeshBuffer()
     pbrModelLoader->InitializeGPU(m_resourceCommandList.Get());
 }
 
+void RenderEngine::InitShaderResources()
+{
+    std::shared_ptr<TextureLoader> texLoader;
+    // texture 준비
+    {
+        if (m_world)
+        {
+            texLoader = m_world->GetTextureLoader();
+            texLoader->LoadIdx();
+            texLoader->InitHeap(100);
+            texLoader->LoadTextures(m_resourceCommandList.Get());
+        }
+    }
+}
 bool RenderEngine::InitGUI()
 {
     IMGUI_CHECKVERSION();
@@ -338,7 +341,6 @@ void RenderEngine::UpdateGUI()
 void RenderEngine::Tick(float deltaTime)
 {
     // SPHTick(deltaTime);
-    // StableFluidsTick(deltaTime);
 
     for (auto& m : meshBatchs)
     {
@@ -350,6 +352,7 @@ void RenderEngine::Tick(float deltaTime)
     {
         camera->SyncCB();
     }
+    //StableFluidsTick(deltaTime);
 	
     RenderMeshes();
     RenderGUI();
@@ -368,6 +371,10 @@ void RenderEngine::StableFluidsTick(float deltaTime)
 {
     m_stableFluids->Tick(deltaTime);
     m_stableFluids->Execute(m_commandQueue.Get());
+
+	RenderMeshes();
+    //RenderGUI();
+    Execute();
 }
 
 void RenderEngine::RenderMeshes()

@@ -426,6 +426,7 @@ void SPH::Render(ID3D12GraphicsCommandList* commandList)
 
     CD3DX12_GPU_DESCRIPTOR_HANDLE sphHandle(m_sphParticleSRVHeap->GetGPUDescriptorHandleForHeapStart(), m_sphHeapIdx,
                                             m_cbvSrvDescriptorSize);
+
     commandList->SetDescriptorHeaps(1, heaps);
     commandList->SetGraphicsRootDescriptorTable(0, sphHandle);
     commandList->SetGraphicsRootConstantBufferView(2, m_sphParticleLocalCB->GetGPUVirtualAddress());

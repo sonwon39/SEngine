@@ -10,8 +10,16 @@ class ActorComponent
     ActorComponent(Actor* owner);
     virtual ~ActorComponent();
 
-  protected:
+  public:
     virtual void Initialize() {};
+    void SetComponentTickEnabled(bool enabled)
+    {
+        bCanTick = enabled;
+    }
+    bool GetComponentTickEnabled()
+    {
+        return bCanTick;
+    }
 
   public:
     Actor* GetOwner()
@@ -20,8 +28,9 @@ class ActorComponent
     }
 
   public:
-    virtual void Tick(const float& deltaTime);
+    virtual void TickComponent(const float& deltaTime);
 
   protected:
     Actor* m_owner;
+    bool bCanTick = false;
 };
