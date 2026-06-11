@@ -17,6 +17,7 @@ class GPUBuffer
     // upload 버퍼 clear
     virtual void Clear();
     void Reset();
+    void Map();
 
   public:
     uint64_t bufferSize;
@@ -46,5 +47,6 @@ class GPUBuffer
     Microsoft::WRL::ComPtr<ID3D12Resource> gpu;
     Microsoft::WRL::ComPtr<ID3D12Resource> upload;
     D3D12_RESOURCE_STATES m_currentState = D3D12_RESOURCE_STATE_COMMON;
+    void* pGPU = nullptr;
 };
 #include "GPUBuffer.inl"

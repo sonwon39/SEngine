@@ -8,7 +8,6 @@
 #include "physx\PxPhysicsAPI.h"
 #include "PhysXMode.h"
 
-class PrimitiveComponent;
 struct ActorData;
 
 // 렌더 가능한 + 물리 표현을 갖는 SceneComponent. 가시성, PSO/텍스처 이름,
@@ -70,6 +69,7 @@ class PrimitiveComponent : public SceneComponent
         return m_physXMode;
     }
     physx::PxTransform GetPxTransform() const;
+
     bool GetUpdateConstant() const
     {
         return m_updateConstant;

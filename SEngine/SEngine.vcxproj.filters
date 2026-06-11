@@ -149,6 +149,15 @@
     <ClCompile Include="Actors\ACamera.cpp">
       <Filter>Actors</Filter>
     </ClCompile>
+    <ClCompile Include="GameFramework\LightComponent.cpp">
+      <Filter>GameFamework</Filter>
+    </ClCompile>
+    <ClCompile Include="AssetManager\LightManager.cpp">
+      <Filter>AssetManager</Filter>
+    </ClCompile>
+    <ClCompile Include="Actors\ALight.cpp">
+      <Filter>Actors</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Timer.h">
@@ -313,6 +322,18 @@
     <ClInclude Include="IBLEnvironment.h">
       <Filter>_h</Filter>
     </ClInclude>
+    <ClInclude Include="StructuredBuffer.h">
+      <Filter>Buffer</Filter>
+    </ClInclude>
+    <ClInclude Include="GameFramework\LightComponent.h">
+      <Filter>GameFamework</Filter>
+    </ClInclude>
+    <ClInclude Include="AssetManager\LightManager.h">
+      <Filter>AssetManager</Filter>
+    </ClInclude>
+    <ClInclude Include="Actors\ALight.h">
+      <Filter>Actors</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="DefaultVS.hlsl" />
@@ -429,6 +450,9 @@
     <None Include="CubeMapCommon.hlsli" />
     <None Include="PBR\PBRCommon.hlsli">
       <Filter>PBR</Filter>
+    </None>
+    <None Include="StructuredBuffer.inl">
+      <Filter>Buffer</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

@@ -1,6 +1,7 @@
 ﻿#include "World.h"
 #include "Actors/AMovingPlatform.h"
 #include "Actors/ACamera.h"
+#include "Actors/ALight.h"
 
 World::World()
 {
@@ -12,6 +13,8 @@ World::World()
     m_modelLoader = std::make_shared<ModelLoader<Vertex, uint16_t>>();
     m_simpleModelLoader = std::make_shared<SimpleModelLoader>();
     m_pbrModelLoader = std::make_shared<PBRModelLoader>();
+
+    m_lightManager = std::make_shared<LightManager>();
 
     m_iblEnv = std::make_shared<IBLEnvironment>();
 }
@@ -66,6 +69,8 @@ void World::Tick(float deltaTime)
     {
         actor->Tick(deltaTime);
     }
+
+    m_lightManager->Update();
 }
 
 bool World::FindTexture(const std::string& textureName, int& index)
@@ -107,7 +112,14 @@ void World::InitLevel()
     ad.mc.texTransform = DirectX::XMMatrixScaling(2.5f, 2.5f, 1.f);
     ad.mc.texTransform = ad.mc.texTransform.Transpose();
     ad.mc.heightScale = 0.f;
-    GenerateActor("pbr_sphere", ad);
+    ad.mc.metallic = 1.f;
+    ad.mc.roughness = 0.f;
+    ad.mc.useHeightMap = false;
+    ad.mc.useNormalMap = true;
+    ad.mc.useMetallicMap = true;
+    ad.mc.useRoughnessMap = true;
+
+	m_pbr = GenerateActor("pbr_sphere", ad);
 
     ad.lc.model = DirectX::XMMatrixTranslation(0.f, 0.f, 0.f);
     ad.lc.model = ad.lc.model.Transpose();
@@ -123,6 +135,10 @@ void World::InitLevel()
     auto camera = std::make_shared<ACamera>();
     camera->Initialize();
     AddActor(camera);
+
+    auto light = std::make_shared<ALight>();
+    light->Initialize();
+    AddActor(light);
 
     ad.textureName = "SkyEnvHDR_CubeMap";
     ad.psoName = "cubeMapPSO";
@@ -182,15 +198,16 @@ std::shared_ptr<StaticMesh> World::GetMesh(const std::string& meshName)
     return it->second;
 }
 
-void World::GenerateActor(const std::string& meshName, const ActorData& ad)
+ std::shared_ptr<Actor> World::GenerateActor(const std::string& meshName, const ActorData& ad)
 {
     auto mesh = GetMesh(meshName);
     if (!mesh)
-        return;
+        return nullptr;
 
     std::shared_ptr<Actor> actor = std::make_shared<Actor>();
     actor->Initialize(mesh, ad);
     AddActor(actor);
+    return actor;
 }
 
 void World::AddActor(std::shared_ptr<Actor> actor)

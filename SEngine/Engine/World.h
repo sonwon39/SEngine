@@ -18,6 +18,7 @@
 #include "Material.h"
 #include "AssetManager/TextureLoader.h"
 #include "AssetManager/ModelLoader.h"
+#include "AssetManager/LightManager.h"
 #include "GameFramework/Actor.h"
 #include "IBLEnvironment.h"
 
@@ -60,6 +61,14 @@ class World
     {
         return m_simpleModelLoader;
     }
+    std::shared_ptr<LightManager> GetLightManger() const
+    {
+        return m_lightManager;
+    }
+	D3D12_GPU_VIRTUAL_ADDRESS GetLightView() const
+	{
+        return (m_lightManager ? m_lightManager->GetLightView() : 0);
+	}
     ID3D12DescriptorHeap* GetMainHeap() const;
     Vector2 GetMouseVelocity() const;
 
@@ -78,7 +87,7 @@ class World
 
   public:
     std::shared_ptr<StaticMesh> GetMesh(const std::string& meshName);
-    void GenerateActor(const std::string& meshName, const ActorData& ad);
+    std::shared_ptr<Actor> GenerateActor(const std::string& meshName, const ActorData& ad);
     void AddActor(std::shared_ptr<Actor> actor);
     void AddMesh(const std::string& meshName, std::shared_ptr<StaticMesh> mesh);
     void OnRegister();
@@ -92,6 +101,10 @@ class World
     std::shared_ptr<Actor> GetPlayer() const
     {
         return m_player;
+    }
+    std::shared_ptr<Actor> GetPBRModel() const
+    {
+        return m_pbr;
     }
     std::shared_ptr<IBLEnvironment> GetIBL() const
     {
@@ -109,16 +122,10 @@ class World
     std::shared_ptr<InputHelper> m_inputHelper;
     UINT windowWidth;
     UINT windowHeight;
+    std::vector<DirectX::SimpleMath::Vector3> colors;
 
   private:
     ID3D12Device5* m_device;
-
-  public:
-    std::vector<DirectX::SimpleMath::Vector3> colors;
-
-  public:
-    // GPUBuffer m_test;
-    DXGI_FORMAT testFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
 
   public:
     bool m_captureDirty = false;
@@ -138,8 +145,12 @@ class World
     std::shared_ptr<PBRModelLoader> m_pbrModelLoader;
 
   private:
+    std::shared_ptr<LightManager> m_lightManager;
+
+  private:
     std::vector<std::shared_ptr<Actor>> m_actors;
     std::shared_ptr<Actor> m_player;
+    std::shared_ptr<Actor> m_pbr;
     std::shared_ptr<IBLEnvironment> m_iblEnv;
 
     std::unordered_map<std::string, std::shared_ptr<StaticMesh>> m_meshes;

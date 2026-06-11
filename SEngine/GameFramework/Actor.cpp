@@ -163,3 +163,13 @@ void Actor::SetPSOName(const std::string& newName)
     if (m_rootPrimitive)
         m_rootPrimitive->SetPSOName(newName);
 }
+void Actor::SetMaterialConstant(const MaterialConstant& newConstant)
+{
+    if (m_rootPrimitive)
+        m_rootPrimitive->SetMaterialConstant(newConstant);
+}
+MaterialConstant Actor::GetMaterialConstant() const
+{
+    MaterialConstant material;
+    return m_rootPrimitive ? m_rootPrimitive->GetMaterialConstant() : material;
+}

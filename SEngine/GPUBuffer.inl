@@ -2,6 +2,7 @@
 
 #include "GPUBuffer.h"
 #include "GraphicsCommon.h"
+#include "Utility.h"
 
 using namespace Graphics;
 
@@ -24,6 +25,12 @@ inline void GPUBuffer::Reset()
 {
     if (gpu)
         gpu.Reset();
+}
+
+inline void GPUBuffer::Map()
+{
+    CD3DX12_RANGE range(0, 0);
+    ThrowIfFailed(gpu->Map(0, &range, static_cast<void**>(&pGPU)));
 }
 
 inline bool GPUBuffer::Transition(D3D12_RESOURCE_STATES newState, D3D12_RESOURCE_BARRIER& outBarrier)

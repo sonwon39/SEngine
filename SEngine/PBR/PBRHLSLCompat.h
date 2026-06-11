@@ -8,7 +8,6 @@ using namespace DirectX::SimpleMath;
 using namespace DirectX;
 #endif
 
-#define NUM_LIGHTS 1
 
 struct MaterialConstant
 {
@@ -18,6 +17,11 @@ struct MaterialConstant
     float roughness;
     float metallic;
     float dummy;
+
+	int useHeightMap;
+    int useNormalMap;
+    int useMetallicMap;
+    int useRoughnessMap;
 };
 
 struct LocalConstant
@@ -29,30 +33,6 @@ struct LocalConstant
 struct SkinnedLocalConstant
 {
     Matrix boneTransform[300];
-};
-
-struct PBRLightInfo
-{
-    XMFLOAT4 brightness;
-    XMVECTOR location;
-    XMVECTOR direction;
-    XMVECTOR color;
-
-    Matrix view;
-    Matrix proj;
-
-    float intensity;
-};
-
-struct PBRGlobalConstant
-{
-    Matrix view;
-    Matrix proj;
-
-    XMVECTOR cameraPos;
-    XMVECTOR cameraDir;
-
-    PBRLightInfo lights[NUM_LIGHTS];
 };
 
 #endif

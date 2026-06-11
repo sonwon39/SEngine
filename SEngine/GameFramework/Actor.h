@@ -80,6 +80,9 @@ class Actor
         m_currentState = newState;
     }
 
+    void SetMaterialConstant(const MaterialConstant& newConstant);
+    MaterialConstant GetMaterialConstant() const;
+
   protected:
     std::shared_ptr<SceneComponent> m_rootComponent;
     // 루트의 구체 타입 캐시. SetRootComponent에서 1회 산출 (각 Setter의 반복 dynamic_cast 제거)

@@ -145,7 +145,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Actors\ACamera.cpp" />
+    <ClCompile Include="Actors\ALight.cpp" />
     <ClCompile Include="Actors\AMovingPlatform.cpp" />
+    <ClCompile Include="AssetManager\LightManager.cpp" />
     <ClCompile Include="AssetManager\ModelLoader.cpp" />
     <ClCompile Include="AssetManager\TextureLoader.cpp" />
     <ClCompile Include="BaseApp.cpp" />
@@ -158,6 +160,7 @@
     <ClCompile Include="GameFramework\ActorComponent.cpp" />
     <ClCompile Include="GameFramework\CameraComponent.cpp" />
     <ClCompile Include="GameFramework\CollisionComponent.cpp" />
+    <ClCompile Include="GameFramework\LightComponent.cpp" />
     <ClCompile Include="GameFramework\PrimitiveComponent.cpp" />
     <ClCompile Include="GameFramework\SceneComponent.cpp" />
     <ClCompile Include="GameFramework\SkinnedMeshComponent.cpp" />
@@ -183,9 +186,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Actors\ACamera.h" />
+    <ClInclude Include="Actors\ALight.h" />
     <ClInclude Include="Actors\AMovingPlatform.h" />
     <ClInclude Include="AssetManager\Asset.h" />
     <ClInclude Include="AssetManager\BlendData.h" />
+    <ClInclude Include="AssetManager\LightManager.h" />
     <ClInclude Include="AssetManager\ModelLoader.h" />
     <ClInclude Include="AssetManager\TextureLoader.h" />
     <ClInclude Include="BaseApp.h" />
@@ -202,6 +207,7 @@
     <ClInclude Include="GameFramework\BlendData.h" />
     <ClInclude Include="GameFramework\CameraComponent.h" />
     <ClInclude Include="GameFramework\CollisionComponent.h" />
+    <ClInclude Include="GameFramework\LightComponent.h" />
     <ClInclude Include="GameFramework\PhysXMode.h" />
     <ClInclude Include="GameFramework\PrimitiveComponent.h" />
     <ClInclude Include="GameFramework\SceneComponent.h" />
@@ -231,6 +237,7 @@
     <ClInclude Include="StableFluids\Grid.h" />
     <ClInclude Include="StableFluids\StableFluids.h" />
     <ClInclude Include="StaticMesh.h" />
+    <ClInclude Include="StructuredBuffer.h" />
     <ClInclude Include="Texture2D.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="Utility.h" />
@@ -383,6 +390,7 @@
     <None Include="SPH\SPHUtility.hlsli" />
     <None Include="StableFluids\StableFluidsUtility.hlsli" />
     <None Include="StaticMesh.inl" />
+    <None Include="StructuredBuffer.inl" />
     <None Include="Utility.inl" />
     <None Include="VertexBuffer.inl" />
   </ItemGroup>

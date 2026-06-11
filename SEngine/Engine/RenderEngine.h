@@ -25,6 +25,7 @@
 #include "GPUBUffer.h"
 #include "DescriptorHeap.h"
 #include "MeshBatch.h"
+#include "StructuredBuffer.h"
 
 class StaticMesh;
 class CameraComponent;
@@ -53,6 +54,7 @@ class RenderEngine
 
   public:
     bool Initialize(int width, int height, int guiWidth, IDXGIFactory7* factory);
+	// Scene에서 사용할 GPU버퍼 생성
     bool InitScene();
 
     //  mesh buffer 초기화 (vertex, index 버퍼)

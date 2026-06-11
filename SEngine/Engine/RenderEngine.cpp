@@ -115,6 +115,11 @@ bool RenderEngine::InitScene()
         m_stableFluids = std::make_shared<StableFluids>();
         m_stableFluids->Initialize(m_width, m_height);
     }
+	// light 초기화
+    {
+        auto light = m_world->GetLightManger();
+        light->Initialize(D3D12_RESOURCE_FLAG_NONE, m_resourceCommandList.Get(), L"light");
+	}
 
     ID3D12CommandList* commands[] = {m_resourceCommandList.Get()};
     m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
@@ -302,6 +307,31 @@ void RenderEngine::UpdateGUI()
 {
     // ImGui::SetWindowSize(ImVec2((float)m_guiWidth, (float)m_height));
     ImGui::SetWindowPos(ImVec2(0.f, 0.f), ImGuiCond_Always);
+
+	MaterialConstant material;
+    if (!m_world)
+        return;
+    auto pbr = m_world->GetPBRModel();
+    if (!pbr)
+        return;
+
+	material = pbr->GetMaterialConstant();
+
+	bool metalic = material.useMetallicMap;
+    bool roghness = material.useRoughnessMap;
+    bool normal = material.useNormalMap;
+
+	ImGui::SliderFloat("roughness", &material.roughness, 0.f, 1.f);
+    ImGui::SliderFloat("metalic", &material.metallic, 0.f, 1.f);
+
+    if (ImGui::Checkbox("Use MetallicMap", &metalic))
+        material.useMetallicMap = metalic;
+    if (ImGui::Checkbox("Use Roughness", &roghness))
+            material.useRoughnessMap = roghness;
+    if (ImGui::Checkbox("Use NormalMap", &normal))
+        material.useNormalMap = normal;
+
+    pbr->SetMaterialConstant(material);
 }
 
 // BOOKMARK
@@ -320,9 +350,9 @@ void RenderEngine::Tick(float deltaTime)
     {
         camera->SyncCB();
     }
-
+	
     RenderMeshes();
-    // RenderGUI();
+    RenderGUI();
     Execute();
 }
 
@@ -366,6 +396,7 @@ void RenderEngine::RenderMeshes()
 
     auto camera = m_world->GetPlayer()->GetCameraComponent();
     auto ibl = m_world->GetIBL();
+    auto light = m_world->GetLightManger();
 
     for (auto& m : meshBatchs)
     {
@@ -379,10 +410,13 @@ void RenderEngine::RenderMeshes()
         if (psoChanged)
         {
             auto rs = m->GetCurrentRootSignature();
+
             if (camera)
                 camera->Bind(rs, m_commandList.Get());
             if (ibl)
                 ibl->Bind(rs, m_commandList.Get());
+            if (light)
+                light->Bind(rs, m_commandList.Get());
         }
 
         m->Render(m_commandList.Get());

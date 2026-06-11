@@ -234,6 +234,16 @@ class Utility
                                       D3D12_CPU_DESCRIPTOR_HANDLE& handle, const DescriptorType& type, UINT count,
                                       UINT dataSize);
 
+
+    template <typename DataType>
+    void CreateBuffer(DataType* data, long bufferSize, Microsoft::WRL::ComPtr<ID3D12Resource>& gpu,
+                      Microsoft::WRL::ComPtr<ID3D12Resource>& upload, D3D12_RESOURCE_FLAGS flag,
+                      ID3D12GraphicsCommandList* commandList);
+
+    template <typename DataType>
+    void CreateUploadBuffer(DataType* data, long bufferSize, Microsoft::WRL::ComPtr<ID3D12Resource>& gpu,
+                            D3D12_RESOURCE_FLAGS flag, ID3D12GraphicsCommandList* commandList);
+
     template <typename DataType>
     void CreateBuffer(const std::vector<DataType>& data, Microsoft::WRL::ComPtr<ID3D12Resource>& gpu,
                       Microsoft::WRL::ComPtr<ID3D12Resource>& upload, D3D12_RESOURCE_FLAGS flag,
