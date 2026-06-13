@@ -4,6 +4,10 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <mutex>
+#include <condition_variable>
+#include <thread>
+
 #include "directxtk12\SimpleMath.h"
 
 #include "InputHelper.h"
@@ -21,6 +25,7 @@
 #include "AssetManager/LightManager.h"
 #include "GameFramework/Actor.h"
 #include "IBLEnvironment.h"
+#include "ImageInfo.h"
 
 class World
 {
@@ -39,6 +44,7 @@ class World
   public:
     // gpu 버퍼 생성 후 (vertex, index) level 초기화
     void InitLevel();
+    bool useSimulation = true;
 
   public:
     ID3D12Device5* GetDevice()
@@ -65,10 +71,10 @@ class World
     {
         return m_lightManager;
     }
-	D3D12_GPU_VIRTUAL_ADDRESS GetLightView() const
-	{
-        return (m_lightManager ? m_lightManager->GetLightView() : 0);
-	}
+    std::shared_ptr<GPUBuffer> GetReadBackBuffer() const
+    {
+        return m_readbackBuffer;
+    }
     ID3D12DescriptorHeap* GetMainHeap() const;
     Vector2 GetMouseVelocity() const;
 
@@ -79,10 +85,10 @@ class World
     void SetFPSMode(bool newState)
     {
         m_fpsMode = newState;
-		if (m_fpsMode)
-		{
+        if (m_fpsMode)
+        {
             MoveMouseToWindowCenter();
-		}
+        }
     }
     bool GetFPSMode() const
     {
@@ -98,12 +104,13 @@ class World
 
     // mesh 내의 vertex index buffer blob 제거
     void ClearMeshBlobs();
-
     void ClearTextureBlobs();
 
     void MoveMouseToWindowCenter();
 
     POINT GetCenterPoint();
+
+    void InitReadbackBuffer(UINT64 size);
 
     // 텍스처 이름으로 Material을 얻는다. 같은 이름이면 같은 Material을 반환(캐시).
     // 텍스처가 로드돼 있지 않으면 nullptr.
@@ -120,6 +127,13 @@ class World
     {
         return m_iblEnv;
     }
+
+  private:
+    void SaveTextureCPU(const ImageInfo& info);
+    void SaveLoop();
+
+  public:
+    void Notify(const ImageInfo& info);
 
   public:
     UINT m_cbvSrvDescriptorSize = 0;
@@ -138,7 +152,6 @@ class World
     ID3D12Device5* m_device;
 
   public:
-    bool m_captureDirty = false;
     bool m_fpsMode = false;
 
   private:
@@ -165,4 +178,15 @@ class World
 
     std::unordered_map<std::string, std::shared_ptr<StaticMesh>> m_meshes;
     std::unordered_map<std::string, std::shared_ptr<Material>> m_materials;
+
+    // save 용
+  private:
+    std::shared_ptr<GPUBuffer> m_readbackBuffer;
+    std::thread saveThread;
+    bool saveFlag = false;
+    bool stopThread = false;
+    std::mutex saveMtx;
+    std::condition_variable saveCv;
+
+	ImageInfo sharedInfo;
 };

@@ -1,11 +1,14 @@
 ﻿#pragma once
 
 #include "Utility.h"
+#include <sstream>
+#include <iomanip>
+#include <chrono>
 
 namespace GraphicsUtils
 {
 template <typename DataType>
-inline void Utility::CreateBuffer(DataType* data, long bufferSize, Microsoft::WRL::ComPtr<ID3D12Resource>& gpu,
+inline void Utility::CreateBuffer(DataType* data, UINT64 bufferSize, Microsoft::WRL::ComPtr<ID3D12Resource>& gpu,
                                   Microsoft::WRL::ComPtr<ID3D12Resource>& upload, D3D12_RESOURCE_FLAGS flag,
                                   ID3D12GraphicsCommandList* commandList)
 {
@@ -38,7 +41,7 @@ inline void Utility::CreateBuffer(DataType* data, long bufferSize, Microsoft::WR
                                                                           D3D12_RESOURCE_STATE_COMMON));
 }
 template <typename DataType>
-inline void Utility::CreateUploadBuffer(DataType* data, long bufferSize, Microsoft::WRL::ComPtr<ID3D12Resource>& gpu,
+inline void Utility::CreateUploadBuffer(DataType* data, UINT64 bufferSize, Microsoft::WRL::ComPtr<ID3D12Resource>& gpu,
                                         D3D12_RESOURCE_FLAGS flag, ID3D12GraphicsCommandList* commandList)
 {
     ThrowIfFailed(m_device->CreateCommittedResource(
@@ -81,12 +84,32 @@ inline void Utility::CreateBuffer(const std::vector<DataType>& data, Microsoft::
     commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(gpu.Get(), D3D12_RESOURCE_STATE_COPY_DEST,
                                                                           D3D12_RESOURCE_STATE_COMMON));
 }
-inline void Utility::CreateBuffer(Microsoft::WRL::ComPtr<ID3D12Resource>& buffer, D3D12_HEAP_TYPE heapType, UINT size,
+inline void Utility::CreateBuffer(Microsoft::WRL::ComPtr<ID3D12Resource>& buffer, D3D12_HEAP_TYPE heapType, UINT64 size,
                                   D3D12_RESOURCE_FLAGS flags, D3D12_RESOURCE_STATES state, std::wstring name)
 {
     ThrowIfFailed(m_device->CreateCommittedResource(
-        &CD3DX12_HEAP_PROPERTIES(heapType), D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(size, flags),
-        D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(buffer.ReleaseAndGetAddressOf())));
+        &CD3DX12_HEAP_PROPERTIES(heapType), D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(size, flags), state, nullptr,
+                                                    IID_PPV_ARGS(buffer.ReleaseAndGetAddressOf())));
     buffer->SetName(name.c_str());
 }
+
+inline std::string Utility::MakeTimestamp()
+{
+    using namespace std::chrono;
+
+    const auto now = system_clock::now();
+    const std::time_t t = system_clock::to_time_t(now);
+
+    std::tm tm{};
+#if defined(_WIN32)
+    localtime_s(&tm, &t);
+#else
+    localtime_r(&t, &tm);
+#endif
+
+    std::ostringstream oss;
+    oss << std::put_time(&tm, "_%y%m%d_%H%M%S");
+    return oss.str();
+}
+
 } // namespace GraphicsUtils

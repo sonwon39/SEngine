@@ -25,9 +25,12 @@
 #include "DescriptorHeap.h"
 #include "MeshBatch.h"
 #include "StructuredBuffer.h"
+#include "ImageInfo.h"
 
 class StaticMesh;
 class CameraComponent;
+
+
 
 enum RenderType
 {
@@ -98,8 +101,12 @@ class RenderEngine
   private:
     void BindMainHeap();
     void FlushCommands();
-    void FlushResourceCommands();
+    void FlushRenderCommands();
     void Execute();
+
+  private:
+    void SaveTextureCPU(const ImageInfo& info);
+    void SaveTextureGPU();
 
   public:
     void RegistMeshBatch(std::shared_ptr<MeshBatch> meshBatch);
@@ -195,6 +202,9 @@ class RenderEngine
     std::vector<std::shared_ptr<MeshBatch>> meshBatchs;
     std::shared_ptr<Material> cubemapMaterial;
     std::vector<CameraComponent*> m_camera;
+
+  private:
+	GPUBuffer readbackBuffer;
 
   private:
     std::string m_currPSOName = "";

@@ -12,6 +12,10 @@ class GPUBuffer
     GPUBuffer();
     virtual ~GPUBuffer();
 
+    void Initialize(UINT64 bufferSize, D3D12_HEAP_TYPE heapType, D3D12_RESOURCE_STATES state,
+                    D3D12_RESOURCE_FLAGS flags,
+                    std::wstring name);
+
   public:
     bool Transition(D3D12_RESOURCE_STATES newState, D3D12_RESOURCE_BARRIER& outBarrier);
     // upload 버퍼 clear
@@ -19,8 +23,10 @@ class GPUBuffer
     void Reset();
     void Map();
 
+    void MapForRead();
+
   public:
-    uint64_t bufferSize;
+    UINT64 bufferSize;
     UINT dataCount;
 
   public:
@@ -42,6 +48,12 @@ class GPUBuffer
     {
         m_currentState = newState;
     }
+
+  public:
+    template <typename DataType> void CopyToGpu(const std::vector<DataType>& data);
+    template <typename DataType> void CopyToCpu(DataType* data, UINT64 numRows, UINT64 rowSize, UINT64 rowPitch);
+    template <typename DataType> void CopyToGpu(DataType* data, UINT64 dataSize);
+    template <typename DataType> void CopyToCpu(DataType* data, UINT64 dataSize);
 
   protected:
     Microsoft::WRL::ComPtr<ID3D12Resource> gpu;

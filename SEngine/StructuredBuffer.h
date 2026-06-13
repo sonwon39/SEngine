@@ -14,10 +14,7 @@ class StructuredBuffer : public GPUBuffer
 
 	// upload 전용 버퍼 생성
     template <typename DataType>
-    void Initialize(DataType* data, long bufferSize, D3D12_RESOURCE_FLAGS flag, ID3D12GraphicsCommandList* commandList,
+    void Initialize(DataType* data, UINT64 size, D3D12_RESOURCE_FLAGS flag, ID3D12GraphicsCommandList* commandList,
                     std::wstring name);
-
-	template <typename DataType> void CopyToGpu(const std::vector<DataType>& data);
-    template <typename DataType> void CopyToGpu(DataType* data, long dataSize);
 };
 #include "StructuredBuffer.inl"

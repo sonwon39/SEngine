@@ -24,22 +24,36 @@ void main(uint3 DTid : SV_DispatchThreadID)
 
     gDensity[DTid.xy] = max(0.0, gDensity[DTid.xy] - 0.001);
 
+	float deltaTime = gLocalCB.deltaTime;
+	float sigma = brushRadius / 2.5f;
+	float2 pixelPos = DTid.xy;
+
+	float2 sourcingPos1 = float2(100.f, height / 2.f);
+	float2 velocity1 = float2(0.1f, 0.f);
+
+	float d1 = distance(pixelPos, sourcingPos1) / brushRadius;
+	float scale1 = smootherstep(1.0 - d1);
+
+	//float2 sourcingPos2 = float2(width - 100.f, height / 2.f);
+	//float2 velocity2 = float2(-0.1f, 0.f);
+
+	//float d2 = distance(pixelPos, sourcingPos2) / brushRadius;
+	//float scale2 = smootherstep(1.0 - d2);
+
+	float3 color = gMouse.color;
+	gDensity[DTid.xy].xyz += (scale1 * color);
+	gVelocity[DTid.xy].xy += (scale1 * velocity1);
+	
+
     if (gMouse.lButtonDown)
     {
-        float deltaTime = gLocalCB.deltaTime;
-        float sigma = brushRadius / 2.5f;
-
-        float2 pixelPos = DTid.xy;
-
         float2 mouseCurrPos = float2(gMouse.posX, gMouse.posY);
         float2 velocity = gMouse.velocity;
 
         float d = distance(pixelPos, mouseCurrPos) / brushRadius;
         float scale = smootherstep(1.0 - d);
 
-        // scale = exp(-(d * d) / (sigma * sigma));
-
-        float3 color = gMouse.color;
+        color = gMouse.color;
         gDensity[DTid.xy].xyz += scale * color;
         gVelocity[DTid.xy].xy += scale * velocity;
     }

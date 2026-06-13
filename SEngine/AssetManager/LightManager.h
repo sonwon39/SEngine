@@ -37,7 +37,7 @@ class LightManager
   private:
     std::array<Light, MAX_LIGHT> m_lights;
     std::shared_ptr<StructuredBuffer> m_lightBuffer;
-    long dataSize = 0;
+    uint64_t dataSize = 0;
 
   private:
     uint16_t m_lightNum = 0;

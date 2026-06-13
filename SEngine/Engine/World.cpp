@@ -1,7 +1,15 @@
-﻿#include "World.h"
+﻿#pragma warning(disable : 4996)
+
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image.h"
+#include "stb_image_write.h"
+
+#include "World.h"
 #include "Actors/AMovingPlatform.h"
 #include "Actors/ACamera.h"
 #include "Actors/ALight.h"
+#include <fp16.h>
 
 World::World()
 {
@@ -17,6 +25,10 @@ World::World()
     m_lightManager = std::make_shared<LightManager>();
 
     m_iblEnv = std::make_shared<IBLEnvironment>();
+
+    m_readbackBuffer = std::make_shared<GPUBuffer>();
+
+	saveThread = std::thread(&World::SaveLoop, this);
 }
 
 World::~World()
@@ -24,10 +36,20 @@ World::~World()
     mouse.reset();
     m_level.reset();
     m_textureLoader.reset();
+	{
+        std::lock_guard<std::mutex> lock(saveMtx);
+        stopThread = true;
+    }
+    saveCv.notify_one();
+    if (saveThread.joinable())
+        saveThread.join();
 }
 
 void World::Initialize(ID3D12Device5* device, int width, int height)
 {
+    windowWidth = width;
+    windowHeight = height;
+
     m_device = device;
 
     m_modelLoader->InitializeCPU();
@@ -56,6 +78,8 @@ void World::Initialize(ID3D12Device5* device, int width, int height)
         Vector3(0.5f, 0.0f, 1.0f), // Purple
         Vector3(0.8f, 0.8f, 0.8f)  // Light Gray
     };
+
+    // InitReadbackBuffer();
 }
 
 void World::Tick(float deltaTime)
@@ -99,45 +123,64 @@ bool World::FindTextureHandle(const std::string& textureName, D3D12_GPU_DESCRIPT
 
 void World::InitLevel()
 {
+	if (useSimulation)
+	{
+        ActorData ad = {};
+        ad.lc.model = DirectX::XMMatrixTranslation(0.f, 0.f, 0.f);
+        ad.lc.model = ad.lc.model.Transpose();
+        ad.textureName = "sf_density";
+        ad.psoName = "defaultPSO";
+        ad.useMaterial = false;
+        GenerateActor("rect", ad);
+
+        auto orthogonalCamera = std::make_shared<ACamera>();
+        orthogonalCamera->Initialize(Vector3(0.f, 0.f, 0.f), false);
+        AddActor(orthogonalCamera);
+
+        m_player = orthogonalCamera;
+        OnRegister();
+        return;
+	}
+
     D3D12_GPU_DESCRIPTOR_HANDLE handle;
     if (FindTextureHandle(skyTextureName + "Brdf", handle))
         m_iblEnv->Initialize(handle);
 
     ActorData ad = {};
 
-    ad.lc.model = DirectX::XMMatrixTranslation(0.f, 1.f, 0.f);
-    ad.lc.model = ad.lc.model.Transpose();
+    ad.lc.model = Matrix(DirectX::XMMatrixTranslation(-1.5f, 1.f, 0.f)).Transpose();
     ad.psoName = "pbrPSO";
     ad.textureName = "Metal052C_4K-PNG_albedo";
     ad.useMaterial = true;
-    ad.mc.texTransform = DirectX::XMMatrixScaling(2.5f, 2.5f, 1.f);
-    ad.mc.texTransform = ad.mc.texTransform.Transpose();
-    ad.mc.heightScale = 0.f;
-    ad.mc.metallic = 1.f;
-    ad.mc.roughness = 0.f;
-    ad.mc.useHeightMap = false;
+    ad.mc.texTransform = Matrix(DirectX::XMMatrixScaling(2.5f, 2.5f, 1.f)).Transpose();
+    ad.mc.heightScale = 0.05f;
+    ad.mc.useHeightMap = true;
     ad.mc.useNormalMap = true;
     ad.mc.useMetallicMap = true;
     ad.mc.useRoughnessMap = true;
-
+	// gui 조작용
     m_pbr = GenerateActor("pbr_sphere", ad);
 
-    ad.lc.model = DirectX::XMMatrixTranslation(0.f, 0.f, 0.f);
-    ad.lc.model = ad.lc.model.Transpose();
-    ad.textureName = "PavingStones145_2K-PNG_Albedo";
-    ad.psoName = "defaultPSO";
-    ad.useMaterial = false;
-    GenerateActor("plane", ad);
+    ad.lc.model = Matrix(DirectX::XMMatrixTranslation(1.5f, 1.f, 0.f)).Transpose();
+    ad.textureName = "worn-painted-metal_albedo";
+    GenerateActor("pbr_sphere", ad);
 
-    auto mp = std::make_shared<AMovingPlatform>();
-    mp->Initialize();
-    AddActor(mp);
+    ad.mc.useHeightMap = false;
+    ad.lc.model = Matrix(DirectX::XMMatrixTranslation(0.f, 0.f, 0.f)).Transpose();
+    ad.mc.texTransform = Matrix(DirectX::XMMatrixScaling(15.f, 15.f, 1.f)).Transpose();
+
+    ad.textureName = "PavingStones145_2K-PNG_Albedo";
+    GenerateActor("pbr_plane", ad);
+
+    /* auto mp = std::make_shared<AMovingPlatform>();
+     mp->Initialize();
+     AddActor(mp);*/
 
     auto camera = std::make_shared<ACamera>();
-    camera->Initialize(Vector3(0.f,2.f,-2.f), true);
+    camera->Initialize(Vector3(0.f, 2.f, -2.f), true);
     AddActor(camera);
 
-	auto light = std::make_shared<ALight>();
+    auto light = std::make_shared<ALight>();
     light->Initialize();
     AddActor(light);
 
@@ -146,21 +189,6 @@ void World::InitLevel()
     GenerateActor("simple_cube", ad);
 
     m_player = camera;
-
-	// stableFluids 렌더용
-	/*ActorData ad = {};
-	ad.lc.model = DirectX::XMMatrixTranslation(0.f, 0.f, 0.f);
-    ad.lc.model = ad.lc.model.Transpose();
-    ad.textureName = "sf_density";
-    ad.psoName = "defaultPSO";
-    ad.useMaterial = false;
-    GenerateActor("rect", ad);
-
-    auto orthogonalCamera = std::make_shared<ACamera>();
-    orthogonalCamera->Initialize(Vector3(0.f, 0.f, 0.f), false);
-    AddActor(orthogonalCamera);
-
-	m_player = orthogonalCamera;*/
 
     OnRegister();
 }
@@ -203,6 +231,7 @@ void World::SetWindowSize(int width, int height)
 {
     windowWidth = width;
     windowHeight = height;
+
 }
 
 std::shared_ptr<StaticMesh> World::GetMesh(const std::string& meshName)
@@ -278,4 +307,70 @@ POINT World::GetCenterPoint()
     center.x = (rect.left + rect.right) / 2;
     center.y = (rect.top + rect.bottom) / 2;
     return center;
+}
+
+void World::InitReadbackBuffer(UINT64 size)
+{
+    m_readbackBuffer->Initialize(size, D3D12_HEAP_TYPE_READBACK, D3D12_RESOURCE_STATE_COPY_DEST,
+                                 D3D12_RESOURCE_FLAG_NONE, L"readback");
+    m_readbackBuffer->SetResourceStates(D3D12_RESOURCE_STATE_COPY_DEST);
+}
+
+// TODO : 현재 f16 텍스쳐만 가능
+void World::SaveTextureCPU(const ImageInfo& info)
+{
+	if (!m_readbackBuffer)
+        return;
+
+	std::cout << "SaveTextureCPU\n";
+
+    uint32_t pixelCount = (uint32_t)(info.rowSize * info.numRows / 2);
+    std::vector<uint16_t> imagef16(pixelCount);
+    std::vector<uint8_t> image(pixelCount);
+
+    m_readbackBuffer->MapForRead();
+    m_readbackBuffer->CopyToCpu(imagef16.data(), info.numRows, info.rowSize, info.rowPitch);
+
+    for (size_t i = 0; i < image.size(); i++)
+    {
+        double c = std::clamp(fp16_ieee_to_fp32_value(imagef16[i]), 0.f, 1.f);
+        // tone mapping
+        if ((i + 1) % 4 != 0)
+            c = std::pow(c, 1 / 2.2);
+        image[i] = std::clamp((int)(c * 255.f), 0, 255);
+    }
+
+    std::string filename = "Backbuffer" + utility->MakeTimestamp() + ".png";
+    std::string fileFullPath = "Results/" + filename;
+    UINT width = info.width;
+    UINT height = info.height;
+    stbi_write_png(fileFullPath.c_str(), (int)width, (int)height, 4, image.data(), (int)(info.rowSize / 2));
+
+    std::cout << fileFullPath << " saved.\n";
+}
+
+void World::SaveLoop()
+{
+	while (true)	{
+        ImageInfo local;
+        {
+            std::unique_lock lock(saveMtx);
+            saveCv.wait(lock, [this] { return stopThread || saveFlag; });
+            if (stopThread)
+                break;
+
+			local = sharedInfo;
+            saveFlag = false;
+        }
+        SaveTextureCPU(local);
+	}
+}
+void World::Notify(const ImageInfo& info)
+{
+	{
+        std::lock_guard<std::mutex> lock(saveMtx);
+        sharedInfo = info;
+        saveFlag = true;
+	}
+    saveCv.notify_one();
 }

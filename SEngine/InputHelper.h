@@ -17,6 +17,17 @@ class InputHelper
     void SetKeyState(uint32_t key, bool newState);
     bool GetKeyState(uint32_t key);
 
+    bool GetCaptureFlag() const
+    {
+        return captureFlag;
+    }
+    void SetCaptureFlag(bool state)
+    {
+        captureFlag = state;
+    }
+
+	bool captureFlag = false;
+
     DirectX::SimpleMath::Vector3 GetInputDirection(Actor* actor);
 
   private:
@@ -29,4 +40,5 @@ class InputHelper
     uint32_t leftKey = 'A';
     uint32_t upKey = 'E';
     uint32_t downKey = 'Q';
+    uint32_t captureKey = 'C';
 };

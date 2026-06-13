@@ -1,14 +1,8 @@
 ﻿#pragma warning(disable : 4996)
 
-#define STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image.h"
-#include "stb_image_write.h"
-
 #include "Directxtk12/DDSTextureLoader.h"
 #include "directxtk12/ResourceUploadBatch.h"
 
-#include <fp16.h>
 #include <pix3.h>
 #include <random>
 
@@ -104,11 +98,11 @@ bool RenderEngine::InitScene()
         m_stableFluids = std::make_shared<StableFluids>();
         m_stableFluids->Initialize(m_width, m_height);
     }
-	// light 초기화
+    // light 초기화
     {
         auto light = m_world->GetLightManger();
         light->Initialize(D3D12_RESOURCE_FLAG_NONE, m_resourceCommandList.Get(), L"light");
-	}
+    }
 
     ID3D12CommandList* commands[] = {m_resourceCommandList.Get()};
     m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
@@ -311,26 +305,26 @@ void RenderEngine::UpdateGUI()
     // ImGui::SetWindowSize(ImVec2((float)m_guiWidth, (float)m_height));
     ImGui::SetWindowPos(ImVec2(0.f, 0.f), ImGuiCond_Always);
 
-	MaterialConstant material;
+    MaterialConstant material;
     if (!m_world)
         return;
     auto pbr = m_world->GetPBRModel();
     if (!pbr)
         return;
 
-	material = pbr->GetMaterialConstant();
+    material = pbr->GetMaterialConstant();
 
-	bool metalic = material.useMetallicMap;
+    bool metalic = material.useMetallicMap;
     bool roghness = material.useRoughnessMap;
     bool normal = material.useNormalMap;
 
-	ImGui::SliderFloat("roughness", &material.roughness, 0.f, 1.f);
+    ImGui::SliderFloat("roughness", &material.roughness, 0.f, 1.f);
     ImGui::SliderFloat("metalic", &material.metallic, 0.f, 1.f);
 
     if (ImGui::Checkbox("Use MetallicMap", &metalic))
         material.useMetallicMap = metalic;
     if (ImGui::Checkbox("Use Roughness", &roghness))
-            material.useRoughnessMap = roghness;
+        material.useRoughnessMap = roghness;
     if (ImGui::Checkbox("Use NormalMap", &normal))
         material.useNormalMap = normal;
 
@@ -340,7 +334,12 @@ void RenderEngine::UpdateGUI()
 // BOOKMARK
 void RenderEngine::Tick(float deltaTime)
 {
-    // SPHTick(deltaTime);
+    auto inputHelper = m_world->m_inputHelper;
+    if (inputHelper && inputHelper->GetCaptureFlag())
+    {
+        inputHelper->SetCaptureFlag(false);
+        SaveTextureGPU();
+    }
 
     for (auto& m : meshBatchs)
     {
@@ -352,11 +351,11 @@ void RenderEngine::Tick(float deltaTime)
     {
         camera->SyncCB();
     }
-    //StableFluidsTick(deltaTime);
-	
-    RenderMeshes();
-    RenderGUI();
-    Execute();
+    StableFluidsTick(deltaTime);
+
+    //RenderMeshes();
+    //RenderGUI();
+    //Execute();
 }
 
 void RenderEngine::SPHTick(float deltaTime)
@@ -372,8 +371,8 @@ void RenderEngine::StableFluidsTick(float deltaTime)
     m_stableFluids->Tick(deltaTime);
     m_stableFluids->Execute(m_commandQueue.Get());
 
-	RenderMeshes();
-    //RenderGUI();
+    RenderMeshes();
+    // RenderGUI();
     Execute();
 }
 
@@ -527,7 +526,7 @@ void RenderEngine::FlushCommands()
     }
 }
 
-void RenderEngine::FlushResourceCommands()
+void RenderEngine::FlushRenderCommands()
 {
     m_currentFence++;
 
@@ -544,7 +543,7 @@ void RenderEngine::FlushResourceCommands()
 
 void RenderEngine::Quit()
 {
-    FlushResourceCommands();
+    FlushRenderCommands();
 }
 
 void RenderEngine::GenerateMips(ID3D12Resource* tex)
@@ -573,7 +572,66 @@ void RenderEngine::Execute()
     ThrowIfFailed(m_commandQueue->Signal(m_fence.Get(), m_currentFence));
     ThrowIfFailed(m_swapChain->Present(1, 0));
     m_currentBackBufferIndex = m_swapChain->GetCurrentBackBufferIndex();
-    FlushResourceCommands();
+    FlushRenderCommands();
+}
+
+void RenderEngine::SaveTextureGPU()
+{
+    ImageInfo info;
+    UINT subresource = 0;
+    info.numRows = 0;
+    info.rowSize = 0;
+    UINT64 requiredSize = 0;
+
+    auto t = GetCurrentSwapChainResource();
+    D3D12_RESOURCE_DESC desc = t->GetDesc();
+    D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint;
+    m_device->GetCopyableFootprints(&desc, subresource, 1, 0, &footprint, &info.numRows, &info.rowSize, &requiredSize);
+
+    info.width = footprint.Footprint.Width;
+    info.height = footprint.Footprint.Height;
+    info.rowPitch = footprint.Footprint.RowPitch;
+
+    FlushCommands();
+    m_resourceCommandAllocator->Reset();
+    ThrowIfFailed(m_resourceCommandList->Reset(m_resourceCommandAllocator.Get(), nullptr));
+
+	m_world->InitReadbackBuffer(requiredSize);
+	auto readbackBuffer = m_world->GetReadBackBuffer();
+ 
+    std::vector<D3D12_RESOURCE_BARRIER> barriers;
+    D3D12_RESOURCE_BARRIER barrier;
+    if (m_swapChainResources[m_currentBackBufferIndex].Transition(D3D12_RESOURCE_STATE_COPY_SOURCE, barrier))
+        barriers.push_back(barrier);
+
+    if (!barriers.empty())
+        m_resourceCommandList->ResourceBarrier(barriers.size(), barriers.data());
+
+    CD3DX12_TEXTURE_COPY_LOCATION dst(readbackBuffer->Get(), footprint);
+    D3D12_TEXTURE_COPY_LOCATION src{};
+    src.pResource = t;
+    src.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+    src.SubresourceIndex = subresource;
+
+    m_resourceCommandList->CopyTextureRegion(&dst, 0, 0, 0, &src, nullptr);
+
+    std::vector<D3D12_RESOURCE_BARRIER> barriers2;
+
+    if (m_swapChainResources[m_currentBackBufferIndex].Transition(D3D12_RESOURCE_STATE_PRESENT, barrier))
+    {
+        barriers2.push_back(barrier);
+    }
+    if (!barriers2.empty())
+    {
+        m_resourceCommandList->ResourceBarrier(barriers2.size(), barriers2.data());
+    }
+
+    m_resourceCommandList->Close();
+    ID3D12CommandList* commands[] = {m_resourceCommandList.Get()};
+    m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
+    FlushCommands();
+
+	m_world->Notify(info);
 }
 
 void RenderEngine::RegistMeshBatch(std::shared_ptr<MeshBatch> meshBatch)

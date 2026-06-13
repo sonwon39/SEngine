@@ -63,6 +63,10 @@ void SEngineMouse::Tick(float deltaTime)
 void SEngineMouse::StableFluidsMouseTick(float deltaTime)
 {
     static int i = 0;
+	if (i == 0)
+	{
+        mouseCB.localConstant.color = m_world->colors[0];
+	}
 
     int width = m_world->windowWidth;
     int height = m_world->windowHeight;
@@ -80,11 +84,11 @@ void SEngineMouse::StableFluidsMouseTick(float deltaTime)
 
     if (lBFlag)
     {
+        i++;
         int index = i % m_world->colors.size();
         lBFlag = false;
         prevNDCPos = currNDCPos;
         mouseCB.localConstant.color = m_world->colors[index];
-        i++;
     }
 
     mouseCB.localConstant.velocity = (currNDCPos - prevNDCPos) * 10.f;

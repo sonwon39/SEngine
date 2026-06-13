@@ -23,7 +23,7 @@ void ModelLoader<Vertex, uint16_t>::InitializeCPU()
     plane.m_meshes.push_back({GeometryGenerator::MakePlane((float)planeSize, (float)planeSize, 50)});
     assets["plane"] = plane;
 
-	Asset<Vertex, uint16_t> rect;
+    Asset<Vertex, uint16_t> rect;
     rect.m_meshes.push_back({GeometryGenerator::MakeRect(2.f, 2.f)});
 
     assets["rect"] = rect;
@@ -48,7 +48,16 @@ void ModelLoader<PBRVertex, uint16_t>::InitializeCPU()
     Asset<PBRVertex, uint16_t> sphere;
     sphere.m_meshes.push_back({GeometryGenerator::PbrSphere(1.f, 100, 100)});
 
+    Asset<PBRVertex, uint16_t> cube;
+    cube.m_meshes.push_back({GeometryGenerator::PBRCube(2.f, 2.f, 2.f, 100, 100, 100)});
+
+    int planeSize = 100;
+    Asset<PBRVertex, uint16_t> plane;
+    plane.m_meshes.push_back({GeometryGenerator::PBRPlane((float)planeSize, (float)planeSize,50, 50)});
+
+	assets["pbr_plane"] = plane;
     assets["pbr_sphere"] = sphere;
+    assets["pbr_cube"] = cube;
 }
 
 void ModelLoader<Vertex, uint16_t>::ProcessMesh(Asset<Vertex, uint16_t>& asset, aiMesh* mesh, const aiScene* scene,

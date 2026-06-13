@@ -18,7 +18,7 @@ struct GeometryGenerator
 
     static Mesh<PBRVertex, uint16_t> PBRPlane(float halfX, float halfZ, int cX, int cY);
     static Mesh<PBRVertex, uint16_t> PbrSphere(const float& radius, const int& x, const int& y);
-    static Mesh<PBRVertex, uint16_t> PBRCube(float halfX, float halfY, float halfZ, int xCount, int yCount, int zCount);
+    static Mesh<PBRVertex, uint16_t> PBRCube(float x, float y, float z, int xCount, int yCount, int zCount);
 
     static void ComputeTangent(PBRVertex& v0, PBRVertex& v1, PBRVertex& v2);
 

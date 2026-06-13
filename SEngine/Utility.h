@@ -236,12 +236,12 @@ class Utility
 
 
     template <typename DataType>
-    void CreateBuffer(DataType* data, long bufferSize, Microsoft::WRL::ComPtr<ID3D12Resource>& gpu,
+    void CreateBuffer(DataType* data, UINT64 bufferSize, Microsoft::WRL::ComPtr<ID3D12Resource>& gpu,
                       Microsoft::WRL::ComPtr<ID3D12Resource>& upload, D3D12_RESOURCE_FLAGS flag,
                       ID3D12GraphicsCommandList* commandList);
 
     template <typename DataType>
-    void CreateUploadBuffer(DataType* data, long bufferSize, Microsoft::WRL::ComPtr<ID3D12Resource>& gpu,
+    void CreateUploadBuffer(DataType* data, UINT64 bufferSize, Microsoft::WRL::ComPtr<ID3D12Resource>& gpu,
                             D3D12_RESOURCE_FLAGS flag, ID3D12GraphicsCommandList* commandList);
 
     template <typename DataType>
@@ -249,8 +249,10 @@ class Utility
                       Microsoft::WRL::ComPtr<ID3D12Resource>& upload, D3D12_RESOURCE_FLAGS flag,
                       ID3D12GraphicsCommandList* commandList);
 
-    void CreateBuffer(Microsoft::WRL::ComPtr<ID3D12Resource>& buffer, D3D12_HEAP_TYPE heapType, UINT size,
+    void CreateBuffer(Microsoft::WRL::ComPtr<ID3D12Resource>& buffer, D3D12_HEAP_TYPE heapType, UINT64 size,
                       D3D12_RESOURCE_FLAGS flags, D3D12_RESOURCE_STATES state, std::wstring name);
+
+    std::string MakeTimestamp();
 
     /**
      * DDS 메모리 블록으로부터 텍스처 리소스를 생성하고 GPU 업로드 명령을 기록한다.

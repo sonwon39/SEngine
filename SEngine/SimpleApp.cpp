@@ -47,8 +47,6 @@ int Core::SimpleApp::Run()
         }
         else
         {
-            // PIXBeginEvent(0, L"Frame Update");
-
             m_timer.Tick();
             deltaTime = (float)m_timer.GetDeltaTime();
 

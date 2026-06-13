@@ -220,6 +220,7 @@
     <ClInclude Include="GraphicsCommon.h" />
     <ClInclude Include="HLSLCompat.h" />
     <ClInclude Include="IBLEnvironment.h" />
+    <ClInclude Include="ImageInfo.h" />
     <ClInclude Include="IndexBuffer.h" />
     <ClInclude Include="InputHelper.h" />
     <ClInclude Include="Material.h" />

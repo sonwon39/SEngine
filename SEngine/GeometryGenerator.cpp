@@ -428,11 +428,13 @@ Mesh<PBRVertex, uint16_t> GeometryGenerator::PbrSphere(const float& radius, cons
     return mesh;
 }
 
-Mesh<PBRVertex, uint16_t> GeometryGenerator::PBRCube(float halfX, float halfY, float halfZ, int xCount, int yCount,
-                                                     int zCount)
+Mesh<PBRVertex, uint16_t> GeometryGenerator::PBRCube(float x, float y, float z, int xCount, int yCount, int zCount)
 {
     std::vector<PBRVertex> vertices;
     std::vector<uint16_t> indices;
+    float halfX = x / 2.f;
+    float halfY = y / 2.f;
+    float halfZ = z / 2.f;
 
     std::vector<std::tuple<float, float, int, int>> halfList = {{halfX, halfZ, xCount, zCount},
                                                                 {halfX, halfY, xCount, yCount},
