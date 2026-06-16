@@ -120,6 +120,13 @@ bool World::FindTextureHandle(const std::string& textureName, D3D12_GPU_DESCRIPT
     }
     return false;
 }
+void World::AddTexture(const std::string& textureName, Texture2D& texture)
+{
+    if (!m_textureLoader)
+        return;
+
+    m_textureLoader->AddTexture(textureName, texture);
+}
 
 void World::InitLevel()
 {

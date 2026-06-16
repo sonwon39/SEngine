@@ -20,6 +20,7 @@
 
 #include "SPH/SPH.h"
 #include "StableFluids/StableFluids.h"
+#include "Noise/Noise.h"
 #include "ConstantBuffer.h"
 #include "GPUBUffer.h"
 #include "DescriptorHeap.h"
@@ -79,6 +80,7 @@ class RenderEngine
 
     void SPHTick(float deltaTime);
     void StableFluidsTick(float deltaTime);
+    void RenderTick(float deltaTime);
     void RenderMeshes();
     void RenderSPH(const std::string& psoName, bool clear);
 
@@ -192,6 +194,7 @@ class RenderEngine
   private:
     std::shared_ptr<SPH> m_sph;
     std::shared_ptr<StableFluids> m_stableFluids;
+    std::shared_ptr<Noise> m_noise;
 
     // font
   private:

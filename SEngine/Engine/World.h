@@ -40,12 +40,14 @@ class World
 
     bool FindTexture(const std::string& textureName, int& index);
     bool FindTextureHandle(const std::string& textureName, D3D12_GPU_DESCRIPTOR_HANDLE& handle);
-
+    void AddTexture(const std::string& textureName, Texture2D& texture);
+    
   public:
     // gpu 버퍼 생성 후 (vertex, index) level 초기화
     void InitLevel();
     bool useSimulation = true;
 
+	
   public:
     ID3D12Device5* GetDevice()
     {

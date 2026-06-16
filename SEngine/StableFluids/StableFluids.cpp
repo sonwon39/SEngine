@@ -2,7 +2,7 @@
 #include "GraphicsCommon.h"
 #include "Engine/World.h"
 #include "Renderer.h"
-#include "RootSignature.h"
+
 #include <vector>
 
 using namespace Graphics;
@@ -109,14 +109,9 @@ void StableFluids::InitResources(UINT width, UINT height)
         m_computeFinalVelocityHeap.CreateResourceView(m_pressureBuffer[1].Get(), DescriptorType::SRV);
         m_computeFinalVelocityHeap.CreateResourceView(m_oldVelocityBuffer.Get(), DescriptorType::UAV);
 
-        std::shared_ptr<TextureLoader> texLoader;
-        // texture 준비
+        if (m_world)
         {
-            if (m_world)
-            {
-                texLoader = m_world->GetTextureLoader();
-                texLoader->AddTexture("sf_density", m_newDensityBuffer);
-            }
+            m_world->AddTexture("sf_density", m_newDensityBuffer);
         }
     }
 
@@ -124,10 +119,6 @@ void StableFluids::InitResources(UINT width, UINT height)
     grid.gGridDim = Vector3((float)gridWidth, (float)gridHeight, 1.f);
     grid.h = 1.f;
     gridCB.Initialize(grid);
-}
-
-void StableFluids::InitGPU(ID3D12CommandAllocator* cmdAlloc, ID3D12GraphicsCommandList* cmdList)
-{
 }
 
 void StableFluids::Tick(float deltaTime)
@@ -406,7 +397,5 @@ void StableFluids::Dispatch()
 
 void StableFluids::SetCPSO(const std::string psoName)
 {
-    ComputePSO cpso = Renderer::GetComputePSO(psoName);
-    m_commandList->SetPipelineState(cpso.GetPSO());
-    m_commandList->SetComputeRootSignature(cpso.GetRootSignature()->GetSignature());
+    Renderer::BindCPSO(psoName, m_commandList.Get());
 }

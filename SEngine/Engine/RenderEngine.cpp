@@ -98,6 +98,10 @@ bool RenderEngine::InitScene()
         m_stableFluids = std::make_shared<StableFluids>();
         m_stableFluids->Initialize(m_width, m_height);
     }
+	{
+        m_noise = std::make_shared<Noise>();
+        m_noise->Initialize();
+	}
     // light 초기화
     {
         auto light = m_world->GetLightManger();
@@ -352,10 +356,8 @@ void RenderEngine::Tick(float deltaTime)
         camera->SyncCB();
     }
     StableFluidsTick(deltaTime);
-
-    //RenderMeshes();
-    //RenderGUI();
-    //Execute();
+    //RenderTick(deltaTime);
+   
 }
 
 void RenderEngine::SPHTick(float deltaTime)
@@ -374,6 +376,13 @@ void RenderEngine::StableFluidsTick(float deltaTime)
     RenderMeshes();
     // RenderGUI();
     Execute();
+}
+
+void RenderEngine::RenderTick(float deltaTime)
+{
+     RenderMeshes();
+     RenderGUI();
+     Execute();
 }
 
 void RenderEngine::RenderMeshes()

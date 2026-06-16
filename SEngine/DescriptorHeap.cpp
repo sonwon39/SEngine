@@ -43,6 +43,12 @@ void DescriptorHeap::CreateResourceView(ID3D12Resource* resource, const Descript
     m_heapIdx++;
 }
 
+void DescriptorHeap::Bind(ID3D12GraphicsCommandList* c)
+{
+    ID3D12DescriptorHeap* heaps[] = {GetHeap()};
+    c->SetDescriptorHeaps(1, heaps);
+}
+
 void DescriptorHeap::ResetIndex()
 {
     m_heapIdx = 0;

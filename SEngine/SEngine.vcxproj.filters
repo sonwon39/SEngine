@@ -42,6 +42,9 @@
     <Filter Include="ActorComponents">
       <UniqueIdentifier>{a39ea56d-dc33-47dc-a902-793f86b1affb}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Noise">
+      <UniqueIdentifier>{366e9553-4ff8-463b-a0ab-873b458b44cc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Timer.cpp">
@@ -160,6 +163,9 @@
     </ClCompile>
     <ClCompile Include="ActorComponents\Mover.cpp">
       <Filter>ActorComponents</Filter>
+    </ClCompile>
+    <ClCompile Include="Noise\Noise.cpp">
+      <Filter>Noise</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -340,6 +346,12 @@
     <ClInclude Include="ImageInfo.h">
       <Filter>_h</Filter>
     </ClInclude>
+    <ClInclude Include="Noise\Noise.h">
+      <Filter>Noise</Filter>
+    </ClInclude>
+    <ClInclude Include="Noise\NoiseLocalConstant.h">
+      <Filter>Noise</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="DefaultVS.hlsl" />
@@ -416,6 +428,9 @@
     <FxCompile Include="PBR\PBRPS.hlsl">
       <Filter>PBR</Filter>
     </FxCompile>
+    <FxCompile Include="Noise\PerlinNoiseCS.hlsl">
+      <Filter>Noise</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -459,6 +474,9 @@
     </None>
     <None Include="StructuredBuffer.inl">
       <Filter>Buffer</Filter>
+    </None>
+    <None Include="Noise\NoiseCommon.hlsli">
+      <Filter>Noise</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

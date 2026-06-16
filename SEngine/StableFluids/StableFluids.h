@@ -24,8 +24,6 @@ class StableFluids
     void InitCommands();
     void InitResources(UINT width, UINT height);
 
-    void InitGPU(ID3D12CommandAllocator* cmdAlloc, ID3D12GraphicsCommandList* cmdList);
-
   public:
     void Tick(float deltaTime);
 

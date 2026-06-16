@@ -17,6 +17,8 @@ class DescriptorHeap
     void CreateResourceView(ID3D12Resource* resource, const DescriptorType& descriptorType,
                             const ViewDimensionType& viewDimesionType = ViewDimensionType::TEXTURE2D);
 
+	void Bind(ID3D12GraphicsCommandList* c);
+
   public:
     // heapIdx 초기화
     void ResetIndex();

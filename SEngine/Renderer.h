@@ -38,4 +38,7 @@ bool GetGraphicsPSO(const std::string& psoName, GraphicsPSO& pso);
 
 ComputePSO GetComputePSO(const std::string& psoName);
 
+void BindCPSO(const std::string& psoName, ID3D12GraphicsCommandList* c);
+void BindPSO(const std::string& psoName, ID3D12GraphicsCommandList* c);
+
 } // namespace Renderer

@@ -172,6 +172,7 @@
     <ClCompile Include="DescriptorHeap.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="MeshBatch.cpp" />
+    <ClCompile Include="Noise\Noise.cpp" />
     <ClCompile Include="SEngineMouse.cpp" />
     <ClCompile Include="PipelineState.cpp" />
     <ClCompile Include="Renderer.cpp" />
@@ -226,6 +227,8 @@
     <ClInclude Include="Material.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="DescriptorHeap.h" />
+    <ClInclude Include="Noise\Noise.h" />
+    <ClInclude Include="Noise\NoiseLocalConstant.h" />
     <ClInclude Include="PBR\PBRHLSLCompat.h" />
     <ClInclude Include="MeshBatch.h" />
     <ClInclude Include="SEngineMouse.h" />
@@ -279,6 +282,16 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Noise\PerlinNoiseCS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
     </FxCompile>
     <FxCompile Include="PBR\PBRPS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
@@ -384,6 +397,7 @@
     <None Include="DefaultCommon.hlsli" />
     <None Include="GPUBuffer.inl" />
     <None Include="IndexBuffer.inl" />
+    <None Include="Noise\NoiseCommon.hlsli" />
     <None Include="packages.config" />
     <None Include="PBR\PBRCommon.hlsli" />
     <None Include="SPH\CountingSortCommon.hlsli" />

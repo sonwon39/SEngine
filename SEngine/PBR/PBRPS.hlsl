@@ -8,7 +8,7 @@ float4 main(PSInput input) : SV_TARGET
 	SurfaceProperties surface;
 	BRDFContext brdfContext;
 	
-	if(gMaterial.useNormalMap)
+	if (gMaterial.useNormalMap)
 	{
 		float3 N = normalize(input.normalW);
 		float3 T = input.tangentW;
@@ -29,7 +29,7 @@ float4 main(PSInput input) : SV_TARGET
 	
 	float metallic = gMaterial.useMetallicMap ? gMetallic.Sample(gWrapLinearSampler, input.uv).r : gMaterial.metallic;
 	float roughness = gMaterial.useRoughnessMap ? gRoughness.Sample(gWrapLinearSampler, input.uv).r : gMaterial.roughness;
-	float3 V =  normalize(gGlobalCB.cameraPos - worldPos);
+	float3 V = normalize(gGlobalCB.cameraPos - worldPos);
 	
 	
 	float3 R = reflect(-V, N);
@@ -53,9 +53,8 @@ float4 main(PSInput input) : SV_TARGET
 	for (uint i = 0; i < MAX_LIGHT; i++)
 	{
 		Light l = gLight[i];
-		
-		
-		if(l.enabled != 1)
+				
+		if (l.enabled != 1)
 			continue;
 
 		float3 lPos = l.position;

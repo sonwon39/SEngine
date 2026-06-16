@@ -81,7 +81,21 @@ ComputePSO Renderer::GetComputePSO(const std::string& psoName)
     }
     return pso;
 }
-
+void Renderer::BindCPSO(const std::string& psoName, ID3D12GraphicsCommandList* c)
+{
+    ComputePSO cpso = GetComputePSO(psoName);
+    c->SetPipelineState(cpso.GetPSO());
+    c->SetComputeRootSignature(cpso.GetRootSignature()->GetSignature());
+}
+void Renderer::BindPSO(const std::string& psoName, ID3D12GraphicsCommandList* c)
+{
+    GraphicsPSO pso;
+	if (GetGraphicsPSO(psoName, pso))
+	{
+        c->SetPipelineState(pso.GetPSO());
+        c->SetGraphicsRootSignature(pso.GetRootSignature()->GetSignature());
+	}
+}
 void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 {
     GraphicsPSO defaultPSO(L"default PSO");
