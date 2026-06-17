@@ -129,6 +129,9 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
     ComputePSO jacobiCPSO(L"jacobi CPSO");
     ComputePSO computeFinalVelocityCPSO(L"computeFinalVelocity CPSO");
 
+	// noise
+    ComputePSO perlinCPSO(L"perlin CPSO");
+
     hdrFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
     backBufferFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
     // backBufferFormat  = hdrFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
@@ -358,6 +361,12 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
     computeFinalVelocityCPSO.Finalize(device);
     m_CPSOs["computeFinalVelocityCPSO"] = computeFinalVelocityCPSO;
     cpsoNames.push_back("computeFinalVelocityCPSO");
+
+	perlinCPSO.SetRootSignature(g_S1_RS);
+    perlinCPSO.SetComputeShader(g_pComputeFinalVelocityCS, sizeof(g_pComputeFinalVelocityCS));
+    perlinCPSO.Finalize(device);
+    m_CPSOs["perlinCPSO"] = perlinCPSO;
+    cpsoNames.push_back("perlinCPSO");
 }
 
 ID3D12PipelineState* Renderer::GetPSO(std::string psoName)

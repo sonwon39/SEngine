@@ -1,2 +1,3 @@
-﻿#include "NoiseLocalConstant.h"
+﻿#define HLSL
+#include "NoiseLocalConstant.h"
 

@@ -13,6 +13,7 @@ Noise::~Noise()
 void Noise::Initialize()
 {
     InitCommands();
+    InitGPU();
 }
 
 void Noise::InitCommands()
@@ -46,6 +47,8 @@ void Noise::GenerateNoise()
 {
     m_commandAllocator->Reset();
     m_commandList->Reset(m_commandAllocator.Get(), nullptr);
+
+	Renderer::BindCPSO(perlinCPSOName, m_commandList.Get());
 
 	m_noiseHeap.Bind(m_commandList.Get());
     m_commandList->SetComputeRootDescriptorTable(0, m_noiseHeap.GetGPUHandle(0));

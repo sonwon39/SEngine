@@ -30,6 +30,9 @@ class Noise
     UINT height = 256;
 
   private:
+    std::string perlinCPSOName = "perlinCPSO";
+
+  private:
     Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_commandList;
     Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_commandAllocator;
 };
