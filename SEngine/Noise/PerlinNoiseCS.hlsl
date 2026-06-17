@@ -1,6 +1,6 @@
 ﻿#include "NoiseCommon.hlsli"
 
-RWTexture2D<float4> g_noise : register(u0);
+RWTexture2D<float> g_noise : register(u0);
 
 [numthreads(N_GROUP_SIZE_X, N_GROUP_SIZE_Y, 1)]
 void main(uint3 DTid : SV_DispatchThreadID)
@@ -15,5 +15,5 @@ void main(uint3 DTid : SV_DispatchThreadID)
 	float2 uv = DTid.xy / float2(width, height) * range;
 	float noise = perlinNoise(uv) * 0.5 + 0.5;
 	noise = pow(noise, 2.2f);
-	g_noise[DTid.xy] = float4(float3(noise.xxx), 1.);
+	g_noise[DTid.xy] = noise;
 }

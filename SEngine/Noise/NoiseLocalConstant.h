@@ -11,4 +11,11 @@ using namespace DirectX;
 #define N_GROUP_SIZE_X 32
 #define N_GROUP_SIZE_Y 32
 
+struct NoiseParticle
+{
+    XMFLOAT3 position;
+    float radius;
+    XMFLOAT3 velocity;
+    float dummy;
+};
 #endif

@@ -37,6 +37,7 @@
 #include "CompiledShaders/ComputeFinalVelocityCS.h"
 
 #include "CompiledShaders/PerlinNoiseCS.h"
+#include "CompiledShaders/CurlNoiseCS.h"
 
 using namespace Graphics;
 using namespace Renderer;
@@ -132,7 +133,8 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
     ComputePSO computeFinalVelocityCPSO(L"computeFinalVelocity CPSO");
 
 	// noise
-    ComputePSO perlinCPSO(L"perlin CPSO");
+    ComputePSO perlinNoiseCPSO(L"perlinNoise CPSO");
+    ComputePSO curlNoiseCPSO(L"curlNoise CPSO");
 
     hdrFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
     backBufferFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
@@ -364,11 +366,17 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
     m_CPSOs["computeFinalVelocityCPSO"] = computeFinalVelocityCPSO;
     cpsoNames.push_back("computeFinalVelocityCPSO");
 
-	perlinCPSO.SetRootSignature(g_U1_RS);
-    perlinCPSO.SetComputeShader(g_pPerlinNoiseCS, sizeof(g_pPerlinNoiseCS));
-    perlinCPSO.Finalize(device);
-    m_CPSOs["perlinCPSO"] = perlinCPSO;
-    cpsoNames.push_back("perlinCPSO");
+	perlinNoiseCPSO.SetRootSignature(g_U1_RS);
+    perlinNoiseCPSO.SetComputeShader(g_pPerlinNoiseCS, sizeof(g_pPerlinNoiseCS));
+    perlinNoiseCPSO.Finalize(device);
+    m_CPSOs["perlinNoiseCPSO"] = perlinNoiseCPSO;
+    cpsoNames.push_back("perlinNoiseCPSO");
+
+	curlNoiseCPSO.SetRootSignature(g_S1_U1_RS);
+    curlNoiseCPSO.SetComputeShader(g_pCurlNoiseCS, sizeof(g_pCurlNoiseCS));
+    curlNoiseCPSO.Finalize(device);
+    m_CPSOs["curlNoiseCPSO"] = curlNoiseCPSO;
+    cpsoNames.push_back("curlNoiseCPSO");
 }
 
 ID3D12PipelineState* Renderer::GetPSO(std::string psoName)

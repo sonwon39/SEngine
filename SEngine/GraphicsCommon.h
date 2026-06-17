@@ -40,6 +40,8 @@ extern RootSignature g_U1_C2_RS;
 extern RootSignature g_U2_C1_RS;
 extern RootSignature g_U2_C2_RS;
 extern RootSignature g_S1_U1_C1_RS;
+extern RootSignature g_S1_U1_RS;
+
 extern RootSignature g_S1_U3_C1_RS;
 extern RootSignature g_S2_U1_C1_RS;
 extern RootSignature g_S2_U2_C1_RS;

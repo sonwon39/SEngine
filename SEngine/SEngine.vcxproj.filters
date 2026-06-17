@@ -431,6 +431,9 @@
     <FxCompile Include="Noise\PerlinNoiseCS.hlsl">
       <Filter>Noise</Filter>
     </FxCompile>
+    <FxCompile Include="Noise\CurlNoiseCS.hlsl">
+      <Filter>Noise</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

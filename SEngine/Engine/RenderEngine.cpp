@@ -100,7 +100,7 @@ bool RenderEngine::InitScene()
     }
 	{
         m_noise = std::make_shared<Noise>();
-        m_noise->Initialize();
+        m_noise->Initialize(m_width, m_height);
         GenerateNoise();
 	}
     // light 초기화
@@ -388,7 +388,9 @@ void RenderEngine::RenderTick(float deltaTime)
 
 void RenderEngine::GenerateNoise()
 {
-    m_noise->GenerateNoise();
+    m_noise->ResetCommand();
+    m_noise->GeneratePerlinNoise();
+    m_noise->GenerateCurlNoise();
     m_noise->Execute(m_commandQueue.Get());
 }
 
