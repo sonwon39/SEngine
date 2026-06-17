@@ -45,8 +45,9 @@ class World
   public:
     // gpu 버퍼 생성 후 (vertex, index) level 초기화
     void InitLevel();
-    bool useSimulation = true;
-
+    bool useSimulation = false;
+    bool useNoise = true;
+    bool renderDefault = false;
 	
   public:
     ID3D12Device5* GetDevice()

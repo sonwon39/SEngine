@@ -101,6 +101,7 @@ bool RenderEngine::InitScene()
 	{
         m_noise = std::make_shared<Noise>();
         m_noise->Initialize();
+        GenerateNoise();
 	}
     // light 초기화
     {
@@ -355,8 +356,8 @@ void RenderEngine::Tick(float deltaTime)
     {
         camera->SyncCB();
     }
-    StableFluidsTick(deltaTime);
-    //RenderTick(deltaTime);
+    //StableFluidsTick(deltaTime);
+    RenderTick(deltaTime);
    
 }
 
@@ -381,8 +382,14 @@ void RenderEngine::StableFluidsTick(float deltaTime)
 void RenderEngine::RenderTick(float deltaTime)
 {
      RenderMeshes();
-     RenderGUI();
+     //RenderGUI();
      Execute();
+}
+
+void RenderEngine::GenerateNoise()
+{
+    m_noise->GenerateNoise();
+    m_noise->Execute(m_commandQueue.Get());
 }
 
 void RenderEngine::RenderMeshes()

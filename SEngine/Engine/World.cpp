@@ -130,9 +130,10 @@ void World::AddTexture(const std::string& textureName, Texture2D& texture)
 
 void World::InitLevel()
 {
+    ActorData ad = {};
+
 	if (useSimulation)
 	{
-        ActorData ad = {};
         ad.lc.model = DirectX::XMMatrixTranslation(0.f, 0.f, 0.f);
         ad.lc.model = ad.lc.model.Transpose();
         ad.textureName = "sf_density";
@@ -148,56 +149,73 @@ void World::InitLevel()
         OnRegister();
         return;
 	}
+	if (useNoise)
+	{
+        ad.lc.model = DirectX::XMMatrixTranslation(0.f, 0.f, 0.f);
+        ad.lc.model = ad.lc.model.Transpose();
+        ad.textureName = "perlinNoise";
+        ad.psoName = "defaultPSO";
+        ad.useMaterial = false;
+        GenerateActor("rect", ad);
 
-    D3D12_GPU_DESCRIPTOR_HANDLE handle;
-    if (FindTextureHandle(skyTextureName + "Brdf", handle))
-        m_iblEnv->Initialize(handle);
+        auto orthogonalCamera = std::make_shared<ACamera>();
+        orthogonalCamera->Initialize(Vector3(0.f, 0.f, 0.f), false);
+        AddActor(orthogonalCamera);
 
-    ActorData ad = {};
+        m_player = orthogonalCamera;
+        OnRegister();
+	}
+	if (renderDefault)
+	{
+        D3D12_GPU_DESCRIPTOR_HANDLE handle;
+        if (FindTextureHandle(skyTextureName + "Brdf", handle))
+            m_iblEnv->Initialize(handle);
 
-    ad.lc.model = Matrix(DirectX::XMMatrixTranslation(-1.5f, 1.f, 0.f)).Transpose();
-    ad.psoName = "pbrPSO";
-    ad.textureName = "Metal052C_4K-PNG_albedo";
-    ad.useMaterial = true;
-    ad.mc.texTransform = Matrix(DirectX::XMMatrixScaling(2.5f, 2.5f, 1.f)).Transpose();
-    ad.mc.heightScale = 0.05f;
-    ad.mc.useHeightMap = true;
-    ad.mc.useNormalMap = true;
-    ad.mc.useMetallicMap = true;
-    ad.mc.useRoughnessMap = true;
-	// gui 조작용
-    m_pbr = GenerateActor("pbr_sphere", ad);
+        ad.lc.model = Matrix(DirectX::XMMatrixTranslation(-1.5f, 1.f, 0.f)).Transpose();
+        ad.psoName = "pbrPSO";
+        ad.textureName = "Metal052C_4K-PNG_albedo";
+        ad.useMaterial = true;
+        ad.mc.texTransform = Matrix(DirectX::XMMatrixScaling(2.5f, 2.5f, 1.f)).Transpose();
+        ad.mc.heightScale = 0.05f;
+        ad.mc.useHeightMap = true;
+        ad.mc.useNormalMap = true;
+        ad.mc.useMetallicMap = true;
+        ad.mc.useRoughnessMap = true;
+        // gui 조작용
+        m_pbr = GenerateActor("pbr_sphere", ad);
 
-    ad.lc.model = Matrix(DirectX::XMMatrixTranslation(1.5f, 1.f, 0.f)).Transpose();
-    ad.textureName = "worn-painted-metal_albedo";
-    GenerateActor("pbr_sphere", ad);
+        ad.lc.model = Matrix(DirectX::XMMatrixTranslation(1.5f, 1.f, 0.f)).Transpose();
+        ad.textureName = "worn-painted-metal_albedo";
+        GenerateActor("pbr_sphere", ad);
 
-    ad.mc.useHeightMap = false;
-    ad.lc.model = Matrix(DirectX::XMMatrixTranslation(0.f, 0.f, 0.f)).Transpose();
-    ad.mc.texTransform = Matrix(DirectX::XMMatrixScaling(15.f, 15.f, 1.f)).Transpose();
+        ad.mc.useHeightMap = false;
+        ad.lc.model = Matrix(DirectX::XMMatrixTranslation(0.f, 0.f, 0.f)).Transpose();
+        ad.mc.texTransform = Matrix(DirectX::XMMatrixScaling(15.f, 15.f, 1.f)).Transpose();
 
-    ad.textureName = "PavingStones145_2K-PNG_Albedo";
-    GenerateActor("pbr_plane", ad);
+        ad.textureName = "PavingStones145_2K-PNG_Albedo";
+        GenerateActor("pbr_plane", ad);
 
-    /* auto mp = std::make_shared<AMovingPlatform>();
-     mp->Initialize();
-     AddActor(mp);*/
+        /* auto mp = std::make_shared<AMovingPlatform>();
+         mp->Initialize();
+         AddActor(mp);*/
 
-    auto camera = std::make_shared<ACamera>();
-    camera->Initialize(Vector3(0.f, 2.f, -2.f), true);
-    AddActor(camera);
+        auto camera = std::make_shared<ACamera>();
+        camera->Initialize(Vector3(0.f, 2.f, -2.f), true);
+        AddActor(camera);
 
-    auto light = std::make_shared<ALight>();
-    light->Initialize();
-    AddActor(light);
+        auto light = std::make_shared<ALight>();
+        light->Initialize();
+        AddActor(light);
 
-    ad.textureName = "SkyEnvHDR_CubeMap";
-    ad.psoName = "cubeMapPSO";
-    GenerateActor("simple_cube", ad);
+        ad.textureName = "SkyEnvHDR_CubeMap";
+        ad.psoName = "cubeMapPSO";
+        GenerateActor("simple_cube", ad);
 
-    m_player = camera;
+        m_player = camera;
 
-    OnRegister();
+        OnRegister();
+	}
+   
 }
 
 ID3D12DescriptorHeap* World::GetMainHeap() const

@@ -36,6 +36,8 @@
 #include "CompiledShaders/JacobiCS.h"
 #include "CompiledShaders/ComputeFinalVelocityCS.h"
 
+#include "CompiledShaders/PerlinNoiseCS.h"
+
 using namespace Graphics;
 using namespace Renderer;
 
@@ -362,8 +364,8 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
     m_CPSOs["computeFinalVelocityCPSO"] = computeFinalVelocityCPSO;
     cpsoNames.push_back("computeFinalVelocityCPSO");
 
-	perlinCPSO.SetRootSignature(g_S1_RS);
-    perlinCPSO.SetComputeShader(g_pComputeFinalVelocityCS, sizeof(g_pComputeFinalVelocityCS));
+	perlinCPSO.SetRootSignature(g_U1_RS);
+    perlinCPSO.SetComputeShader(g_pPerlinNoiseCS, sizeof(g_pPerlinNoiseCS));
     perlinCPSO.Finalize(device);
     m_CPSOs["perlinCPSO"] = perlinCPSO;
     cpsoNames.push_back("perlinCPSO");
