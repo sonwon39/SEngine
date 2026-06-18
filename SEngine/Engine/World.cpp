@@ -151,22 +151,18 @@ void World::InitLevel()
 	}
 	if (useNoise)
 	{
-        /*ad.lc.model = DirectX::XMMatrixTranslation(0.f, 0.f, 0.f);
+        ad.lc.model = DirectX::XMMatrixTranslation(0.f, 0.f, 0.f);
         ad.lc.model = ad.lc.model.Transpose();
-        ad.textureName = "perlinNoise";
+        ad.textureName = "noiseDensity";
         ad.psoName = "defaultPSO";
         ad.useMaterial = false;
-        GenerateActor("rect", ad);*/
+        GenerateActor("rect", ad);
 
         auto orthogonalCamera = std::make_shared<ACamera>();
         orthogonalCamera->Initialize(Vector3(0.f, 0.f, 0.f), false);
         AddActor(orthogonalCamera);
-		
-        auto camera = std::make_shared<ACamera>();
-        camera->Initialize(Vector3(0.f, 0.f, -2.f), true);
-        AddActor(camera);
 
-        m_player = camera;
+        m_player = orthogonalCamera;
         OnRegister();
 	}
 	if (renderDefault)
@@ -346,36 +342,36 @@ void World::InitReadbackBuffer(UINT64 size)
 }
 
 // TODO : 현재 f16 텍스쳐만 가능
-void World::SaveTextureCPU(const ImageInfo& info)
+void World::ReadbackToRGBA(const ImageInfo& info, std::vector<uint8_t>& out)
 {
-	if (!m_readbackBuffer)
+    if (!m_readbackBuffer)
         return;
-
-	std::cout << "SaveTextureCPU\n";
 
     uint32_t pixelCount = (uint32_t)(info.rowSize * info.numRows / 2);
     std::vector<uint16_t> imagef16(pixelCount);
-    std::vector<uint8_t> image(pixelCount);
+    out.resize(pixelCount);
 
     m_readbackBuffer->MapForRead();
     m_readbackBuffer->CopyToCpu(imagef16.data(), info.numRows, info.rowSize, info.rowPitch);
 
-    for (size_t i = 0; i < image.size(); i++)
+    for (size_t i = 0; i < out.size(); i++)
     {
         double c = std::clamp(fp16_ieee_to_fp32_value(imagef16[i]), 0.f, 1.f);
-        // tone mapping
+        // tone mapping (alpha 채널 제외)
         if ((i + 1) % 4 != 0)
             c = std::pow(c, 1 / 2.2);
-        image[i] = std::clamp((int)(c * 255.f), 0, 255);
+        out[i] = std::clamp((int)(c * 255.f), 0, 255);
     }
+}
 
-    std::string filename = "Backbuffer" + utility->MakeTimestamp() + ".png";
-    std::string fileFullPath = "Results/" + filename;
-    UINT width = info.width;
-    UINT height = info.height;
-    stbi_write_png(fileFullPath.c_str(), (int)width, (int)height, 4, image.data(), (int)(info.rowSize / 2));
+void World::SaveTextureCPU(const ImageInfo& info, const std::string& outPath)
+{
+    std::vector<uint8_t> image;
+    ReadbackToRGBA(info, image);
+    if (image.empty())
+        return;
 
-    std::cout << fileFullPath << " saved.\n";
+    stbi_write_png(outPath.c_str(), (int)info.width, (int)info.height, 4, image.data(), (int)(info.rowSize / 2));
 }
 
 void World::SaveLoop()
@@ -391,7 +387,8 @@ void World::SaveLoop()
 			local = sharedInfo;
             saveFlag = false;
         }
-        SaveTextureCPU(local);
+        std::string fileFullPath = local.resultPath;
+        SaveTextureCPU(local, fileFullPath);
 	}
 }
 void World::Notify(const ImageInfo& info)

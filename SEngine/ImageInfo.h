@@ -7,4 +7,5 @@ struct ImageInfo
     UINT64 rowSize;
     UINT numRows;
     UINT64 rowPitch;
+    std::string resultPath;
 };

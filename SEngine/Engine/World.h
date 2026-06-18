@@ -3,6 +3,7 @@
 #include "d3d12.h"
 #include <memory>
 #include <string>
+#include <vector>
 #include <unordered_map>
 #include <mutex>
 #include <condition_variable>
@@ -132,10 +133,13 @@ class World
     }
 
   private:
-    void SaveTextureCPU(const ImageInfo& info);
     void SaveLoop();
 
   public:
+    // readback 버퍼를 매핑해 f16→8bit RGBA(톤매핑 포함)로 변환. PNG 저장/영상 인코딩 공용.
+    void ReadbackToRGBA(const ImageInfo& info, std::vector<uint8_t>& out);
+    // outPath: 저장할 파일 전체 경로(폴더 포함). 동기 호출 가능(녹화 시 렌더 스레드에서 직접 사용).
+    void SaveTextureCPU(const ImageInfo& info, const std::string& outPath);
     void Notify(const ImageInfo& info);
 
   public:

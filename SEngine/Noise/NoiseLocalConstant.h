@@ -18,6 +18,7 @@ struct NoiseParticle
     float radius;
     XMFLOAT3 velocity;
     float dummy;
+    XMFLOAT3 color;
 };
 struct NoiseLocalConstant
 {

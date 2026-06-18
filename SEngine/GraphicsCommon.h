@@ -61,6 +61,7 @@ extern RootSignature g_UUUSSC_RS;
 extern RootSignature g_UUUUSSC_RS;
 
 extern RootSignature g_CurlNoiseSimulation_RS;
+extern RootSignature g_NoiseSourcing_RS;
 
 extern std::shared_ptr<GraphicsUtils::Utility> utility;
 extern std::shared_ptr<World> m_world;

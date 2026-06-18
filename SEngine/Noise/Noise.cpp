@@ -2,6 +2,7 @@
 #include "GraphicsCommon.h"
 #include "Engine\world.h"
 #include "Renderer.h"
+#include <random>
 
 Noise::Noise()
 {
@@ -33,13 +34,26 @@ void Noise::InitCommands()
 void Noise::InitCPU()
 {
     particleCPU.resize(particleCount);
-    particleCPU[0].position = Vector3(0.f, 0.f, 0.f);
-    particleCPU[0].radius = 0.1f;
-    particleCPU[0].velocity = Vector3(0.f, 0.f, 0.f);
+   
+	std::random_device rd;
+    std::mt19937 gen(rd());
+    float PI = 3.141592f;
 
-    //std::shared_ptr<StaticMesh> mesh = std::make_shared<StaticMesh>();
-    //mesh->InitializePoints(particleCount);
-    //m_world->AddMesh("NoiseParticles", mesh);
+    std::uniform_real_distribution<float> randomLen(0.1f, 1.f);
+    std::uniform_real_distribution<float> randomTheta(-PI, PI);
+    std::uniform_real_distribution<float> randomSize(0.01f, 0.02f);
+    std::uniform_real_distribution<float> randomColor(0.2f, 1.f);
+    for (size_t i = 0; i < particleCount; i++)
+    {
+        float theta = randomTheta(gen);
+        float l = randomLen(gen);
+        particleCPU[i].position = l* Vector3(std::cos(theta), std::sin(theta), 0.f);
+        particleCPU[i].radius = randomSize(gen);
+        particleCPU[i].color = Vector3(randomColor(gen), randomColor(gen), randomColor(gen));
+    }
+    // std::shared_ptr<StaticMesh> mesh = std::make_shared<StaticMesh>();
+    // mesh->InitializePoints(particleCount);
+    // m_world->AddMesh("NoiseParticles", mesh);
 }
 
 void Noise::InitGPU(UINT width, UINT height, ID3D12GraphicsCommandList* cmdList)
@@ -47,30 +61,34 @@ void Noise::InitGPU(UINT width, UINT height, ID3D12GraphicsCommandList* cmdList)
     m_width = width;
     m_height = height;
 
-    m_noiseHeap.Initialize(2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+    m_noiseHeap.Initialize(3, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 0, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
     D3D12_RESOURCE_FLAGS allowUAflag = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
     m_perlinNoise.Initialize(perlinWidth, perlinHeight, perlinFormat, allowUAflag,
                              D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 0, L"perlinNoise");
     m_curlNoise.Initialize(m_width, m_height, curlFormat, allowUAflag, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 0,
                            L"curlNoise");
+    m_density.Initialize(m_width, m_height, densityFormat, allowUAflag, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 0,
+                         L"noiseDensity");
 
-	particles.Initialize(particleCPU, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, cmdList, L"NoiseParticle");
+    particles.Initialize(particleCPU, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, cmdList, L"NoiseParticle");
 
-	NoiseLocalConstant init;
+    NoiseLocalConstant init;
     init.deltaTime = 0;
     init.particleCount = particleCount;
     init.grid = Vector2((float)m_width, (float)m_height);
-	m_noiseLCB.Initialize(init);
+    m_noiseLCB.Initialize(init);
     m_noiseLCB.Update();
 
-	// descriptor view 생성
+    // descriptor view 생성
     m_noiseHeap.CreateResourceView(m_perlinNoise.Get(), DescriptorType::UAV, ViewDimensionType::TEXTURE2D);
     m_noiseHeap.CreateResourceView(m_curlNoise.Get(), DescriptorType::UAV, ViewDimensionType::TEXTURE2D);
+    m_noiseHeap.CreateResourceView(m_density.Get(), DescriptorType::UAV, ViewDimensionType::TEXTURE2D);
 
-    /*if (m_world->GetTextureLoader())
+    if (m_world->GetTextureLoader())
     {
-        m_world->AddTexture("NoiseParticles", particles);
-    }*/
+        m_world->AddTexture("noiseDensity", m_density);
+        m_world->AddTexture("perlinNoise", m_perlinNoise);
+    }
 }
 
 void Noise::GeneratePerlinNoise()
@@ -112,7 +130,7 @@ void Noise::GenerateCurlNoise()
     // bind heap
     m_noiseHeap.Bind(m_commandList.Get());
 
-	// 0 : perlinNoise, 1 : curlNoise
+    // 0 : perlinNoise, 1 : curlNoise
     m_commandList->SetComputeRootDescriptorTable(0, m_noiseHeap.GetGPUHandle(0));
     m_commandList->SetComputeRootDescriptorTable(1, m_noiseHeap.GetGPUHandle(1));
 
@@ -121,10 +139,42 @@ void Noise::GenerateCurlNoise()
 
 void Noise::CurlNoiseSimulation(float deltaTime)
 {
-	// update consant buffer
+    // update consant buffer
     m_noiseLCB.localConstant.deltaTime = deltaTime;
     m_noiseLCB.Update();
 
+    Sourcing();
+    ParticleAdvection();
+}
+
+void Noise::Sourcing()
+{
+    // resource barrier
+    std::vector<D3D12_RESOURCE_BARRIER> barriers;
+    D3D12_RESOURCE_BARRIER barrier;
+    if (m_density.Transition(D3D12_RESOURCE_STATE_UNORDERED_ACCESS, barrier))
+        barriers.push_back(barrier);
+    if (particles.Transition(D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, barrier))
+        barriers.push_back(barrier);
+    if (!barriers.empty())
+        m_commandList->ResourceBarrier((UINT)barriers.size(), barriers.data());
+
+    // bind PSO
+    Renderer::BindCPSO(noiseSourcingCPSOName, m_commandList.Get());
+
+    // bind heap
+    m_noiseHeap.Bind(m_commandList.Get());
+
+    // 0 : particle, 1 : density, 2 : lcb
+    m_commandList->SetComputeRootShaderResourceView(0, particles.GetGPUVirtualAddress());
+    m_commandList->SetComputeRootDescriptorTable(1, m_noiseHeap.GetGPUHandle(2));
+    m_commandList->SetComputeRootConstantBufferView(2, m_noiseLCB.GetGPUAddress());
+
+    Dispatch(m_width, m_height, N_GROUP_SIZE_X, N_GROUP_SIZE_Y);
+}
+
+void Noise::ParticleAdvection()
+{
     // resource barrier
     std::vector<D3D12_RESOURCE_BARRIER> barriers;
     D3D12_RESOURCE_BARRIER barrier;
@@ -141,10 +191,9 @@ void Noise::CurlNoiseSimulation(float deltaTime)
     // bind heap
     m_noiseHeap.Bind(m_commandList.Get());
 
-	// 0 : curl noise, 1 : particle, 2 : lcb
-    m_commandList->SetComputeRootDescriptorTable(0, m_noiseHeap.GetGPUHandle(1));
-    m_commandList->SetComputeRootUnorderedAccessView(1, particles.GetGPUVirtualAddress());
-    m_commandList->SetComputeRootConstantBufferView(2, m_noiseLCB.GetGPUAddress());
+    // 0 : particle, 1 : lcb
+    m_commandList->SetComputeRootUnorderedAccessView(0, particles.GetGPUVirtualAddress());
+    m_commandList->SetComputeRootConstantBufferView(1, m_noiseLCB.GetGPUAddress());
 
     Dispatch(particleCount, SIMULATION_GROUP_SIZE_X);
 }

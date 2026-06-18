@@ -45,5 +45,5 @@ void StaticMesh::Render(ID3D12GraphicsCommandList* commandList)
 void StaticMesh::RenderPoints(ID3D12GraphicsCommandList* c)
 {
     c->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
-    c->DrawInstanced(m_indexCounts[0], 1, 0, 0);
+    c->DrawInstanced((UINT)m_indexCounts[0], 1, 0, 0);
 }

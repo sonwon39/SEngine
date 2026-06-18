@@ -114,8 +114,15 @@ class RenderEngine
     void Execute();
 
   private:
-    void SaveTextureCPU(const ImageInfo& info);
-    void SaveTextureGPU();
+    // 현재 백버퍼를 readback 버퍼로 복사하고 ImageInfo를 반환 (저장 트리거는 호출측이 결정)
+    ImageInfo ReadbackBackbuffer();
+	void SaveTextureGPU(const std::string& resultPath);
+
+    // PNG 없이 바로 mp4로 인코딩: ffmpeg 자식 프로세스 stdin 파이프
+    // inFps: 입력(캡처) 프레임레이트 = 실시간 재생 속도. outFps: 저장 mp4 fps(0이면 inFps와 동일).
+    bool OpenVideoPipe(int width, int height, int inFps, int outFps, const std::string& outPath);
+    void WriteVideoFrame(const std::vector<uint8_t>& frame);
+    void CloseVideoPipe();
 
   public:
     void RegistMeshBatch(std::shared_ptr<MeshBatch> meshBatch);
@@ -215,6 +222,22 @@ class RenderEngine
 
   private:
 	GPUBuffer readbackBuffer;
+
+    // 포트폴리오용 자동 녹화 (고정 dt 오프라인 렌더 → PNG 연번)
+    // SENGINE_RECORD 환경변수가 있으면 활성화. SENGINE_RECORD_FRAMES / SENGINE_RECORD_FPS로 조절.
+  private:
+    bool m_recording = true;
+    int m_recordFrame = 0;       // 시작부터의 누적 프레임
+    int m_recordWarmup = 60;     // 초반 워밍업 프레임 수 (트레일 형성 대기)
+    int m_recordCount = 300;     // 저장할 프레임 수
+    float m_recordDt = 1.0f / 60.0f; // 캡처 timestep (= 입력 fps). 1/60으로 바꾸면 진짜 60fps
+    int m_outputFps = 60;         // 저장 mp4 fps (0이면 캡처 fps와 동일). 예: 60이면 60fps로 저장
+
+    // ffmpeg 파이프 핸들
+    HANDLE m_ffmpegStdin = nullptr;
+    HANDLE m_ffmpegProcess = nullptr;
+    bool m_videoPipeOpen = false;
+    std::string videoName;
 
   private:
     std::string m_currPSOName = "";

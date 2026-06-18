@@ -449,6 +449,9 @@
     <FxCompile Include="Noise\NoiseParticleRenderVS.hlsl">
       <Filter>Noise</Filter>
     </FxCompile>
+    <FxCompile Include="Noise\NoiseSourcingCS.hlsl">
+      <Filter>Noise</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

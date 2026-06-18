@@ -43,6 +43,7 @@
 #include "CompiledShaders/NoiseParticleRenderVS.h"
 #include "CompiledShaders/NoiseParticleRenderGS.h"
 #include "CompiledShaders/NoiseParticleRenderPS.h"
+#include "CompiledShaders/NoiseSourcingCS.h"
 
 using namespace Graphics;
 using namespace Renderer;
@@ -142,6 +143,7 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
     ComputePSO perlinNoiseCPSO(L"perlinNoise CPSO");
     ComputePSO curlNoiseCPSO(L"curlNoise CPSO");
     ComputePSO curlSimulationCPSO(L"curlSimulation CPSO");
+    ComputePSO noiseSourcingCPSO(L"noiseSourcing CPSO");
 
     hdrFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
     backBufferFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
@@ -404,6 +406,12 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
     curlSimulationCPSO.Finalize(device);
     m_CPSOs["curlSimulationCPSO"] = curlSimulationCPSO;
     cpsoNames.push_back("curlSimulationCPSO");
+
+	noiseSourcingCPSO.SetRootSignature(g_NoiseSourcing_RS);
+    noiseSourcingCPSO.SetComputeShader(g_pNoiseSourcingCS, sizeof(g_pNoiseSourcingCS));
+    noiseSourcingCPSO.Finalize(device);
+    m_CPSOs["noiseSourcingCPSO"] = noiseSourcingCPSO;
+    cpsoNames.push_back("noiseSourcingCPSO");
 }
 
 ID3D12PipelineState* Renderer::GetPSO(std::string psoName)

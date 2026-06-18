@@ -49,6 +49,7 @@ RootSignature g_UUUSSC_RS;
 RootSignature g_UUUUSSC_RS;
 
 RootSignature g_CurlNoiseSimulation_RS;
+RootSignature g_NoiseSourcing_RS;
 
 std::shared_ptr<GraphicsUtils::Utility> utility;
 std::shared_ptr<World> m_world;
@@ -299,12 +300,18 @@ void Graphics::InitializeCommonState(const Microsoft::WRL::ComPtr<ID3D12Device5>
     g_UUUUSSC_RS[6].InitCBV(0);
     g_UUUUSSC_RS.Finalize(device, L"g_UUUUSSC_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
-    g_CurlNoiseSimulation_RS.Reset(3, 1);
-    g_CurlNoiseSimulation_RS[0].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0, 1);
-    g_CurlNoiseSimulation_RS[1].InitUAV(0);
-    g_CurlNoiseSimulation_RS[2].InitCBV(0);
+    g_CurlNoiseSimulation_RS.Reset(2, 1);
+    g_CurlNoiseSimulation_RS[0].InitUAV(0);
+    g_CurlNoiseSimulation_RS[1].InitCBV(0);
     g_CurlNoiseSimulation_RS.InitStaticSampler(0, wrapLinearSampler);
-
     g_CurlNoiseSimulation_RS.Finalize(device, L"g_CurlNoiseSimulation_RS",
                                       D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+    g_NoiseSourcing_RS.Reset(3, 1);
+    g_NoiseSourcing_RS[0].InitSRV(0);
+    g_NoiseSourcing_RS[1].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 0, 1);
+    g_NoiseSourcing_RS[2].InitCBV(0);
+    g_NoiseSourcing_RS.InitStaticSampler(0, wrapLinearSampler);
+    g_NoiseSourcing_RS.Finalize(device, L"g_NoiseSourcing_RS",
+                                D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 }
