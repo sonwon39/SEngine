@@ -26,7 +26,10 @@ void MeshBatch::Render(ID3D12GraphicsCommandList* commandList)
     if (mcb >= 0)
         commandList->SetGraphicsRootConstantBufferView(mcb, owner->GetMCBGPUAddress());
 
-    mesh->Render(commandList); // VB/IB + DrawIndexed (StaticMesh가 이미 갖고 있음)
+	if (meshType == MeshType::Mesh)
+        mesh->Render(commandList); // VB/IB + DrawIndexed (StaticMesh가 이미 갖고 있음)
+    else if (meshType == MeshType::Point)
+        mesh->RenderPoints(commandList);
 }
 
 void MeshBatch::SyncCB()

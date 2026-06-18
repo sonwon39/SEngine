@@ -38,6 +38,11 @@
 
 #include "CompiledShaders/PerlinNoiseCS.h"
 #include "CompiledShaders/CurlNoiseCS.h"
+#include "CompiledShaders/CurlNoiseSimulationCS.h"
+
+#include "CompiledShaders/NoiseParticleRenderVS.h"
+#include "CompiledShaders/NoiseParticleRenderGS.h"
+#include "CompiledShaders/NoiseParticleRenderPS.h"
 
 using namespace Graphics;
 using namespace Renderer;
@@ -106,6 +111,7 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
     GraphicsPSO pbrPSO(L"pbr PSO");
 
     GraphicsPSO particleRenderPSO(L"particleRender PSO");
+    GraphicsPSO noiseParticleRenderPSO(L"noiseParticleRender PSO");
 
     ComputePSO defaultCPSO(L"default CPSO");
 
@@ -135,6 +141,7 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
 	// noise
     ComputePSO perlinNoiseCPSO(L"perlinNoise CPSO");
     ComputePSO curlNoiseCPSO(L"curlNoise CPSO");
+    ComputePSO curlSimulationCPSO(L"curlSimulation CPSO");
 
     hdrFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
     backBufferFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
@@ -258,6 +265,20 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
     m_PSOs["particleRenderPSO"] = particleRenderPSO;
     psoNames.push_back("particleRenderPSO");
 
+	noiseParticleRenderPSO.SetInputLayout(0, nullptr);
+    noiseParticleRenderPSO.SetRootSignature(g_RenderNoiseParticle_RS);
+    noiseParticleRenderPSO.SetRasterizerState(rasterizerDefault);
+    noiseParticleRenderPSO.SetBlendState(blendColor);
+    noiseParticleRenderPSO.SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT);
+    noiseParticleRenderPSO.SetVertexShader(g_pNoiseParticleRenderVS, sizeof(g_pNoiseParticleRenderVS));
+    noiseParticleRenderPSO.SetGeometryShader(g_pNoiseParticleRenderGS, sizeof(g_pNoiseParticleRenderGS));
+    noiseParticleRenderPSO.SetPixelShader(g_pNoiseParticleRenderPS, sizeof(g_pNoiseParticleRenderPS));
+    noiseParticleRenderPSO.SetSampleMask(UINT_MAX);
+    noiseParticleRenderPSO.SetRenderTargetFormat(backBufferFormat, DXGI_FORMAT_UNKNOWN, 1, 0);
+    noiseParticleRenderPSO.Finalize(device);
+    m_PSOs["noiseParticleRenderPSO"] = noiseParticleRenderPSO;
+    psoNames.push_back("noiseParticleRenderPSO");
+
     defaultCPSO.SetRootSignature(g_U1_RS);
     defaultCPSO.SetComputeShader(g_pDefaultCS, sizeof(g_pDefaultCS));
     defaultCPSO.Finalize(device);
@@ -377,6 +398,12 @@ void Renderer::Initialize(const Microsoft::WRL::ComPtr<ID3D12Device5>& device)
     curlNoiseCPSO.Finalize(device);
     m_CPSOs["curlNoiseCPSO"] = curlNoiseCPSO;
     cpsoNames.push_back("curlNoiseCPSO");
+
+	curlSimulationCPSO.SetRootSignature(g_CurlNoiseSimulation_RS);
+    curlSimulationCPSO.SetComputeShader(g_pCurlNoiseSimulationCS, sizeof(g_pCurlNoiseSimulationCS));
+    curlSimulationCPSO.Finalize(device);
+    m_CPSOs["curlSimulationCPSO"] = curlSimulationCPSO;
+    cpsoNames.push_back("curlSimulationCPSO");
 }
 
 ID3D12PipelineState* Renderer::GetPSO(std::string psoName)

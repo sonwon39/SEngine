@@ -28,7 +28,10 @@ class StaticMesh
     void Initialize(ID3D12Device5* device, ID3D12GraphicsCommandList* commandList,
                     const std::vector<Mesh<V, I>>& meshes);
 
+    void InitializePoints(UINT64 pointCount);
+
     void Render(ID3D12GraphicsCommandList* commandList);
+    void RenderPoints(ID3D12GraphicsCommandList* commandList);
 
     // vertex index 버퍼들의 upload 버퍼 clear
     void Clear();

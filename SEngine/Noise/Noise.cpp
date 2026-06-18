@@ -10,11 +10,11 @@ Noise::Noise()
 Noise::~Noise()
 {
 }
-void Noise::Initialize(UINT width, UINT height)
+void Noise::Initialize(UINT width, UINT height, ID3D12GraphicsCommandList* cmdList)
 {
     InitCommands();
     InitCPU();
-    InitGPU(width, height);
+    InitGPU(width, height, cmdList);
 }
 
 void Noise::InitCommands()
@@ -33,17 +33,16 @@ void Noise::InitCommands()
 void Noise::InitCPU()
 {
     particleCPU.resize(particleCount);
-    particleCPU[0].position = Vector3(50.f, 50.f, 0.f);
-    particleCPU[0].radius = 30.f;
+    particleCPU[0].position = Vector3(0.f, 0.f, 0.f);
+    particleCPU[0].radius = 0.1f;
     particleCPU[0].velocity = Vector3(0.f, 0.f, 0.f);
 
-    /*for (size_t i = 0; i < particleCount; i++)
-    {
-
-    }*/
+    //std::shared_ptr<StaticMesh> mesh = std::make_shared<StaticMesh>();
+    //mesh->InitializePoints(particleCount);
+    //m_world->AddMesh("NoiseParticles", mesh);
 }
 
-void Noise::InitGPU(UINT width, UINT height)
+void Noise::InitGPU(UINT width, UINT height, ID3D12GraphicsCommandList* cmdList)
 {
     m_width = width;
     m_height = height;
@@ -55,13 +54,23 @@ void Noise::InitGPU(UINT width, UINT height)
     m_curlNoise.Initialize(m_width, m_height, curlFormat, allowUAflag, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 0,
                            L"curlNoise");
 
-	particles.Initialize(particleCPU, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, m_commandList.Get(), L"NoiseParticle");
+	particles.Initialize(particleCPU, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, cmdList, L"NoiseParticle");
 
+	NoiseLocalConstant init;
+    init.deltaTime = 0;
+    init.particleCount = particleCount;
+    init.grid = Vector2((float)m_width, (float)m_height);
+	m_noiseLCB.Initialize(init);
+    m_noiseLCB.Update();
+
+	// descriptor view 생성
     m_noiseHeap.CreateResourceView(m_perlinNoise.Get(), DescriptorType::UAV, ViewDimensionType::TEXTURE2D);
     m_noiseHeap.CreateResourceView(m_curlNoise.Get(), DescriptorType::UAV, ViewDimensionType::TEXTURE2D);
 
-    if (m_world->GetTextureLoader())
-        m_world->AddTexture("perlinNoise", m_perlinNoise);
+    /*if (m_world->GetTextureLoader())
+    {
+        m_world->AddTexture("NoiseParticles", particles);
+    }*/
 }
 
 void Noise::GeneratePerlinNoise()
@@ -110,12 +119,18 @@ void Noise::GenerateCurlNoise()
     Dispatch(m_width, m_height, N_GROUP_SIZE_X, N_GROUP_SIZE_Y);
 }
 
-void Noise::CurlNoiseSimulation()
+void Noise::CurlNoiseSimulation(float deltaTime)
 {
+	// update consant buffer
+    m_noiseLCB.localConstant.deltaTime = deltaTime;
+    m_noiseLCB.Update();
+
     // resource barrier
     std::vector<D3D12_RESOURCE_BARRIER> barriers;
     D3D12_RESOURCE_BARRIER barrier;
     if (m_curlNoise.Transition(D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, barrier))
+        barriers.push_back(barrier);
+    if (particles.Transition(D3D12_RESOURCE_STATE_UNORDERED_ACCESS, barrier))
         barriers.push_back(barrier);
     if (!barriers.empty())
         m_commandList->ResourceBarrier((UINT)barriers.size(), barriers.data());
@@ -126,14 +141,12 @@ void Noise::CurlNoiseSimulation()
     // bind heap
     m_noiseHeap.Bind(m_commandList.Get());
 
-	// 0 : curl noise, 1 : particle
+	// 0 : curl noise, 1 : particle, 2 : lcb
     m_commandList->SetComputeRootDescriptorTable(0, m_noiseHeap.GetGPUHandle(1));
+    m_commandList->SetComputeRootUnorderedAccessView(1, particles.GetGPUVirtualAddress());
+    m_commandList->SetComputeRootConstantBufferView(2, m_noiseLCB.GetGPUAddress());
 
-    Dispatch(m_width, m_height, N_GROUP_SIZE_X, N_GROUP_SIZE_Y);
-}
-
-void Noise::ComputeParticles()
-{
+    Dispatch(particleCount, SIMULATION_GROUP_SIZE_X);
 }
 
 void Noise::RenderParticles(ID3D12GraphicsCommandList* c)
@@ -163,6 +176,12 @@ void Noise::Dispatch(UINT width, UINT height, UINT gs_x, UINT gs_y)
     UINT x = (width + gs_x - 1) / gs_x;
     UINT y = (height + gs_y - 1) / gs_y;
     m_commandList->Dispatch(x, y, 1);
+}
+
+void Noise::Dispatch(UINT count, UINT gs_x)
+{
+    UINT x = (count + gs_x - 1) / gs_x;
+    m_commandList->Dispatch(x, 1, 1);
 }
 
 void Noise::SetCPSO(const std::string psoName)

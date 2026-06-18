@@ -25,6 +25,11 @@ void StaticMesh::Clear()
     }
 }
 
+void StaticMesh::InitializePoints(UINT64 pointCount)
+{
+    m_indexCounts.push_back(pointCount);
+}
+
 void StaticMesh::Render(ID3D12GraphicsCommandList* commandList)
 {
     for (size_t i = 0; i < meshCount; i++)
@@ -35,4 +40,10 @@ void StaticMesh::Render(ID3D12GraphicsCommandList* commandList)
         UINT indexCount = (UINT)m_indexBuffers[i].dataCount;
         commandList->DrawIndexedInstanced(indexCount, 1, 0, 0, 0);
     }
+}
+
+void StaticMesh::RenderPoints(ID3D12GraphicsCommandList* c)
+{
+    c->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
+    c->DrawInstanced(m_indexCounts[0], 1, 0, 0);
 }

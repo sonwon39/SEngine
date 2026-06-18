@@ -2,6 +2,7 @@
 
 #include "StructuredBuffer.h"
 
+
 inline StructuredBuffer::StructuredBuffer()
 {
 }
@@ -17,7 +18,6 @@ inline void StructuredBuffer::Initialize(const std::vector<DataType>& data, D3D1
     bufferSize = UINT64(data.size() * sizeof(DataType));
     dataCount = UINT(data.size());
     gpu->SetName(name.c_str());
-
 }
 template <typename DataType>
 inline void StructuredBuffer::Initialize(DataType* data, UINT64 size, D3D12_RESOURCE_FLAGS flag,

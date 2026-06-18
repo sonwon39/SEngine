@@ -88,7 +88,8 @@ enum class BindKey : uint32_t
     GlobalCB,
     LocalCB,
     MaterialCB,
-	LightCB
+	LightCB,
+	StructuredBuffer,
 };
 
 class RootSignature
@@ -154,7 +155,7 @@ class RootSignature
     UINT m_numSamplers;
 
   protected:
-    std::array<int8_t, 6> m_slotOf{-1, -1, -1, -1, -1, -1};
+    std::array<int8_t, 7> m_slotOf{-1, -1, -1, -1, -1, -1, -1};
 
   public:
     void SetSlot(BindKey k, uint32_t slot)

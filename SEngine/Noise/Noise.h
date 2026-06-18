@@ -6,6 +6,7 @@
 
 #include "Texture2D.h"
 #include "StructuredBuffer.h"
+#include "ConstantBuffer.h"
 #include "DescriptorHeap.h"
 #include "NoiseLocalConstant.h"
 
@@ -15,22 +16,23 @@ class Noise
     Noise();
     virtual ~Noise();
 
-    void Initialize(UINT width, UINT height);
-    void InitGPU(UINT width, UINT height);
+    void Initialize(UINT width, UINT height, ID3D12GraphicsCommandList* cmdList);
+    void InitGPU(UINT width, UINT height, ID3D12GraphicsCommandList* cmdList);
     void GeneratePerlinNoise();
     void GenerateCurlNoise();
+
+	// partice 위치 갱신
+    void CurlNoiseSimulation(float deltaTime);
+    void RenderParticles(ID3D12GraphicsCommandList* c);
+
     void ResetCommand();
     void InitCommands();
     void InitCPU();
-    void CurlNoiseSimulation();
-
-	// partice 위치 갱신
-    void ComputeParticles();
-    void RenderParticles(ID3D12GraphicsCommandList* c);
 
   public:
     void Execute(ID3D12CommandQueue* commandQueue);
     void Dispatch(UINT width, UINT height, UINT gs_x, UINT gs_y);
+    void Dispatch(UINT count, UINT gs_x);
     void SetCPSO(const std::string psoName);
 
   private:
@@ -49,6 +51,7 @@ class Noise
     UINT particleCount = 1;
     StructuredBuffer particles;
     std::vector<NoiseParticle> particleCPU;
+    ConstantBuffer<NoiseLocalConstant> m_noiseLCB;
 
   private:
     std::string perlinCPSOName = "perlinNoiseCPSO";
@@ -62,4 +65,6 @@ class Noise
   private:
     Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_commandList;
     Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_commandAllocator;
+
+	
 };

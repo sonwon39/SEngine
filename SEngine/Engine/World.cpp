@@ -151,18 +151,22 @@ void World::InitLevel()
 	}
 	if (useNoise)
 	{
-        ad.lc.model = DirectX::XMMatrixTranslation(0.f, 0.f, 0.f);
+        /*ad.lc.model = DirectX::XMMatrixTranslation(0.f, 0.f, 0.f);
         ad.lc.model = ad.lc.model.Transpose();
         ad.textureName = "perlinNoise";
         ad.psoName = "defaultPSO";
         ad.useMaterial = false;
-        GenerateActor("rect", ad);
+        GenerateActor("rect", ad);*/
 
         auto orthogonalCamera = std::make_shared<ACamera>();
         orthogonalCamera->Initialize(Vector3(0.f, 0.f, 0.f), false);
         AddActor(orthogonalCamera);
+		
+        auto camera = std::make_shared<ACamera>();
+        camera->Initialize(Vector3(0.f, 0.f, -2.f), true);
+        AddActor(camera);
 
-        m_player = orthogonalCamera;
+        m_player = camera;
         OnRegister();
 	}
 	if (renderDefault)

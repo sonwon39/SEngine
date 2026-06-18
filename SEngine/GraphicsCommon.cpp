@@ -22,6 +22,7 @@ RootSignature g_commonRS;
 RootSignature g_defaultRS;
 RootSignature g_cubeMapRS;
 RootSignature g_PBR_RS;
+RootSignature g_RenderNoiseParticle_RS;
 
 RootSignature g_U1_RS;
 RootSignature g_U1_C1_RS;
@@ -46,6 +47,8 @@ RootSignature g_UCC_RS;
 RootSignature g_UUC_RS;
 RootSignature g_UUUSSC_RS;
 RootSignature g_UUUUSSC_RS;
+
+RootSignature g_CurlNoiseSimulation_RS;
 
 std::shared_ptr<GraphicsUtils::Utility> utility;
 std::shared_ptr<World> m_world;
@@ -145,7 +148,7 @@ void Graphics::InitializeCommonState(const Microsoft::WRL::ComPtr<ID3D12Device5>
     g_U2_C2_RS[2].InitCBV(1);
     g_U2_C2_RS.Finalize(device, L"g_U2_C2_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
-	g_S1_U1_RS.Reset(2, 1);
+    g_S1_U1_RS.Reset(2, 1);
     g_S1_U1_RS[0].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0, 1);
     g_S1_U1_RS[1].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 0, 1);
     g_S1_U1_RS.InitStaticSampler(0, wrapLinearSampler);
@@ -196,6 +199,13 @@ void Graphics::InitializeCommonState(const Microsoft::WRL::ComPtr<ID3D12Device5>
     g_PBR_RS.SetSlot(BindKey::LocalCB, 3);
     g_PBR_RS.SetSlot(BindKey::MaterialCB, 4);
     g_PBR_RS.SetSlot(BindKey::LightCB, 5);
+
+    g_RenderNoiseParticle_RS.Reset(2, 0);
+    g_RenderNoiseParticle_RS[0].InitSRV(0);
+    g_RenderNoiseParticle_RS[1].InitCBV(0);
+    g_RenderNoiseParticle_RS.Finalize(device, L"g_RenderNoiseParticle_RS",
+                                      D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+    g_RenderNoiseParticle_RS.SetSlot(BindKey::GlobalCB, 1);
 
     g_S1_RS.Reset(1, 0);
     g_S1_RS[0].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0, 1);
@@ -288,4 +298,13 @@ void Graphics::InitializeCommonState(const Microsoft::WRL::ComPtr<ID3D12Device5>
     g_UUUUSSC_RS[5].InitSRV(1);
     g_UUUUSSC_RS[6].InitCBV(0);
     g_UUUUSSC_RS.Finalize(device, L"g_UUUUSSC_RS", D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+    g_CurlNoiseSimulation_RS.Reset(3, 1);
+    g_CurlNoiseSimulation_RS[0].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0, 1);
+    g_CurlNoiseSimulation_RS[1].InitUAV(0);
+    g_CurlNoiseSimulation_RS[2].InitCBV(0);
+    g_CurlNoiseSimulation_RS.InitStaticSampler(0, wrapLinearSampler);
+
+    g_CurlNoiseSimulation_RS.Finalize(device, L"g_CurlNoiseSimulation_RS",
+                                      D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 }

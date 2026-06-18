@@ -10,6 +10,7 @@ using namespace DirectX;
 
 #define N_GROUP_SIZE_X 32
 #define N_GROUP_SIZE_Y 32
+#define SIMULATION_GROUP_SIZE_X 256
 
 struct NoiseParticle
 {
@@ -17,5 +18,11 @@ struct NoiseParticle
     float radius;
     XMFLOAT3 velocity;
     float dummy;
+};
+struct NoiseLocalConstant
+{
+    float deltaTime;
+    int particleCount;
+    XMFLOAT2 grid;
 };
 #endif

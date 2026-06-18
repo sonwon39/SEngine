@@ -517,8 +517,6 @@ void SPH::InitParticleGPU(ID3D12CommandAllocator* cmdAlloc, ID3D12GraphicsComman
         Graphics::utility->CreateBuffer(bsInit, lvl.blockSums, lvl.blockSumsUpload, uavFlag, cmdList);
     }
 
-    cmdList->Close();
-
     // view 생성
     CD3DX12_CPU_DESCRIPTOR_HANDLE prev_handle(m_sphParticleUAVHeap[0]->GetCPUDescriptorHandleForHeapStart());
     CD3DX12_CPU_DESCRIPTOR_HANDLE curr_handle(m_sphParticleUAVHeap[1]->GetCPUDescriptorHandleForHeapStart());

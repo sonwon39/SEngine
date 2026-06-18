@@ -100,7 +100,7 @@ bool RenderEngine::InitScene()
     }
 	{
         m_noise = std::make_shared<Noise>();
-        m_noise->Initialize(m_width, m_height);
+        m_noise->Initialize(m_width, m_height, m_resourceCommandList.Get());
         GenerateNoise();
 	}
     // light 초기화
@@ -108,7 +108,7 @@ bool RenderEngine::InitScene()
         auto light = m_world->GetLightManger();
         light->Initialize(D3D12_RESOURCE_FLAG_NONE, m_resourceCommandList.Get(), L"light");
     }
-
+    m_resourceCommandList->Close();
     ID3D12CommandList* commands[] = {m_resourceCommandList.Get()};
     m_commandQueue->ExecuteCommandLists(ARRAYSIZE(commands), commands);
     FlushCommands();
@@ -357,8 +357,8 @@ void RenderEngine::Tick(float deltaTime)
         camera->SyncCB();
     }
     //StableFluidsTick(deltaTime);
-    RenderTick(deltaTime);
-   
+    //RenderTick(deltaTime);
+    NoiseSimulationTick(deltaTime);
 }
 
 void RenderEngine::SPHTick(float deltaTime)
@@ -366,6 +366,7 @@ void RenderEngine::SPHTick(float deltaTime)
     m_sph->Tick(deltaTime);
     m_sph->Execute(m_commandQueue.Get());
 
+    ResetCommand();
     RenderSPH("particleRenderPSO", true /*clear RT*/);
 }
 
@@ -374,6 +375,7 @@ void RenderEngine::StableFluidsTick(float deltaTime)
     m_stableFluids->Tick(deltaTime);
     m_stableFluids->Execute(m_commandQueue.Get());
 
+    ResetCommand();
     RenderMeshes();
     // RenderGUI();
     Execute();
@@ -381,11 +383,30 @@ void RenderEngine::StableFluidsTick(float deltaTime)
 
 void RenderEngine::RenderTick(float deltaTime)
 {
+     ResetCommand();
      RenderMeshes();
      //RenderGUI();
      Execute();
 }
 
+void RenderEngine::NoiseSimulationTick(float deltaTime)
+{
+    static int i = 0;
+    m_noise->ResetCommand();
+    m_noise->CurlNoiseSimulation(deltaTime);
+    m_noise->Execute(m_commandQueue.Get());
+
+    ResetCommand();
+    
+	InitRenderPipeline(false);
+    Renderer::BindPSO("noiseParticleRenderPSO", m_commandList.Get());
+
+    auto camera = m_world->GetPlayer()->GetCameraComponent();
+    m_commandList->SetGraphicsRootConstantBufferView(1, camera->GetGCBGPUAddress());
+	m_noise->RenderParticles(m_commandList.Get());
+    Execute();
+    i++;
+}
 void RenderEngine::GenerateNoise()
 {
     m_noise->ResetCommand();
@@ -394,12 +415,8 @@ void RenderEngine::GenerateNoise()
     m_noise->Execute(m_commandQueue.Get());
 }
 
-void RenderEngine::RenderMeshes()
+void RenderEngine::InitRenderPipeline(bool clear)
 {
-    using namespace Renderer;
-
-    ResetCommand();
-
     m_commandList->RSSetScissorRects(1, &m_scissorRect);
     m_commandList->RSSetViewports(1, &m_viewport);
 
@@ -411,11 +428,22 @@ void RenderEngine::RenderMeshes()
     if (!barriers.empty())
         m_commandList->ResourceBarrier((UINT)barriers.size(), barriers.data());
 
-    m_commandList->ClearRenderTargetView(GetCurrentRtvCpuHandle(), rtvClearColor.data(), 0, nullptr);
-    m_commandList->ClearDepthStencilView(GetDSVCpuHandle(0), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0,
-                                         0, nullptr);
-    m_commandList->OMSetRenderTargets(1, &GetCurrentRtvCpuHandle(), TRUE, &GetDSVCpuHandle(0));
+	if (clear)
+    {
+        m_commandList->ClearRenderTargetView(GetCurrentRtvCpuHandle(), rtvClearColor.data(), 0, nullptr);
+        m_commandList->ClearDepthStencilView(GetDSVCpuHandle(0), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f,
+                                             0, 0, nullptr);
+	}
 
+
+    m_commandList->OMSetRenderTargets(1, &GetCurrentRtvCpuHandle(), TRUE, &GetDSVCpuHandle(0));
+}
+
+void RenderEngine::RenderMeshes()
+{
+    using namespace Renderer;
+
+    InitRenderPipeline();
     bool heapBinded = false;
 
     auto camera = m_world->GetPlayer()->GetCameraComponent();

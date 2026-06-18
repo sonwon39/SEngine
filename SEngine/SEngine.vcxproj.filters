@@ -352,6 +352,9 @@
     <ClInclude Include="Noise\NoiseLocalConstant.h">
       <Filter>Noise</Filter>
     </ClInclude>
+    <ClInclude Include="MeshType.h">
+      <Filter>_h</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="DefaultVS.hlsl" />
@@ -432,6 +435,18 @@
       <Filter>Noise</Filter>
     </FxCompile>
     <FxCompile Include="Noise\CurlNoiseCS.hlsl">
+      <Filter>Noise</Filter>
+    </FxCompile>
+    <FxCompile Include="Noise\CurlNoiseSimulationCS.hlsl">
+      <Filter>Noise</Filter>
+    </FxCompile>
+    <FxCompile Include="Noise\NoiseParticleRenderGS.hlsl">
+      <Filter>Noise</Filter>
+    </FxCompile>
+    <FxCompile Include="Noise\NoiseParticleRenderPS.hlsl">
+      <Filter>Noise</Filter>
+    </FxCompile>
+    <FxCompile Include="Noise\NoiseParticleRenderVS.hlsl">
       <Filter>Noise</Filter>
     </FxCompile>
   </ItemGroup>

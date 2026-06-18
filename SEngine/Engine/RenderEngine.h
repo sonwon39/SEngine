@@ -81,7 +81,13 @@ class RenderEngine
     void SPHTick(float deltaTime);
     void StableFluidsTick(float deltaTime);
     void RenderTick(float deltaTime);
+    void NoiseSimulationTick(float deltaTime);
     void GenerateNoise();
+
+
+	// RSSet, barrier, Clear, OMSet
+    void InitRenderPipeline(bool clear = true);
+
     void RenderMeshes();
     void RenderSPH(const std::string& psoName, bool clear);
 

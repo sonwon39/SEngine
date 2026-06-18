@@ -2,6 +2,7 @@
 
 #include "d3d12.h"
 #include <string>
+#include "MeshType.h"
 
 class StaticMesh;
 class Material;
@@ -29,4 +30,6 @@ class MeshBatch
     PrimitiveComponent* owner = nullptr; // per-primitive CB sync용
     std::string psoName;
     const RootSignature* currentRS;
+
+	MeshType meshType;
 };
