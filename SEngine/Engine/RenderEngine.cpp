@@ -33,8 +33,8 @@ static const float PI = 3.141592f;
 
 RenderEngine::RenderEngine(ID3D12Device5* device) : m_device(device)
 {
-    videoName = "curlnoise";
-    m_recording = true;
+    videoName = "StableFluids";
+    m_recording = false;
 }
 
 RenderEngine::~RenderEngine()
@@ -353,7 +353,11 @@ void RenderEngine::Tick(float deltaTime)
         std::string path = "Results/" + utility->MakeTimestamp() + ".png";
         SaveTextureGPU(path);
     }
- 
+    if (inputHelper && inputHelper->GetRecordFlag())
+    {
+        m_recording = true;
+        inputHelper->SetRecordFlag(false);
+    }
 
     // === 녹화 기능
     if (m_recording)
@@ -381,7 +385,7 @@ void RenderEngine::Tick(float deltaTime)
                 CloseVideoPipe();
                 m_recording = false;
                 std::cout << "RECORD_DONE frames=" << m_recordCount << std::endl;
-                PostQuitMessage(0);
+                //PostQuitMessage(0);
             }
         }
         m_recordFrame++;
@@ -397,9 +401,13 @@ void RenderEngine::Tick(float deltaTime)
     {
         camera->SyncCB();
     }
-    // StableFluidsTick(deltaTime);
-    // RenderTick(deltaTime);
-    NoiseSimulationTick(deltaTime);
+
+    if (m_world->useSimulation)
+		StableFluidsTick(deltaTime);
+    if (m_world->renderDefault)
+	    RenderTick(deltaTime);
+    if (m_world->useNoise)
+	    NoiseSimulationTick(deltaTime);
 }
 
 void RenderEngine::SPHTick(float deltaTime)

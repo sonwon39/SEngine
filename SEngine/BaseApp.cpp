@@ -156,10 +156,10 @@ LRESULT BaseApp::MainProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         const UINT resultData =
             GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT, &raw, &rawSize, sizeof(RAWINPUTHEADER));
 
-        /*if (m_world && m_world->mouse)
+        if (m_world && m_world->mouse && m_world->GetFPSMode())
         {
             m_world->mouse->AddRawDelta(raw.data.mouse.lLastX, raw.data.mouse.lLastY);
-        }*/
+        }
     }
     break;
     case WM_LBUTTONDOWN:

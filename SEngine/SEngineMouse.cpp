@@ -35,7 +35,6 @@ void SEngineMouse::UpdateLButtonDownState(bool newState)
 
 void SEngineMouse::Tick(float deltaTime)
 {
-    static int j = 0;
     GetCursorPos(&mousePos);
     ScreenToClient(m_world->m_mainWnd, &mousePos);
 
@@ -43,20 +42,7 @@ void SEngineMouse::Tick(float deltaTime)
 
 	if (m_world->GetFPSMode())
 	{
-        currPos = Vector2((float)mousePos.x, (float)mousePos.y);
-		if (j == 0)
-		{
-            prevPos = currPos;
-		}
-        j++;
-        velocity = (currPos - prevPos);
-        auto center = m_world->GetCenterPoint();
-        prevPos = Vector2((float)center.x, (float)center.y);
         m_world->MoveMouseToWindowCenter();
-	}
-	else
-	{
-        j = 0;
 	}
 }
 

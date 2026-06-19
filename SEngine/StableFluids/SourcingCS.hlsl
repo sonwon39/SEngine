@@ -41,8 +41,8 @@ void main(uint3 DTid : SV_DispatchThreadID)
 	//float scale2 = smootherstep(1.0 - d2);
 
 	float3 color = gMouse.color;
-	gDensity[DTid.xy].xyz += (scale1 * color);
-	gVelocity[DTid.xy].xy += (scale1 * velocity1);
+	//gDensity[DTid.xy].xyz += (scale1 * color);
+	//gVelocity[DTid.xy].xy += (scale1 * velocity1);
 	
 
     if (gMouse.lButtonDown)

@@ -25,19 +25,18 @@ template <typename V, typename I> class ModelLoader
     ModelLoader()
     {
         basePath = std::filesystem::current_path().string();
-        basePath += "/Models/";
+        basePath += "/Assets/Models/";
     };
     ~ModelLoader() {};
 
   public:
     void InitializeCPU();
     void InitializeGPU(ID3D12GraphicsCommandList* commandList);
-    ;
 
   public:
     std::string basePath;
     std::vector<Mesh<V, I>> GetAsset(const std::string& assetName) const;
-    std::shared_ptr<StaticMesh> GetMeshes(const std::string& assetName) const;
+    //std::shared_ptr<StaticMesh> GetMeshes(const std::string& assetName) const;
     DirectX::SimpleMath::Vector3 aiToVector3(aiVector3D vector);
     SkinnedLocalConstant GetCurrentSLC(const float& frame, const std::string& assetName, const int& clipIdx,
                                        bool updateRootPos);
@@ -285,6 +284,8 @@ inline void ModelLoader<V, I>::Load(std::string filename, DirectX::SimpleMath::M
             const auto* mesh = scene->mMeshes[i];
             if (mesh->HasBones())
             {
+				// mesh가 bone을 가지고 있다면 모든 bone에 대해
+				// boneNameToId map을 -1로 초기화
                 for (size_t j = 0; j < mesh->mNumBones; j++)
                 {
                     const aiBone* bone = mesh->mBones[j];
@@ -294,6 +295,8 @@ inline void ModelLoader<V, I>::Load(std::string filename, DirectX::SimpleMath::M
             }
         }
 
+		// bone을 root부터 내려가면서 트리 구조로 boneNameToId 채운 뒤
+		// boneIdToName 초기화
         uint32_t count = 0;
         CreateBoneTree(asset, scene->mRootNode, &count);
         for (auto& i : asset.animData.boneNameToId)
@@ -301,6 +304,7 @@ inline void ModelLoader<V, I>::Load(std::string filename, DirectX::SimpleMath::M
 
         asset.animData.boneParents.resize(asset.animData.boneNameToId.size(), -1);
     }
+
     ProcessNode(asset, scene->mRootNode, scene, tr, loadAnimation);
 
     if (loadAnimation)
@@ -322,7 +326,6 @@ inline void ModelLoader<V, I>::Load(std::string filename, DirectX::SimpleMath::M
                 auto it = asset.animData.boneNameToId.find(nodeAnim->mNodeName.C_Str());
                 if (it == asset.animData.boneNameToId.end())
                 {
-                    // std::cout << "hi ";
                     continue;
                 }
                 uint32_t boneId = it->second;

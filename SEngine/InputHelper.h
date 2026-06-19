@@ -21,12 +21,21 @@ class InputHelper
     {
         return captureFlag;
     }
+    bool GetRecordFlag() const
+    {
+        return recordFlag;
+    }
     void SetCaptureFlag(bool state)
     {
         captureFlag = state;
     }
+    void SetRecordFlag(bool state)
+    {
+        recordFlag = state;
+    }
 
 	bool captureFlag = false;
+    bool recordFlag = false;
 
     DirectX::SimpleMath::Vector3 GetInputDirection(Actor* actor);
 
@@ -41,4 +50,5 @@ class InputHelper
     uint32_t upKey = 'E';
     uint32_t downKey = 'Q';
     uint32_t captureKey = 'C';
+    uint32_t recordKey = 'R';
 };

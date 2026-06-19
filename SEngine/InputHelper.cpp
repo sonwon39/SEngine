@@ -27,6 +27,10 @@ void InputHelper::SetKeyState(uint32_t key, bool newState)
 	{
         captureFlag = true;
 	}
+    if (key == recordKey && newState)
+    {
+        recordFlag = true;
+    }
 }
 
 bool InputHelper::GetKeyState(uint32_t key)

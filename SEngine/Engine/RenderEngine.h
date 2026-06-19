@@ -227,11 +227,11 @@ class RenderEngine
     // SENGINE_RECORD 환경변수가 있으면 활성화. SENGINE_RECORD_FRAMES / SENGINE_RECORD_FPS로 조절.
   private:
     bool m_recording = true;
-    int m_recordFrame = 0;       // 시작부터의 누적 프레임
-    int m_recordWarmup = 60;     // 초반 워밍업 프레임 수 (트레일 형성 대기)
-    int m_recordCount = 300;     // 저장할 프레임 수
-    float m_recordDt = 1.0f / 60.0f; // 캡처 timestep (= 입력 fps). 1/60으로 바꾸면 진짜 60fps
-    int m_outputFps = 60;         // 저장 mp4 fps (0이면 캡처 fps와 동일). 예: 60이면 60fps로 저장
+    int m_recordFrame = 0;            // 누적 프레임
+    int m_recordWarmup = 0;           // 초반 워밍업 프레임 수
+    int m_recordCount = 300;          // 저장할 프레임 수
+    float m_recordDt = 1.0f / 60.0f;  // 캡처 timestep (= 입력 fps). 1/60으로 바꾸면 진짜 60fps
+    int m_outputFps = 60;             // 저장 mp4 fps
 
     // ffmpeg 파이프 핸들
     HANDLE m_ffmpegStdin = nullptr;

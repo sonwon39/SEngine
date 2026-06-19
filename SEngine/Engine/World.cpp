@@ -29,6 +29,10 @@ World::World()
     m_readbackBuffer = std::make_shared<GPUBuffer>();
 
 	saveThread = std::thread(&World::SaveLoop, this);
+
+	useSimulation = true;
+    useNoise = false;
+    renderDefault = false;
 }
 
 World::~World()
@@ -54,7 +58,11 @@ void World::Initialize(ID3D12Device5* device, int width, int height)
 
     m_modelLoader->InitializeCPU();
     m_simpleModelLoader->InitializeCPU();
-    m_pbrModelLoader->InitializeCPU();
+	m_pbrModelLoader->InitializeCPU();
+    auto scalingTr = DirectX::XMMatrixScaling(0.01f, 0.01f, 0.01f);
+	auto unrealFrontTR = DirectX::XMMatrixScaling(0.01f, 0.01f, 0.01f) * DirectX::XMMatrixRotationY(DirectX::XM_PI);
+    m_pbrModelLoader->Load("shield.fbx", scalingTr, false);
+    m_pbrModelLoader->Load("Animations/Capoeira.fbx", scalingTr, true);
 
     m_inputHelper->Initialize();
 
@@ -171,7 +179,7 @@ void World::InitLevel()
         if (FindTextureHandle(skyTextureName + "Brdf", handle))
             m_iblEnv->Initialize(handle);
 
-        ad.lc.model = Matrix(DirectX::XMMatrixTranslation(-1.5f, 1.f, 0.f)).Transpose();
+        ad.lc.model = Matrix(DirectX::XMMatrixTranslation(-5.5f, 1.f, 0.f)).Transpose();
         ad.psoName = "pbrPSO";
         ad.textureName = "Metal052C_4K-PNG_albedo";
         ad.useMaterial = true;
@@ -184,7 +192,7 @@ void World::InitLevel()
         // gui 조작용
         m_pbr = GenerateActor("pbr_sphere", ad);
 
-        ad.lc.model = Matrix(DirectX::XMMatrixTranslation(1.5f, 1.f, 0.f)).Transpose();
+        ad.lc.model = Matrix(DirectX::XMMatrixTranslation(5.5f, 1.f, 0.f)).Transpose();
         ad.textureName = "worn-painted-metal_albedo";
         GenerateActor("pbr_sphere", ad);
 
@@ -194,6 +202,18 @@ void World::InitLevel()
 
         ad.textureName = "PavingStones145_2K-PNG_Albedo";
         GenerateActor("pbr_plane", ad);
+
+		ad.lc.model = Matrix(DirectX::XMMatrixTranslation(10.5f, 1.f, 0.f)).Transpose();
+        ad.textureName = "Metal052C_4K-PNG_albedo";
+        ad.useMaterial = true;
+        ad.mc.texTransform = Matrix(DirectX::XMMatrixScaling(1.f, 1.f, 1.f)).Transpose();
+        GenerateActor("shield", ad);
+
+		ad.lc.model = Matrix(DirectX::XMMatrixTranslation(0.f, 0.f, 0.f)).Transpose();
+        ad.textureName = "Michelle_albedo";
+        ad.useMaterial = true;
+        ad.mc.texTransform = Matrix(DirectX::XMMatrixScaling(1.f, 1.f, 1.f)).Transpose();
+        GenerateActor("Capoeira", ad);
 
         /* auto mp = std::make_shared<AMovingPlatform>();
          mp->Initialize();
@@ -226,14 +246,15 @@ ID3D12DescriptorHeap* World::GetMainHeap() const
     return m_textureLoader->GetDescriptorHeap()->GetHeap();
 }
 
-Vector2 World::GetMouseVelocity() const
+Vector2 World::GetMouseRawDelta() const
 {
-    Vector2 velocity;
+    Vector2 delta;
     if (mouse)
     {
-        return mouse->velocity;
+        delta = mouse->GetMouseRawDelta();
+        mouse->SetRawDelta(Vector2(0.f, 0.f));
     }
-    return velocity;
+    return delta;
 }
 
 std::shared_ptr<Material> World::GetOrCreateMaterial(const std::string& textureName)

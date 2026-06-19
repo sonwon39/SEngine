@@ -80,7 +80,7 @@ class World
         return m_readbackBuffer;
     }
     ID3D12DescriptorHeap* GetMainHeap() const;
-    Vector2 GetMouseVelocity() const;
+    Vector2 GetMouseRawDelta() const;
 
   public:
     void SetWindowSize(int width, int height);

@@ -43,6 +43,8 @@ inline void GPUBuffer::Map()
 inline void GPUBuffer::MapForRead()
 {
     CD3DX12_RANGE range(0, bufferSize);
+    if (pGPU)
+        return;
     ThrowIfFailed(gpu->Map(0, &range, static_cast<void**>(&pGPU)));
 }
 

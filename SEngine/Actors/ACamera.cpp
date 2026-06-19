@@ -47,9 +47,10 @@ void ACamera::Tick(const float& deltaTime)
     Vector3 dir = m_world->m_inputHelper->GetInputDirection(this);
     Vector3 dx = dir * m_velocity * deltaTime;
 
-    Vector2 cameraDel = m_world->GetMouseVelocity();
+    Vector2 cameraDel = m_world->GetMouseRawDelta();
 
     Actor::UpdateActorLocation(dx);
+
     if (m_world->GetFPSMode())
         Actor::UpdateRotation((int)cameraDel.x, (int)cameraDel.y, deltaTime);
 }
